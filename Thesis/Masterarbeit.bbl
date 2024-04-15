@@ -1,0 +1,161 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated as
+% required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+\datalist[entry]{nty/global//global/global}
+  \entry{Chen_2021}{article}{}
+    \name{author}{4}{}{%
+      {{hash=CX}{%
+         family={Chen},
+         familyi={C\bibinitperiod},
+         given={Xiang},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=DPA}{%
+         family={Diaz-Pinto},
+         familyi={D\bibinithyphendelim P\bibinitperiod},
+         given={Andres},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=RN}{%
+         family={Ravikumar},
+         familyi={R\bibinitperiod},
+         given={Nishant},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=FAF}{%
+         family={Frangi},
+         familyi={F\bibinitperiod},
+         given={Alejandro\bibnamedelima F},
+         giveni={A\bibinitperiod\bibinitdelim F\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {IOP Publishing}%
+    }
+    \strng{namehash}{CX+1}
+    \strng{fullhash}{CXDPARNFAF1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{C}
+    \field{sortinithash}{C}
+    \verb{doi}
+    \verb 10.1088/2516-1091/abd37c
+    \endverb
+    \field{number}{1}
+    \field{pages}{012003}
+    \field{title}{Deep learning in medical image registration}
+    \verb{url}
+    \verb https://dx.doi.org/10.1088/2516-1091/abd37c
+    \endverb
+    \field{volume}{3}
+    \field{journaltitle}{Progress in Biomedical Engineering}
+    \field{year}{2021}
+    \warn{\item Invalid format of field 'month'}
+  \endentry
+
+  \entry{Jia2023FourierNetLB}{article}{}
+    \name{author}{6}{}{%
+      {{hash=JX}{%
+         family={Jia},
+         familyi={J\bibinitperiod},
+         given={Xinlei},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=TA}{%
+         family={Thorley},
+         familyi={T\bibinitperiod},
+         given={Alexander},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=GA}{%
+         family={G{\'o}mez},
+         familyi={G\bibinitperiod},
+         given={Alberto},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=LW}{%
+         family={Lu},
+         familyi={L\bibinitperiod},
+         given={Wenqi},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=KD}{%
+         family={Kotecha},
+         familyi={K\bibinitperiod},
+         given={Dipak},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=DJ}{%
+         family={Duan},
+         familyi={D\bibinitperiod},
+         given={Jinming},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JX+1}
+    \strng{fullhash}{JXTAGALWKDDJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{J}
+    \field{sortinithash}{J}
+    \field{title}{Fourier-Net+: Leveraging Band-Limited Representation for
+  Efficient 3D Medical Image Registration}
+    \verb{url}
+    \verb https://api.semanticscholar.org/CorpusID:259360728
+    \endverb
+    \field{volume}{abs/2307.02997}
+    \field{journaltitle}{ArXiv}
+    \field{year}{2023}
+  \endentry
+
+  \entry{Wang_deepflash}{article}{}
+    \name{author}{2}{}{%
+      {{hash=WJ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Jian},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=ZM}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Miaomiao},
+         giveni={M\bibinitperiod},
+      }}%
+    }
+    \keyw{Image
+  registration;Optimization;Training;Convolution;Strain;Predictive
+  models;Machine learning}
+    \strng{namehash}{WJZM1}
+    \strng{fullhash}{WJZM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{W}
+    \field{sortinithash}{W}
+    \field{booktitle}{2020 IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition (CVPR)}
+    \verb{doi}
+    \verb 10.1109/CVPR42600.2020.00450
+    \endverb
+    \field{pages}{4443\bibrangedash 4451}
+    \field{title}{DeepFLASH: An Efficient Network for Learning-Based Medical
+  Image Registration}
+    \field{year}{2020}
+  \endentry
+\enddatalist
+\endinput

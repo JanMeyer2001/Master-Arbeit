@@ -1,0 +1,130 @@
+\documentclass[english,version-2020-11]{uzl-thesis}
+
+\UzLThesisSetup{
+  Logo-Dateiname        = {Logo_IMI_de.png},
+  Verfasst              = {am}{Institut für Medizinische Informatik},
+  Titel auf Deutsch     = {MRT-Registration}, 
+  Titel auf Englisch    = {MRT-Registration},
+  Autor                 = {Jan Meyer},
+  Betreuerin            = {Prof. Dr. Mattias Heinrich},
+  Mit Unterstützung von = {Ziad Al-Haj Hemidi, Eytan Kats},
+  Masterarbeit,
+  Studiengang           = {Medizinische Informatik},
+  Datum                 = {1. Januar 2025},
+  Abstract              = {Something about MRI and registration},
+  Zusammenfassung       = {Irgendwas über MRT und Registration},
+  Acknowledgements      = {Danke an Mattias, Ziad und Eytan für die gute Betreuung.},
+  Numerische Bibliographie %Alphabetische
+}
+
+
+% Designs
+%
+%
+% A \emph{design} is a whole set of font and layout options bundled
+% together. They have been chosen in such a way that a visually
+% pleasing “overall appearance” results.
+%
+%
+%\UzLStyle{computer modern oldschool design}
+%\UzLStyle{computer modern scholary design}
+%\UzLStyle{pagella basic design}
+%\UzLStyle{pagella centered design}
+%\UzLStyle{pagella contrast design}
+%\UzLStyle{alegrya basic design}
+%\UzLStyle{alegrya scholary design}
+%\UzLStyle{alegrya stylish design}
+\UzLStyle{alegrya modern design}
+
+
+
+
+%%%%%%%%
+%
+% Now, include the package you need here using \usepackage. 
+%
+% However, many standard packages are already loaded by the class:
+% amsmath, amssymb, amsthm, babel, biblatex, csquotes, etoolbox,
+% filecontents, fontspec, geometry, hyperref, tikz (with libraries
+% arrows.meta, positioning and shapes), varioref, url 
+%
+%%%%%%%
+
+
+
+
+% add bibliography
+\addbibresource{Bibliography.bib}
+\bibliography{Bibliography.bib}
+
+
+
+
+\begin{document}
+
+\chapter{Introduction}
+Introduction of stuff.
+
+\section{Contributions of this Thesis}
+We implemented stuff.
+
+\section{Related Work}
+Others have already done stuff for example \cite{Chen_2021}, \cite{Jia2023FourierNetLB}, \cite{Wang_deepflash}.
+
+\section{Structure of this Thesis}
+This Thesis contains a lot of stuff in different chapters.
+
+
+
+
+\chapter{Basics}
+
+\section{Magnetic Particle Imaging}
+Here MRI is described.
+
+\section{Image Registration}
+Here goes some stuff for image registration.
+\begin{equation}
+	T' = \max S(F, T(M))
+\end{equation}
+This equation is taken from \cite{Chen_2021}
+
+\section{Deep Learning for image registration}
+Deep Learning has seen a rise in popularity in the last year in various fields including image registration.
+
+\subsection{CNNs}
+CNNs are an important class of neural networks, mainly for image processing.
+
+\subsection{U-Net}
+The U-Net architecture is typically used for segmentation, but can also be used for image registration tasks.
+
+
+
+
+
+\chapter{Main Chapter - Rename later}
+In this chapter the main part of the actual work is discussed.
+
+\section{DeepFlash}
+Explain DeepFlash.
+
+\section{Fourier Net}
+Here goes the explanation for the Fourier-Net.
+
+\section{Fourier Net+}
+Here goes the explanation for the Fourier-Net+.
+
+
+
+
+\chapter{Results and Discussion}
+Here go the results with the discussion.
+
+
+
+
+
+\chapter{Conclusion}
+Summery of all stuff...
+
+\end{document}
