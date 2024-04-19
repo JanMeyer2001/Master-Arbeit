@@ -1629,7 +1629,7 @@
       {\usebibmacro{postnote}}
   },
   Numerische Bibliographie/.code={
-    \uzl@load@biblatex{style=numeric}
+    \uzl@load@biblatex{style=numeric,sorting=none} %citestyle=numeric,
     \DeclareNameAlias{sortname}{last-first}
     \DeclareNameAlias{author}{sortname}
     \DeclareNameAlias{editor}{sortname}
