@@ -304,6 +304,205 @@
     \field{year}{2023}
   \endentry
 
+  \entry{Voxelmorph}{article}{}
+    \name{author}{5}{}{%
+      {{hash=BG}{%
+         family={Balakrishnan},
+         familyi={B\bibinitperiod},
+         given={Guha},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=ZA}{%
+         family={Zhao},
+         familyi={Z\bibinitperiod},
+         given={Amy},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=SMR}{%
+         family={Sabuncu},
+         familyi={S\bibinitperiod},
+         given={Mert\bibnamedelima R.},
+         giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+      {{hash=GJ}{%
+         family={Guttag},
+         familyi={G\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=DAV}{%
+         family={Dalca},
+         familyi={D\bibinitperiod},
+         given={Adrian\bibnamedelima V.},
+         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{BG+1}
+    \strng{fullhash}{BGZASMRGJDAV1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2019.2897538
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{8}
+    \field{pages}{1788\bibrangedash 1800}
+    \field{title}{VoxelMorph: A Learning Framework for Deformable Medical Image
+  Registration}
+    \field{volume}{38}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/VoxelMorph.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{08}
+    \field{year}{2019}
+  \endentry
+
+  \entry{Fourier-Net}{inproceedings}{}
+    \name{author}{9}{}{%
+      {{hash=JX}{%
+         family={Jia},
+         familyi={J\bibinitperiod},
+         given={Xi},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bartlett},
+         familyi={B\bibinitperiod},
+         given={Joseph},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=CW}{%
+         family={Chen},
+         familyi={C\bibinitperiod},
+         given={Wei},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=SS}{%
+         family={Song},
+         familyi={S\bibinitperiod},
+         given={Siyang},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=ZT}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Tianyang},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=CX}{%
+         family={Cheng},
+         familyi={C\bibinitperiod},
+         given={Xinxing},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=LW}{%
+         family={Lu},
+         familyi={L\bibinitperiod},
+         given={Wenqi},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=QZ}{%
+         family={Qiu},
+         familyi={Q\bibinitperiod},
+         given={Zhaowen},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=DJ}{%
+         family={Duan},
+         familyi={D\bibinitperiod},
+         given={Jinming},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JX+1}
+    \strng{fullhash}{JXBJCWSSZTCXLWQZDJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Proceedings of the AAAI Conference on Artificial
+  Intelligence}
+    \field{number}{1}
+    \field{pages}{1015\bibrangedash 1023}
+    \field{title}{Fourier-Net: Fast Image Registration with Band-Limited
+  Deformation}
+    \field{volume}{37}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/0. Jia, XI, et al. 'Fourier-Net'.pdf:PDF
+    \endverb
+    \field{year}{2023}
+  \endentry
+
+  \entry{Fourier-Net+}{misc}{}
+    \name{author}{6}{}{%
+      {{hash=JX}{%
+         family={Jia},
+         familyi={J\bibinitperiod},
+         given={Xi},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=TA}{%
+         family={Thorley},
+         familyi={T\bibinitperiod},
+         given={Alexander},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=GA}{%
+         family={Gomez},
+         familyi={G\bibinitperiod},
+         given={Alberto},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=LW}{%
+         family={Lu},
+         familyi={L\bibinitperiod},
+         given={Wenqi},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=KD}{%
+         family={Kotecha},
+         familyi={K\bibinitperiod},
+         given={Dipak},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=DJ}{%
+         family={Duan},
+         familyi={D\bibinitperiod},
+         given={Jinming},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Image and Video Processing (eess.IV), Computer Vision and Pattern
+  Recognition (cs.CV), FOS: Electrical engineering, electronic engineering,
+  information engineering, FOS: Electrical engineering, electronic engineering,
+  information engineering, FOS: Computer and information sciences, FOS:
+  Computer and information sciences}
+    \strng{namehash}{JX+1}
+    \strng{fullhash}{JXTAGALWKDDJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.48550/ARXIV.2307.02997
+    \endverb
+    \field{title}{Fourier-Net+: Leveraging Band-Limited Representation for
+  Efficient 3D Medical Image Registration}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/2. Jia, Xi, et al. 'Fourier-Net+. Leveragi
+    \verb ng Band-Limited Representation for Efficient 3D Medical Image Registr
+    \verb ation'.pdf:PDF
+    \endverb
+    \field{year}{2023}
+  \endentry
+
   \entry{Tam2016}{article}{}
     \name{author}{14}{}{%
       {{hash=TAL}{%
@@ -688,79 +887,39 @@
     \field{year}{2009}
   \endentry
 
-  \entry{Fourier-Net}{inproceedings}{}
-    \name{author}{9}{}{%
-      {{hash=JX}{%
-         family={Jia},
-         familyi={J\bibinitperiod},
-         given={Xi},
-         giveni={X\bibinitperiod},
+  \entry{Adam}{misc}{}
+    \name{author}{2}{}{%
+      {{hash=KDP}{%
+         family={Kingma},
+         familyi={K\bibinitperiod},
+         given={Diederik\bibnamedelima P.},
+         giveni={D\bibinitperiod\bibinitdelim P\bibinitperiod},
       }}%
       {{hash=BJ}{%
-         family={Bartlett},
+         family={Ba},
          familyi={B\bibinitperiod},
-         given={Joseph},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=CW}{%
-         family={Chen},
-         familyi={C\bibinitperiod},
-         given={Wei},
-         giveni={W\bibinitperiod},
-      }}%
-      {{hash=SS}{%
-         family={Song},
-         familyi={S\bibinitperiod},
-         given={Siyang},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=ZT}{%
-         family={Zhang},
-         familyi={Z\bibinitperiod},
-         given={Tianyang},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=CX}{%
-         family={Cheng},
-         familyi={C\bibinitperiod},
-         given={Xinxing},
-         giveni={X\bibinitperiod},
-      }}%
-      {{hash=LW}{%
-         family={Lu},
-         familyi={L\bibinitperiod},
-         given={Wenqi},
-         giveni={W\bibinitperiod},
-      }}%
-      {{hash=QZ}{%
-         family={Qiu},
-         familyi={Q\bibinitperiod},
-         given={Zhaowen},
-         giveni={Z\bibinitperiod},
-      }}%
-      {{hash=DJ}{%
-         family={Duan},
-         familyi={D\bibinitperiod},
-         given={Jinming},
+         given={Jimmy},
          giveni={J\bibinitperiod},
       }}%
     }
-    \strng{namehash}{JX+1}
-    \strng{fullhash}{JXBJCWSSZTCXLWQZDJ1}
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Machine Learning (cs.LG), FOS: Computer and information sciences,
+  FOS: Computer and information sciences}
+    \strng{namehash}{KDPBJ1}
+    \strng{fullhash}{KDPBJ1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{booktitle}{Proceedings of the AAAI Conference on Artificial
-  Intelligence}
-    \field{number}{1}
-    \field{pages}{1015\bibrangedash 1023}
-    \field{title}{Fourier-Net: Fast Image Registration with Band-Limited
-  Deformation}
-    \field{volume}{37}
+    \verb{doi}
+    \verb 10.48550/ARXIV.1412.6980
+    \endverb
+    \field{title}{Adam: A Method for Stochastic Optimization}
     \verb{file}
     \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/0. Jia, XI, et al. 'Fourier-Net'.pdf:PDF
+    \verb ter/Masterarbeit/Literatur/Adam.pdf:PDF
     \endverb
-    \field{year}{2023}
+    \field{year}{2014}
   \endentry
 
   \entry{U-Net}{inbook}{}
@@ -875,6 +1034,57 @@
     \endverb
     \field{month}{06}
     \field{year}{2020}
+  \endentry
+
+  \entry{Dalca2018}{inbook}{}
+    \name{author}{4}{}{%
+      {{hash=DAV}{%
+         family={Dalca},
+         familyi={D\bibinitperiod},
+         given={Adrian\bibnamedelima V.},
+         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+      {{hash=BG}{%
+         family={Balakrishnan},
+         familyi={B\bibinitperiod},
+         given={Guha},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=GJ}{%
+         family={Guttag},
+         familyi={G\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=SMR}{%
+         family={Sabuncu},
+         familyi={S\bibinitperiod},
+         given={Mert\bibnamedelima R.},
+         giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Springer International Publishing}%
+    }
+    \strng{namehash}{DAV+1}
+    \strng{fullhash}{DAVBGGJSMR1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Lecture Notes in Computer Science}
+    \verb{doi}
+    \verb 10.1007/978-3-030-00928-1_82
+    \endverb
+    \field{isbn}{9783030009281}
+    \field{issn}{1611-3349}
+    \field{pages}{729\bibrangedash 738}
+    \field{title}{Unsupervised Learning for Fast Probabilistic Diffeomorphic
+  Registration}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Unsupervised Learning for Fast Probabilist
+    \verb ic Diffeomorphic Registration (Pre-VoxelMorph).pdf:PDF
+    \endverb
+    \field{year}{2018}
   \endentry
 \enddatalist
 \endinput
