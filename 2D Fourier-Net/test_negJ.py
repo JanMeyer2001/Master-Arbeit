@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import numpy as np
 import torch
 from Models import *
-from Functions import ValidationDataset
+from Functions import *
 import torch.utils.data as Data
 import csv
 
@@ -38,8 +38,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    #default='/export/local/xxj946/AOSBraiCN2',
-                    default='/bask/projects/d/duanj-ai-imaging/Accreg/brain/OASIS_AffineData/',
+                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
                     help="data path for training images")
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=3,
@@ -130,7 +129,7 @@ def test(modelpath):
     NegJ_35=[]
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
-    test_set = ValidationDataset(opt.datapath,img_file='test_list.txt')
+    test_set = TestDataset(opt.datapath)
     test_generator = Data.DataLoader(dataset=test_set, batch_size=bs,
                                          shuffle=False, num_workers=2)
     for __, __, mov_img, fix_img, mov_lab, fix_lab in test_generator:
@@ -165,8 +164,8 @@ def test(modelpath):
                 negJ = np.sum(jac_det <= 0) / 160 / 192 * 100
                 NegJ_35.append(negJ)
 
-    print(np.mean(Dices_35), np.std(Dices_35))
-    print('%100:', np.mean(NegJ_35), '%100:',np.std(NegJ_35))
+    print('Mean Dice Score: ', np.mean(Dices_35), 'Std Dice Score: ', np.std(Dices_35))
+    print('Mean DetJ<0 %:', np.mean(NegJ_35), 'Std DetJ<0 %:',np.std(NegJ_35))
 
     # return np.mean(Dices_35)
 
@@ -181,33 +180,3 @@ if __name__ == '__main__':
     # best_model = torch.load(model_path + natsorted(os.listdir(model_path))[model_idx])#['state_dict']
     test(model_path + natsorted(os.listdir(model_path))[model_idx])
     
-    
-    # from torchsummary import summary
-    # from Models import *
-
-    # model = SYMNet(2, 2, opt.start_channel)
-    # summary(model, [(1, 160, 192),(1, 160, 192)])
-    # summary(model, (1, 128,128))#,(1, 80, 96, 112)])
-    
-    # csvname = 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_Test.csv'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset)
-    # f = open(csvname, 'w')
-
-    # with f:
-        # fnames = ['Index','Dice35']
-        # writer = csv.DictWriter(f, fieldnames=fnames)
-        # writer.writeheader()
-    # try:
-        # for i in range(opt.checkpoint,opt.iteration,opt.checkpoint):
-            # model_path='./L2ss_{}_Chan_{}_Smth_{}_Set_{}/SYMNet_{}.pth'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset, i)
-            # print(model_path)
-            # dice35_temp= test(model_path)
-            # f = open(csvname, 'a')
-            # with f:
-                # writer = csv.writer(f)
-                # writer.writerow([i,dice35_temp])
-            # DICESCORES35.append(dice35_temp)
-    # except:
-        # print(np.argmax(DICESCORES35))
-        # print(np.max(DICESCORES35))
-    # print(np.argmax(DICESCORES35))
-    # print(np.max(DICESCORES35))

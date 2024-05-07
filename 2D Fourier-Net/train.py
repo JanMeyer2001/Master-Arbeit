@@ -10,6 +10,7 @@ from Functions import *
 import torch.utils.data as Data
 import matplotlib.pyplot as plt
 import csv
+import time
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 from natsort import natsorted
 
@@ -19,8 +20,8 @@ parser.add_argument("--lr", type=float,
 parser.add_argument("--bs", type=int,
                     dest="bs", default=1, help="batch_size")
 parser.add_argument("--iteration", type=int,
-                    dest="iteration", default=320001,
-                    help="number of total iterations")
+                    dest="iteration", default=1000, 
+                    help="number of total iterations")#32000
 parser.add_argument("--local_ori", type=float,
                     dest="local_ori", default=1000.0,
                     help="Local Orientation Consistency loss: suggested range 1 to 1000")
@@ -44,8 +45,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    #default='/export/local/xxj946/AOSBraiCN2',
-                    default='/bask/projects/d/duanj-ai-imaging/Accreg/brain/OASIS_AffineData/',
+                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
                     help="data path for training images")
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=3,
@@ -91,7 +91,10 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=6):
     while len(model_lists) > max_model_num:
         os.remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
+
 def train():
+    print('Started training on ', time.ctime())
+
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
     model = SYMNet(2, 2, start_channel).cuda()
@@ -129,22 +132,24 @@ def train():
     # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
     lossall = np.zeros((3, iteration))
-    train_set = TrainDataset(datapath,img_file='train_list.txt',trainingset = trainingset)
+    train_set = TrainDataset(datapath,trainingset = trainingset) #
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    test_set = ValidationDataset(opt.datapath,img_file='val_list.txt')
-    test_generator = Data.DataLoader(dataset=test_set, batch_size=bs, shuffle=False, num_workers=2)
+    valid_set = ValidationDataset(opt.datapath)
+    valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
     model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(using_l2,start_channel,smooth, trainingset, lr)
     model_dir_png = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Png/'.format(using_l2,start_channel,smooth, trainingset, lr)
-    csv_name = 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(using_l2,start_channel,smooth, trainingset, lr)
+    
+    if not os.path.isdir(model_dir_png):
+        os.mkdir(model_dir_png)
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+
+    csv_name = model_dir_png + 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(using_l2,start_channel,smooth, trainingset, lr)
     f = open(csv_name, 'w')
     with f:
         fnames = ['Index','Dice']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
-    if not os.path.isdir(model_dir_png):
-        os.mkdir(model_dir_png)
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
     # model_dir_samples = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Samples'.format(using_l2,start_channel,smooth, trainingset, lr)
 
     # if not os.path.isdir(model_dir_samples):
@@ -154,10 +159,15 @@ def train():
     step = 1
 
     while step <= iteration:
+        if step == 1:
+            start = time.time()
+        elif step == 2:
+            end = time.time()
+            print('Expected time for training: ', ((end-start)*(iteration-1))/60, ' minutes.')    
+        
         for X, Y in training_generator:
 
             X = X.cuda().float()
-
             Y = Y.cuda().float()
             
             out_1, out_2 = model(X, Y)
@@ -167,6 +177,7 @@ def train():
             out_ifft2 = torch.fft.fftshift(torch.fft.fft2(out_2))
             # p3d = (84, 84, 70, 70)
             p3d = (72, 72, 60, 60)
+            #p3d = (84, 84, 60, 60)
             out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
             out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
             # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
@@ -175,9 +186,13 @@ def train():
             # disp_mf_3 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
             f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
             
+            """
+            print('shape of X: ', X.shape)
+            print('shape of f_xy: ', f_xy.permute(0, 2, 3, 1).shape)
+            """
+
             grid, X_Y = transform(X, f_xy.permute(0, 2, 3, 1))
-            
-                                                                     
+                                                           
             if using_l2 == 3:
                 loss1 = (1 - ms_ssim_module(X_Y , Y)) + (1 - ssim_module(X_Y , Y))# + 0 * loss_similarity(Y, X_Y)
             else:
@@ -189,15 +204,15 @@ def train():
             loss.backward()
             optimizer.step()
 
-            lossall[:,step] = np.array([loss.item(),loss1.item(),loss5.item()])
-            sys.stdout.write("\r" + 'step "{0}" -> training loss "{1:.4f}" - sim "{2:.4f}" -smo "{3:.4f}" '.format(step, loss.item(),loss1.item(),loss5.item()))
+            lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
+            sys.stdout.write("\r" + 'step "{0}" -> training loss "{1:.6f}" - sim "{2:.6f}" -smo "{3:.6f}" '.format(step, loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
 
             if (step % n_checkpoint == 0):
                 with torch.no_grad():
                     Dices_Validation = []
                     # Dices_Validation_Sup = []
-                    for __, __, mov_img, fix_img, mov_lab, fix_lab in test_generator:
+                    for mov_img, fix_img, mov_lab, fix_lab in valid_generator:
                         model.eval()
                         
                         # sup_v_x, sup_v_y  = supvised_model(mov_img.float().to(device), fix_img.float().to(device))
@@ -216,6 +231,7 @@ def train():
                         # p3d = (72, 72, 60, 60)
                         # p3d = (84, 84, 70, 70)
                         p3d = (72, 72, 60, 60)
+                        #p3d = (84, 84, 60, 60)
                         # p3d = (90, 90, 75, 75)
                         # p3d = (84, 84, 70, 70)
                         # p3d = (84, 84, 70, 70)
@@ -258,6 +274,16 @@ def train():
         print("one epoch pass")
         # epoch = epoch + 1
     np.save(model_dir_png + '/loss_SYMNet.npy', lossall)
+    print('Training ended on ', time.ctime())
+    
+    """
+    # plot losses
+    plt.imshow(lossall)
+    plt.ylim([0,1])
+    plt.savefig(model_dir_png + 'TrainingLoss.png')
+    plt.close
+    """
+
 def save_flow(X, Y, X_Y, f_xy, sample_path):
     x = X.data.cpu().numpy()
     y = Y.data.cpu().numpy()
@@ -278,39 +304,57 @@ def save_flow(X, Y, X_Y, f_xy, sample_path):
 
 #    print(pred.max())
     plt.subplots(figsize=(7, 4))
+    plt.axis('off')
     # plt.subplots()
-    plt.subplot(231)
-    plt.imshow(x[0, :, :], cmap='gray', vmin=0, vmax=1)
+
+    moving_image = rotate_image(x[0, :, :])
+    plt.subplot(2,3,1)
+    plt.imshow(moving_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Moving Image')
     plt.axis('off')
-    plt.subplot(232)
-    plt.imshow(y[0, :, :], cmap='gray', vmin=0, vmax=1)
+
+    fixed_image = rotate_image(y[0, :, :])
+    plt.subplot(2,3,2)
+    plt.imshow(fixed_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Fixed Image')
     plt.axis('off')
-    plt.subplot(233)
-    plt.imshow(x_pred[0, :, :], cmap='gray', vmin=0, vmax=1)
+
+    warped_image = rotate_image(x_pred[0, :, :])
+    plt.subplot(2,3,3)
+    plt.imshow(warped_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Warped Image')
     plt.axis('off')
-    plt.subplot(234)
-    # plt.subplot(245)
-    # plt.imshow(x_pred[0, :, :], cmap='gray')
-    # plt.axis('off')
-    # plt.subplot(246)
-    # plt.imshow(x[0, :, :], cmap='gray')
+
+    plt.subplot(2,3,4)
     interval = 5
-    for i in range(0,op_flow.shape[1]-1,interval):
-        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
+    [w,h,j] = op_flow.shape
+    op_flow_new = np.zeros([w,j,h])
+    op_flow_new[0,:,:] = rotate_image(op_flow[0,:,:])
+    op_flow_new[1,:,:] = rotate_image(op_flow[1,:,:])
+
+    for i in range(0,op_flow_new.shape[1]-1,interval):
+        plt.plot(op_flow_new[0,i,:], op_flow_new[1,i,:],c='g',lw=1)
     #plot the vertical lines
-    for i in range(0,op_flow.shape[2]-1,interval):
-        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
-#    plt.axis((-1,1,-1,1))
-    #plt.axis('equal')  
+    for i in range(0,op_flow_new.shape[2]-1,interval):
+        plt.plot(op_flow_new[0,:,i], op_flow_new[1,:,i],c='g',lw=1)
+
     plt.xlim(-1, 1)
     plt.ylim(-1, 1)
+    plt.title('Displacement Field')
     plt.axis('off')
-    plt.subplot(235)
-    plt.imshow(abs(x[0, :, :]-y[0, :, :]), cmap='gray', vmin=0, vmax=1)
+
+    diff_before = rotate_image(abs(x[0, :, :]-y[0, :, :]))
+    plt.subplot(2,3,5)
+    plt.imshow(diff_before, cmap='gray', vmin=0, vmax=1)
+    plt.title('Difference before')
     plt.axis('off')
-    plt.subplot(236)
-    plt.imshow(abs(x_pred[0, :, :]-y[0, :, :]), cmap='gray', vmin=0, vmax=1)
+    
+    diff_after = rotate_image(abs(x_pred[0, :, :]-y[0, :, :]))
+    plt.subplot(2,3,6)
+    plt.imshow(diff_after, cmap='gray', vmin=0, vmax=1)
+    plt.title('Difference after')
     plt.axis('off')
     plt.savefig(sample_path,bbox_inches='tight')
     plt.close()
+
 train()

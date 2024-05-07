@@ -38,8 +38,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    #default='/export/local/xxj946/AOSBraiCN2',
-                    default='/bask/projects/d/duanj-ai-imaging/Accreg/brain/OASIS_AffineData/',
+                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
                     help="data path for training images")
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=3,
@@ -181,7 +180,7 @@ if __name__ == '__main__':
     import time
     start = time.time()
     test(model_path + natsorted(os.listdir(model_path))[model_idx])
-    print((time.time() - start)/400)
+    print('runtime: ', (time.time() - start)/400)
     
     # from torchsummary import summary
     # from Models import *
