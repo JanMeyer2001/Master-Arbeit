@@ -128,8 +128,9 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     model_dir = './L2ss_{}_Chan_{}_Smth_{}_LR_{}/'.format(using_l2,start_channel,smooth,lr)
-    if not os.path.isdir(model_dir+'/model/'):
-        os.mkdir(model_dir+'/model/')
+    if not os.path.isdir(model_dir+'model/'):
+        os.mkdir(model_dir)
+        os.mkdir(model_dir+'model/')
     csv_name = model_dir + 'L2ss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(using_l2,start_channel,smooth,lr)
     f = open(csv_name, 'w')
     with f:
@@ -184,7 +185,7 @@ def train():
             optimizer.step()
 
             lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
-            sys.stdout.write("\r" + 'step {0}/' + str(iteration) + ' -> training loss "{1:.4f}" - sim "{2:.4f}" -smo "{3:.4f}" '.format(step, loss.item(),loss1.item(),loss5.item()))
+            sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
 
             if (step % n_checkpoint == 0):

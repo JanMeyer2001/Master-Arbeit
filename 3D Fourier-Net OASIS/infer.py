@@ -69,7 +69,7 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
     transform = SpatialTransform().cuda()
 
-    model_idx = -2
+    model_idx = -1
     model_dir = './L2ss_{}_Chan_{}_Smth_{}_LR_{}/'.format(using_l2, start_channel, smooth, lr)
    
     if not os.path.exists('Quantitative_Results/'):
@@ -85,8 +85,8 @@ def main():
     
     model = SYMNet(2, 3, start_channel).cuda()
     
-    print('Best model: {}'.format(natsorted(os.listdir(model_dir+'/model'))[model_idx]))
-    best_model = torch.load(model_dir+'/model/' + natsorted(os.listdir(model_dir+'/model'))[model_idx])#['state_dict']
+    print('Best model: {}'.format(natsorted(os.listdir(model_dir+'model/'))[model_idx]))
+    best_model = torch.load(model_dir+'model/' + natsorted(os.listdir(model_dir+'model/'))[model_idx])#['state_dict']
     model.load_state_dict(best_model)
     model.cuda()
     # reg_model = utils.register_model(config.img_size, 'nearest')
