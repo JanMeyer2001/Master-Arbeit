@@ -42,8 +42,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    #default='/export/local/xxj946/AOSBraiCN2',
-                    default='/bask/projects/d/duanj-ai-imaging/Accreg/brain/OASIS_AffineData/',
+                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
                     help="data path for training images")
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=4,
@@ -211,7 +210,7 @@ if __name__ == '__main__':
             # model_path='./L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}/SYMNet_{}.pth'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset, opt.lr, i)
             # print(model_path)
     '''
-    model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}_Pth2/'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset, opt.lr, opt.bs)
+    model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}_Pth1/'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset, opt.lr, opt.bs)
     print(model_dir)
     import time
     start = time.time()

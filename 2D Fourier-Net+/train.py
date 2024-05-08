@@ -11,6 +11,7 @@ import torch.utils.data as Data
 import matplotlib.pyplot as plt
 from natsort import natsorted
 import csv
+import time
 
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
@@ -45,8 +46,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    #default='/export/local/xxj946/AOSBraiCN2',
-                    default='/bask/projects/d/duanj-ai-imaging/Accreg/brain/OASIS_AffineData/',
+                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
                     help="data path for training images")
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=4,
@@ -72,22 +72,20 @@ trainingset = opt.trainingset
 using_l2 = opt.using_l2
 
 def dice(pred1, truth1):
-    dice_k=[]
-    # mask4_value1 = np.unique(pred1)
+    mask4_value1 = np.unique(pred1)
     mask4_value2 = np.unique(truth1)
-    # print(len(mask4_value2))
-    # mask_value4 = list(set(mask4_value1) & set(mask4_value2))
-    for k in mask4_value2[1:]:
+    mask_value4 = list(set(mask4_value1) & set(mask4_value2))
+    dice_list=[]
+    for k in mask_value4[1:]:
         truth = truth1 == k
         pred = pred1 == k
         intersection = np.sum(pred * truth) * 2.0
-        dice_k.append(intersection / (np.sum(pred) + np.sum(truth)))
-    return np.mean(dice_k)
+        dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
+    return np.mean(dice_list)
 
 def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     torch.save(state, save_dir + save_filename)
     model_lists = natsorted(glob.glob(save_dir + '*'))
-    # print(model_lists)
     while len(model_lists) > max_model_num:
         os.remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
@@ -106,71 +104,54 @@ def train():
         ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
         loss_similarity = SAD().loss
     loss_smooth = smoothloss
-#    loss_magnitude = magnitude_loss
-#    loss_Jdet = neg_Jdet_loss
 
     transform = SpatialTransform().cuda()
-    diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-#    com_transform = CompositionTransform().cuda()
+    #diff_transform = DiffeomorphicTransform(time_step=7).cuda()
 
     for param in transform.parameters():
         param.requires_grad = False
         param.volatile = True
-    #for name, param in model.named_parameters():
-    #    if param.requires_grad:
-    #        print(name, param.data)
-    #aos_params = list(model.ic_block.param)
-    #other_params = [p for p in model.parameters() if p not in aos_params]
-    #aos_params = [p for n,p in model.named_parameters() if n.startswith('ic_block.')]
-    #other_params = [p for n,p in model.named_parameters() if not n.startswith('ic_block.')]
-    #optimizer = torch.optim.Adam([{'params': other_params},{'params': aos_params, 'lr': 1e-4}], lr=lr)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    # optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
     lossall = np.zeros((3, iteration))
-    train_set = TrainDataset(datapath,img_file='train_list.txt',trainingset = trainingset)
+    train_set = TrainDataset(datapath,trainingset = trainingset) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    test_set = ValidationDataset(opt.datapath,img_file='val_list.txt')
-    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=2)
-    model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}/'.format(using_l2, start_channel, smooth, trainingset, lr, bs)
-    model_dir_pth1 = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}_Pth1/'.format(using_l2, start_channel, smooth, trainingset, lr, bs)
-    model_dir_pth2 = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}_Pth2/'.format(using_l2, start_channel, smooth, trainingset, lr, bs)
-    csv_name = 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_BZ_{}.csv'.format(using_l2, start_channel, smooth, trainingset, lr, bs)
-    if os.path.exists(csv_name):
-        assert 0==1
+    valid_set = ValidationDataset(opt.datapath)
+    valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
+    model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(using_l2,start_channel,smooth, trainingset, lr)
+    model_dir_png = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Png/'.format(using_l2,start_channel,smooth, trainingset, lr)
+    
+    if not os.path.isdir(model_dir_png):
+        os.mkdir(model_dir_png)
+    if not os.path.isdir(model_dir):
+        os.mkdir(model_dir)
+
+    csv_name = model_dir_png + 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(using_l2,start_channel,smooth, trainingset, lr)
     f = open(csv_name, 'w')
     with f:
         fnames = ['Index','Dice']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
-
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
-    if not os.path.isdir(model_dir_pth1):
-        os.mkdir(model_dir_pth1)
-    if not os.path.isdir(model_dir_pth2):
-        os.mkdir(model_dir_pth2)
-    
     
     step = 1
 
     while step <= iteration:
+        if step == 1:
+            start = time.time()
+        elif step == 2:
+            end = time.time()
+            print('Expected time for training: ', ((end-start)*(iteration-1))/60, ' minutes.')    
+        
         for mov_img, fix_img in training_generator:
 
             fix_img = fix_img.cuda().float()
-
             mov_img = mov_img.cuda().float()
-
-            # fix_lab = fix_lab.cuda().float()
-
-            # mov_lab = mov_lab.cuda().float()
             
             f_xy = model(mov_img, fix_img)
-            # Df_xy = diff_transform(f_xy)
             Df_xy = f_xy
             __, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
            
-            loss1 = loss_similarity(fix_img, warped_mov) # GT shall be 1st Param
+            loss1 = loss_similarity(fix_img, warped_mov) 
             loss5 = loss_smooth(f_xy)
             
             loss = loss1 + smooth * loss5
@@ -178,52 +159,31 @@ def train():
             loss.backward()
             optimizer.step()
 
-            lossall[:,step] = np.array([loss.item(),loss1.item(),loss5.item()])
-            sys.stdout.write("\r" + 'step "{0}" -> training loss "{1:.4f}" - sim "{2:.4f}" -smo "{3:.4f}" '.format(step, loss.item(),loss1.item(),loss5.item()))
+            lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
+            sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
 
             if (step % n_checkpoint == 0) or (step==1):
                 with torch.no_grad():
                     Dices_Validation = []
-                    for __, __, vmov_img, vfix_img, vmov_lab, vfix_lab in test_generator:
+                    for vmov_img, vfix_img, vmov_lab, vfix_lab in valid_generator:
                         model.eval()
                         V_xy = model(vmov_img.float().to(device), vfix_img.float().to(device))
-                        # DV_xy = diff_transform(V_xy)
                         DV_xy = V_xy
-                        # x_seg_oh = nn.functional.one_hot(mov_lab.long(), num_classes=25)
-                        # x_seg_oh = torch.squeeze(x_seg_oh, 1)
-                        # x_seg_oh = x_seg_oh.permute(0, 3, 1, 2).contiguous()
-                        # grid, x_segs = transform(x_seg_oh.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'bilinear')
-                        #x_segs = model.spatial_trans(x_seg.float(), flow.float())
-                        # x_segs = []
-                        # for i in range(25):
-                            # __, def_seg = transform(x_seg_oh[:, i:i + 1, ...].float().to(device), DV_xy.permute(0, 2, 3, 1))
-                            # x_segs.append(def_seg)
-                        # x_segs = torch.cat(x_segs, dim=1)
-                        # warped_mov_lab = torch.argmax(x_segs, dim=1, keepdim=True)
                         grid, warped_vmov_lab = transform(vmov_lab.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
-                        # for bs_index in range(1):
                         dice_bs = dice(warped_vmov_lab[0,...].data.cpu().numpy().copy(),vfix_lab[0,...].data.cpu().numpy().copy())
                         Dices_Validation.append(dice_bs)
-                    modelname = 'DiceVal_{:.4f}_Step_{:09d}.pth'.format(np.mean(Dices_Validation), step)
+                    modelname = 'DiceVal_{:.4f}_Step_{:06d}.pth'.format(np.mean(Dices_Validation), step)
                     csv_dice = np.mean(Dices_Validation)
-                    if step <= iteration / 2.0:
-                        save_checkpoint(model.state_dict(), model_dir_pth1, modelname)
-                    else:
-                        save_checkpoint(model.state_dict(), model_dir_pth2, modelname)
+                    save_checkpoint(model.state_dict(), model_dir, modelname)
                     np.save(model_dir + 'Loss.npy', lossall)
                     f = open(csv_name, 'a')
                     with f:
                         writer = csv.writer(f)
                         writer.writerow([step, csv_dice])
+            
             if (step % n_checkpoint == 0):
-                sample_path = os.path.join(model_dir, '{:08d}-images.jpg'.format(step))
-                # h, w = f_xy.shape[-2:]
-                # grid_h, grid_w = torch.meshgrid([torch.linspace(-1, 1, h), torch.linspace(-1, 1, w)])
-                # s = torch.stack((grid_w,grid_h), dim=0).cuda().float()
-                # print(s.unsqueeze(0).shape)
-                # print(mov_img.shape)
-                # s = transform(s.unsqueeze(0),f_xy.permute(0, 2, 3, 1))
+                sample_path = os.path.join(model_dir, '{:06d}-images.jpg'.format(step))
                 save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
             step += 1
 
@@ -235,56 +195,65 @@ def train():
 def save_flow(X, Y, X_Y, f_xy, sample_path):
     x = X.data.cpu().numpy()
     y = Y.data.cpu().numpy()
-#    print('AAAAAAAAAAAAAAAAAAAAAAAA shape: {}, {}, {}, {}'.format(x.shape, pred.shape, x_pred.shape, flow.shape))
-    # pred = pred.data.cpu().numpy()
     x_pred = X_Y.data.cpu().numpy()
-    # pred = pred[0,...]
     x_pred = x_pred[0,...]
     x = x[0,...]
     y = y[0,...]
     
     flow = f_xy.data.cpu().numpy()
     op_flow =flow[0,:,:,:]
-    # quiver_flow = op_flow.copy()
-    # op_flow[0, :, :] = op_flow[0, :, :] / 2 * op_flow.shape[-2]
-    # op_flow[1, :, :] = op_flow[1, :, :] / 2 * op_flow.shape[-1]
-
-
-#    print(pred.max())
+    
     plt.subplots(figsize=(7, 4))
-    # plt.subplots()
-    plt.subplot(231)
-    plt.imshow(x[0, :, :], cmap='gray', vmin=0, vmax=1)
     plt.axis('off')
-    plt.subplot(232)
-    plt.imshow(y[0, :, :], cmap='gray', vmin=0, vmax=1)
+
+    moving_image = rotate_image(x[0, :, :])
+    plt.subplot(2,3,1)
+    plt.imshow(moving_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Moving Image')
     plt.axis('off')
-    plt.subplot(233)
-    plt.imshow(x_pred[0, :, :], cmap='gray', vmin=0, vmax=1)
+
+    fixed_image = rotate_image(y[0, :, :])
+    plt.subplot(2,3,2)
+    plt.imshow(fixed_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Fixed Image')
     plt.axis('off')
-    plt.subplot(234)
-    # plt.subplot(245)
-    # plt.imshow(x_pred[0, :, :], cmap='gray')
-    # plt.axis('off')
-    # plt.subplot(246)
-    # plt.imshow(x[0, :, :], cmap='gray')
-    interval = 7
-    for i in range(0,op_flow.shape[1]-1,interval):
-        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
+
+    warped_image = rotate_image(x_pred[0, :, :])
+    plt.subplot(2,3,3)
+    plt.imshow(warped_image, cmap='gray', vmin=0, vmax=1)
+    plt.title('Warped Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,4)
+    interval = 5
+    [w,h,j] = op_flow.shape
+    op_flow_new = np.zeros([w,j,h])
+    op_flow_new[0,:,:] = rotate_image(op_flow[0,:,:])
+    op_flow_new[1,:,:] = rotate_image(op_flow[1,:,:])
+
+    for i in range(0,op_flow_new.shape[1]-1,interval):
+        plt.plot(op_flow_new[0,i,:], op_flow_new[1,i,:],c='g',lw=1)
     #plot the vertical lines
-    for i in range(0,op_flow.shape[2]-1,interval):
-        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
-#    plt.axis((-1,1,-1,1))
-    #plt.axis('equal')  
+    for i in range(0,op_flow_new.shape[2]-1,interval):
+        plt.plot(op_flow_new[0,:,i], op_flow_new[1,:,i],c='g',lw=1)
+
     plt.xlim(-1, 1)
     plt.ylim(-1, 1)
+    plt.title('Displacement Field')
     plt.axis('off')
-    plt.subplot(235)
-    plt.imshow(abs(x[0, :, :]-y[0, :, :]), cmap='gray', vmin=0, vmax=1)
+
+    diff_before = rotate_image(abs(x[0, :, :]-y[0, :, :]))
+    plt.subplot(2,3,5)
+    plt.imshow(diff_before, cmap='gray', vmin=0, vmax=1)
+    plt.title('Difference before')
     plt.axis('off')
-    plt.subplot(236)
-    plt.imshow(abs(x_pred[0, :, :]-y[0, :, :]), cmap='gray', vmin=0, vmax=1)
+    
+    diff_after = rotate_image(abs(x_pred[0, :, :]-y[0, :, :]))
+    plt.subplot(2,3,6)
+    plt.imshow(diff_after, cmap='gray', vmin=0, vmax=1)
+    plt.title('Difference after')
     plt.axis('off')
     plt.savefig(sample_path,bbox_inches='tight')
     plt.close()
+
 train()
