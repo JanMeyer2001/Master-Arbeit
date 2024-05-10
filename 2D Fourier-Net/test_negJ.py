@@ -104,11 +104,9 @@ def dice(pred1, truth1):
     mask_value4 = list(set(mask4_value1) & set(mask4_value2))
     dice_list=[]
     for k in mask_value4[1:]:
-        #print(k)
         truth = truth1 == k
         pred = pred1 == k
         intersection = np.sum(pred * truth) * 2.0
-        # print(intersection)
         dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
     return np.mean(dice_list)
 
@@ -118,13 +116,8 @@ def test(modelpath):
     torch.backends.cudnn.benchmark = True
     transform = SpatialTransform().cuda()
     model.load_state_dict(torch.load(modelpath))
-    #model_lambda = model.ic_block.labda.data.cpu().numpy()
-    #model_odr = model.ic_block.odr.data.cpu().numpy()
     model.eval()
     transform.eval()
-#    diff_transform.eval()
-#    com_transform.eval()
-#    Dices_before=[]
     Dices_35=[]
     NegJ_35=[]
     use_cuda = True
@@ -139,14 +132,11 @@ def test(modelpath):
             out_2 = out_2.squeeze().squeeze()
             out_ifft1 = torch.fft.fftshift(torch.fft.fft2(out_1))
             out_ifft2 = torch.fft.fftshift(torch.fft.fft2(out_2))
-            # p3d = (84, 84, 70, 70)
             p3d = (72, 72, 60, 60)
             out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
             out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-            # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-            disp_mf_1 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-            disp_mf_2 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-            # disp_mf_3 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
+            disp_mf_1 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft1)))
+            disp_mf_2 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft2)))
             V_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
             
             __, warped_mov_lab = transform(mov_lab.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
@@ -154,9 +144,7 @@ def test(modelpath):
             V_xy = V_xy.detach().cpu().numpy()
             V_xy[:,0,:,:] = V_xy[:,0,:,:] * hh / 2
             V_xy[:,1,:,:] = V_xy[:,1,:,:] * ww / 2
-            #print('V_xy.shape . . . ', V_xy.shape)  #([1, 3, 160, 192, 224])
-            #print('warped_mov_lab.shape . . . ', warped_mov_lab.shape) #([1, 1, 160, 192, 224])
-            
+
             for bs_index in range(bs):
                 dice_bs = dice(warped_mov_lab[bs_index,...].data.cpu().numpy().copy(),fix_lab[bs_index,...].data.cpu().numpy().copy())
                 Dices_35.append(dice_bs)
@@ -167,16 +155,11 @@ def test(modelpath):
     print('Mean Dice Score: ', np.mean(Dices_35), 'Std Dice Score: ', np.std(Dices_35))
     print('Mean DetJ<0 %:', np.mean(NegJ_35), 'Std DetJ<0 %:',np.std(NegJ_35))
 
-    # return np.mean(Dices_35)
 
 
 if __name__ == '__main__':
-    # DICESCORES4=[]
-    # DICESCORES35=[]
     model_path='./L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(opt.using_l2, opt.start_channel, opt.smth_labda, opt.trainingset, opt.lr)
     model_idx = -1
     from natsort import natsorted
     print('Best model: {}'.format(natsorted(os.listdir(model_path))[model_idx]))
-    # best_model = torch.load(model_path + natsorted(os.listdir(model_path))[model_idx])#['state_dict']
     test(model_path + natsorted(os.listdir(model_path))[model_idx])
-    

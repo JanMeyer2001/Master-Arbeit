@@ -32,6 +32,7 @@ def crop_and_pad(img,sizex,sizey,sizez):
 
     img_new[sizex//2-h//2:sizex//2+h//2,sizey//2-w//2:sizey//2+w//2,sizez//2-d//2:sizez//2+d//2]=img[img.shape[0]//2-h//2:img.shape[0]//2+h//2,img.shape[1]//2-w//2:img.shape[1]//2+w//2,img.shape[2]//2-d//2:img.shape[2]//2+d//2]
     return img_new
+
 def rescale_intensity(image, thres=(0.0, 100.0)):
     """ Rescale the image intensity to the range of [0, 1] """
     image = image.astype(np.float32)
@@ -41,22 +42,6 @@ def rescale_intensity(image, thres=(0.0, 100.0)):
     image2[image > val_h] = val_h
     image2 = (image2.astype(np.float32) - val_l) / (val_h - val_l)
     return image2
-
-def load_train_pair(data_path, filename1, filename2):
-    # Load images and labels
-    nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1)) 
-    image1 = nim1.get_fdata()[:,96,:]
-    image1 = np.array(image1, dtype='float32')
-
-    nim2 = nib.load(os.path.join(data_path, 'imagesTr', filename2)) 
-    image2 = nim2.get_fdata()[:,96,:]
-    image2 = np.array(image2, dtype='float32')
-    
-    #"""
-    image1 = np.reshape(image1, (1,) + image1.shape)
-    image2 = np.reshape(image2, (1,) + image2.shape)
-    #"""
-    return image1, image2
 
 class TrainDataset(Data.Dataset):
   'Characterizes a dataset for PyTorch'
@@ -89,6 +74,22 @@ class TrainDataset(Data.Dataset):
         'Generates one sample of data'
         mov_img, fix_img = load_train_pair(self.data_path, self.filename[index][0], self.filename[index][1])
         return  mov_img, fix_img
+
+def load_train_pair(data_path, filename1, filename2):
+    # Load images and labels
+    nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1)) 
+    image1 = nim1.get_fdata()[:,96,:]
+    image1 = np.array(image1, dtype='float32')
+
+    nim2 = nib.load(os.path.join(data_path, 'imagesTr', filename2)) 
+    image2 = nim2.get_fdata()[:,96,:]
+    image2 = np.array(image2, dtype='float32')
+    
+    #"""
+    image1 = np.reshape(image1, (1,) + image1.shape)
+    image2 = np.reshape(image2, (1,) + image2.shape)
+    #"""
+    return image1, image2
 
 class ValidationDataset(Data.Dataset):
   'Validation Dataset'
