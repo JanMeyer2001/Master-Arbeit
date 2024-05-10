@@ -42,7 +42,7 @@
 % arrows.meta, positioning and shapes), varioref, url 
 %
 %%%%%%%
-
+\usepackage{subcaption}
 
 
 % add bibliography
@@ -110,43 +110,59 @@ The U-Net~\cite{U-Net} architecture is an extension of the typical CNNs structur
 An autoencoder (AE) is a type of CNNs that learns to reconstruct an image from its input without supervision. AEs usually consists of an encoder which extracts the input features, which are stored a low-dimensional latent state space, similar to a U-Net, and a decoder which restore the original input from the latent space. To prevent an AE from learning an identity function, regularized autoencoders were invented, which can be used for e.g. denoising AEs. Variational AEs (VAEs) are generative models that learn latent representation using a variational approach, which constrains the variability of the outputs. VAEs can been used for anomaly detection and image generation~\cite{Fu2020}.
 
 \subsection{Generative Adversarial Networks}
-Generative adversarial networks (GANs) consist of two competing networks, a generator and a discriminator. The generator is trained to generate artificial data that approximate a target data distribution from a low-dimensional latent space similar to an AE. The discriminator is trained to distinguish the artificial data from actual data. The discriminator encourages the generator to predict realistic data by penalizing unrealistic predictions via learning. Therefore, the discriminative loss could be considered as a dynamic network-based loss term. The generator and discriminator both are getting better during training to reach Nash equilibrium. In medical imaging, GANs have been used to perform image synthesis for inter- or intra-modality, such as MRI to synthetic CT and vise versa. In medical image registration, GANs are usually used to either provide additional regularization or translate multi-modal registration to unimodal registration~\cite{Fu2020}.
+Generative adversarial networks (GANs) consist of two competing networks, a generator and a discriminator. The generator is trained to generate artificial data that approximate a target data distribution from a low-dimensional latent space similar to an AE. The discriminator is trained to distinguish the artificial data from actual data. The discriminator encourages the generator to predict realistic data by penalizing unrealistic predictions via learning. Therefore, the discriminative loss could be considered as a dynamic network-based loss term. The generator and discriminator both are getting better during training to reach Nash equilibrium. In medical imaging, GANs have been used to perform image synthesis for inter- or intra-modality, such as MRI to synthetic CT and vise versa. In medical image registration, GANs are usually used to either provide additional regularization or translate multi-modal registration to uni-modal registration~\cite{Fu2020}.
 
 \section{Deep Learning for Image Registration}
 Recently, there has been a surge in the use of deep learning based approaches for medical image registration. Their success is largely due to their ability to perform fast inference, and the flexibility to leverage auxiliary information such as anatomical masks as part of the training process. The most effective methods, such as \emph{VoxelMorph}~\cite{Voxelmorph}, typically employ a U-Net style architecture to estimate dense spatial deformation fields. These methods require only one forward pass during inference, making them orders of magnitude faster than traditional iterative methods. Following the success of \emph{VoxelMorph}, numerous deep neural networks have been proposed for various registration tasks~\cite{Fourier-Net+}. Other approaches also utilize CNNs, AEs and GANs. Typical strategies are discussed in more detail in the following sections.
 
 \subsection{Supervised Registration}
-Supervised Registration describes training a network with a ground truth displacement field that is either real or synthetic. Thus the loss can easily be calculated as the difference in the displacement fields of the network and ground truth. These methods have achieved notable results with real displacement fields as supervision. However, this is limited by the size and the diversity of the dataset. The real displacement field are also often calculated by conventional algorithms, which might limit their effectiveness for difficult problems. Fully supervised methods are widely studied and have notable results, but the generation of real or synthetic displacement fields is hard, and these displacements fields might be different from the real ground truth, which can impact the accuracy and efficiency of these kinds of methods~\cite{Zou2022}.
+Supervised registration describes training a network with a ground truth displacement field that is either real (created by hand) or synthetic (generated via traditional iterative registration algorithms). Thus the loss can easily be calculated as the difference in the displacement fields of the network prediction and the ground truth. These methods have achieved notable results with real displacement fields as supervision. However, this approach is very limited by the size and the diversity of the dataset. As the displacement fields are often calculated by conventional algorithms their effectiveness might be limited for difficult problems with which the traditional algorithms struggle. Fully supervised methods are widely studied and have notable results, but the generation of real or synthetic displacement fields is hard, and these displacements fields might be different from the real ground truth, which can impact the accuracy and efficiency of these kinds of methods~\cite{Zou2022}. Notable approaches include \emph{BIRNet}~\cite{BIRNet}.
 
 \subsection{Unsupervised Registration}
-As the preparation of the ground truth displacement field for supervised methods is inconvenient, limitations in generalizing results in different domains and various registration tasks are inevitable. Thus, unsupervised registration has a more convenient training process with paired images as inputs, but without a ground truth. Generally, unsupervised learning consists of similarity-based and GAN-based methods~\cite{Zou2022}.
+As the preparation of the ground truth displacement field for supervised methods is inconvenient, limitations in generalizing results in different domains and various registration tasks are inevitable. Thus, unsupervised registration has a more convenient training process with paired images as inputs, but without a ground truth. Generally, unsupervised learning consists of similarity-based and GAN-based methods, where the loss function computes the similarity between the aligned images and the smoothness of the displacement field, rather than the difference to a ground truth~\cite{Zou2022}. Well known example are \emph{IC-Net}~\cite{IC-Net},  \emph{VoxelMorph}~\cite{Voxelmorph}, \emph{TransMorph}~\cite{TransMorph} and \emph{SYMNet}~\cite{SYM-Net}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%  Methodology %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Methodology}
-In this chapter the main part of the actual work is discussed.
+%\chapter{Methodology}
+%In this chapter the main part of the actual work is discussed.
 
-\section{Data}
-Describe the data used for evaluation.
+\chapter{Data}
+Here the datasets are described.
 
-\section{Network Architecture}
-Describe the network being used.
+\section{OASIS}
+For training and testing the \emph{OASIS-1} dataset~\cite{OASIS} was mainly used, which contains T1-weighted MRI brain scans from 454 subjects. These were further pre-processed by~\cite{HyperMorph} for the \emph{Learn2Reg}-Challenge~\cite{Learn2Reg}. This enables subject-to-subject brain registration, as all MRI scans were bias-corrected, skull-stripped, aligned, and cropped to the size of $160 \times 192 \times 224$. Examples can be seen in Figures~\ref{fig:image1} and \ref{fig:image2} with slices from the center of the x-, y- and z-axis.
 
-\subsection{Fourier-Net}
-The \emph{Fourier-Net} is new approach that aims to learn a low-dimensional representation of the displacement field in a band-limited Fourier domain instead of the full field in the spatial domain. This band-limited representation is then decoded by our devised model-driven decoder to the dense, full-resolution displacement field in the spatial domain. These changes allow for fewer parameters and computational operations, resulting in faster inference speeds~\cite{Fourier-Net}. The architecture is based on the U-Net~\cite{U-Net}, like most deep registration approaches, but replaces the expansive path with a parameter-free model-driven decoder as mentioned before.\\
-The encoder of \emph{Fourier-Net} consists of a CNN that is based on the networks in~\cite{Zhang2018,Mok2020} and takes two images (fixed and moving) as inputs. The output is a displacement field of the images that is then converted from the spatial domain into the Fourier domain via an discrete Fourier transformation (DFT) and band-limiting by low-pass filtering the displacement field. From there, the band-limiting representation is padded with zeros to the full resolution of the original displacement field. The field is then recovered by using the inverse DFT (iDFT) to convert it back into the spatial domain. This displacement field is then used to warp the moving image into the fixed image. For this a warping layer similar to~\cite{Voxelmorph} is used. Optionally, squaring and scaling layers~\cite{Dalca2018} can also be added before warping the image to encourage a diffeomorphism in final deformation. A diffeomorphic deformation is defined as a smooth and invertible deformation, thus the output of the iDFT layer can be regarded as a stationary velocity field denoted by $v$ instead of the displacement field $\theta$. In group theory, $v$ is a member of Lie algebra, and it can be exponentiated to obtain the diffeomorphic deformation. A diagram of this can be seen in Figure~\ref{fig:Fourier-Net}. After the moving image has been warped the unsupervised loss $\mathcal{L}$ can be calculated as follows:
-\begin{equation}
-	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ (\phi_i(\Theta) + \text{Id}) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla \phi_i(\Theta) ||^2_2 \bigg) \bigg] ,
-\end{equation}
-where $\circ$ denotes the warping operation, $N$ the number of training pairs with moving images $I_{M_i}$ and fixed images $I_{F_i}$, $\Theta$ the network parameters, $\phi$ the displacement field, Id the identity grid and $\nabla$ the first order gradient. The two terms of the loss, $\mathcal{L}_{Sim}$ determining the similarity between warped moving images and fixed images via MSE or NCC, and the second term defining the smoothness of the displacement fields, are balanced using the scalar parameter $\lambda$.\\
-When using the squaring and scaling layers, thus making the deformation of the moving image diffeomorphic, the loss can be modified by replacing the displacement field $\theta$ with the velocity field $v$:
-\begin{equation}
-	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ Exp(v_i(\Theta) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla v_i(\Theta) ||^2_2 \bigg) \bigg] .
-\end{equation}
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\begin{subfigure}{0.45\textwidth}
+    		\includegraphics[width=\textwidth]{image2.png}
+    		%\caption{Example Image from the Dataset with corresponding labels.}
+		\caption{}    		
+    		\label{fig:image2}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.45\textwidth}
+    		\includegraphics[width=\textwidth]{image1.png}
+    		%\caption{Another example Image from the Dataset with corresponding labels.}
+		\caption{}    		
+    		\label{fig:image1}
+	\end{subfigure}
+	\caption{Example images (upper row) from the \emph{OASIS} dataset with corresponding labels (bottom row).}
+	\label{fig:OASIS}
+\end{figure}
 
+
+\chapter{Network Architectures}
+As a starting point \emph{Fourier-Net}~\cite{Fourier-Net} and its successor \emph{Fourier-Net+}~\cite{Fourier-Net+} were used. These networks, which are explained in the following pages, enable fast and accurate registration while needing less resources compared to similar approaches. But we also did our own stuff...
+
+\section{Fourier-Net}
+\emph{Fourier-Net} is a new unsupervised approach that aims to learn a low-dimensional representation of the displacement field in a band-limited Fourier domain instead of the full field in the spatial domain. This band-limited representation is then decoded by a model-driven decoder to the dense, full-resolution displacement field in the spatial domain. This allows for fewer parameters and computational operations, resulting in faster inference speeds~\cite{Fourier-Net}. The architecture is based on the U-Net~\cite{U-Net}, like most deep registration approaches, but replaces the expansive path with a parameter-free model-driven decoder as mentioned before. The encoder of \emph{Fourier-Net} consists of a CNN and takes two images (fixed and moving) as inputs. The output is a displacement field that is then converted from the spatial domain into the Fourier domain via an discrete Fourier transformation (DFT) and band-limiting by low-pass filtering. From there, this band-limiting representation 
+%of the displacement field 
+is padded with zeros to the full resolution of the original displacement field. The field is then recovered by using the inverse DFT (iDFT) to convert it back into the spatial domain. This displacement field is then used to warp the moving image into the fixed image. Additionally, squaring and scaling layers~\cite{Dalca2018} can be added before warping the image in order to encourage a diffeomorphism in final deformation. 
 
 \begin{figure}[htpb]
 	\centering
@@ -156,9 +172,61 @@ When using the squaring and scaling layers, thus making the deformation of the m
 	\label{fig:Fourier-Net}
 \end{figure}
 
+\subsection{Encoder}
+Describe SYMNet, etc. in more detail here.\\
+The encoder of \emph{Fourier-Net} consists of a CNN, namely the \emph{SYMNet}~\cite{SYM-Net}.
 
-\subsection{Fourier Net+}
-The \emph{Fourier-Net+}, as the name suggests, is an extension of Fourier-Net which takes the band-limited spatial representation of the images as input, instead of their original full-resolution counterparts. This leads to further reduction in the number of convolutional layers in the contracting path of the network, resulting in a decrease of parameters, memory usage, and computational operations. This makes \emph{Fourier-Net+} even more efficient than its older predecessor~\cite{Fourier-Net+}.\\
+\subsection{Decoder}
+Describe DFT, etc. here.
+
+\subsection{Diffeomorphism}
+Describe what a diffeomorphism is. Describe Squaring and Scaling layers.\\
+A diffeomorphic deformation is defined as a smooth and invertible deformation, thus the output of the iDFT layer can be regarded as a stationary velocity field denoted by $v$ instead of the displacement field $\theta$. In group theory, $v$ is a member of Lie algebra, and it can be exponentiated to obtain the diffeomorphic deformation. This specific version is then called \emph{Fourier-Net Diff} A diagram of this can be seen in Figure~\ref{fig:Fourier-Net}. 
+
+\subsection{SpatialTransformer}
+Describe the Spatial Transformer.\\
+For this warping layer the \emph{spatial transformer}~\cite{SpatialTransformer}
+%similar to~\cite{Voxelmorph} 
+is used.
+
+\subsection{Loss Function}
+Describe Parts of the loss function.\\After the moving image has been warped the unsupervised loss $\mathcal{L}$ can be calculated as follows:
+\begin{equation}
+	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ (\phi_i(\Theta) + \text{Id}) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla \phi_i(\Theta) ||^2_2 \bigg) \bigg] ,
+\end{equation}
+where $\circ$ denotes the warping operation, $N$ the number of training pairs with moving images $I_{M_i}$ and fixed images $I_{F_i}$, $\Theta$ the network parameters, $\phi$ the displacement field, Id the identity grid and $\nabla$ the first order gradient. The two terms of the loss, $\mathcal{L}_{Sim}$ determining the similarity between warped moving images and fixed images via MSE or NCC, and the second term defining the smoothness of the displacement fields, are balanced using the scalar parameter $\lambda$.\\
+When using the squaring and scaling layers, thus making the deformation of the moving image diffeomorphic, the loss can be modified by replacing the displacement field $\theta$ with the velocity field $v$:
+\begin{equation}
+	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ Exp(v_i(\Theta) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla v_i(\Theta) ||^2_2 \bigg) \bigg] .
+\end{equation}
+
+\subsection{Training}
+Describe how to reproduce results from the paper...\\
+\emph{Fourier-Net} can be used with both 2D as well as 3D inputs, however the latter are harder to visualize. As the \emph{OASIS} dataset provides 3D volumes with annotations we can slice these to get 2D image data with matching labels (see Figure~\ref{fig:OASIS} for the calculation of the Dice-Score. Thus we can nicely visualize the training success of the 2D network by locking at the difference between images before and after registration in addition to the Dice-Score, which can also be calculated for 3D data.  This can be seen in Figure~\ref{fig:DifferencesTrainingProgress} with two examples from different stages of the training process. Despite the example in Figure~\ref{fig:Training29600it} being the far harder example to align the network performs better than before (see Figure~\ref{fig:Training800it}) due to the training progress.
+
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+    		\includegraphics[width=\textwidth]{results1.png}
+    		\caption{Training progress after 800 iterations.}
+    		\label{fig:Training800it}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.45\textwidth}
+		\centering
+    		\includegraphics[width=\textwidth]{results2.png}
+    		\caption{Training progress after 29600 iterations.}
+    		\label{fig:Training29600it}
+	\end{subfigure}
+	\caption{Differences between moving and fixed images before and after registration.}
+	\label{fig:DifferencesTrainingProgress}
+\end{figure}
+
+
+\section{Fourier Net+}
+\emph{Fourier-Net+}, as the name suggests, is an extension of Fourier-Net which takes the band-limited spatial representation of the images as input, instead of their original full-resolution counterparts. This leads to further reduction in the number of convolutional layers in the contracting path of the network, resulting in a decrease of parameters, memory usage, and computational operations. This makes \emph{Fourier-Net+} even more efficient than its older predecessor~\cite{Fourier-Net+}.\\
 As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the same as for \emph{Fourier-Net} (see Figure~\ref{fig:Fourier-Net} for reference). However, while the decoder, and thus the loss function, remain the same, the encoder is slightly altered to make the network even more efficient. For this, similarly to the decoder, a DFT is used, however this time the idea is applied to the input images. These are first transformed into the Fourier domain, then low-pass filtered and finally reconstructed from their band-limited representation back into the spatial domain via an iDFT. The two images, now compressed, are the input for the encoder of \emph{Fourier-Net}, meaning the CNN and following DFT. However, due to the band-limiting before the CNN, the latter can be made much more light-weight, thus reducing computational cost. This is visualized in Figure~\ref{fig:Fourier-Net+CNN}. Thus, \emph{Fourier-Net+} too is overall lighter than the baseline \emph{Fourier-Net} in terms of the number of parameters and computations. However, such a light network may face limitations in accurately capturing complex deformations. To counter this potential weakness, the authors propose a cascaded version of \emph{Fourier-Net+}, which uses multiple versions of \emph{Fourier-Net+} cascaded one after the other to achieve a better overall displacement field~\cite{Fourier-Net+}. A schematic for this can be seen in Figure~\ref{fig:Fourier-Net+Cascaded}.
 
 \begin{figure}[htpb]
@@ -169,6 +237,9 @@ As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the
 	\label{fig:Fourier-Net+}
 \end{figure}
 
+\subsection{Changes to the Encoder}
+What changes compared to \emph{Fourier-Net}?
+
 \begin{figure}[htpb]
 	\centering
 	\graphicspath{{images/}{\main/images/}}
@@ -176,6 +247,9 @@ As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the
 	\caption{Architecture of the CNN for a typical U-Net, \emph{Fourier-Net} and \emph{Fourier-Net+} taken from~\cite{Fourier-Net+}.}
 	\label{fig:Fourier-Net+CNN}
 \end{figure}
+
+\subsection{Effects of Cascading}
+Why use cascaded version of the network?
 
 \begin{figure}[htpb]
 	\centering
@@ -185,8 +259,9 @@ As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the
 	\label{fig:Fourier-Net+Cascaded}
 \end{figure}
 
-\section{Evaluation}
-Describe the evaluation methods being used.
+\chapter{Experiments} %Evaluation
+Describe the experiment and evaluation methods being used.
+%Describe data here?!?
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%

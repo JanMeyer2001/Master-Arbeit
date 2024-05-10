@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  22 APR 2024 17:35
+This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  10 MAY 2024 16:26
  restricted system commands enabled.
 **Masterarbeit.tex
 (./Masterarbeit.tex
@@ -2631,11 +2631,50 @@ dflt;"
 dflt;"
 (fontspec)             - 'italic small caps'  (m/scit) with NFSS spec.: 
 
+("C:/Program Files/MiKTeX/tex/latex/caption/subcaption.sty"
+Package: subcaption 2023/07/28 v1.6b Sub-captions (AR)
+
+("C:/Program Files/MiKTeX/tex/latex/caption/caption.sty"
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+("C:/Program Files/MiKTeX/tex/latex/caption/caption3.sty"
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen292
+\captionmargin=\dimen293
+\caption@leftmargin=\dimen294
+\caption@rightmargin=\dimen295
+\caption@width=\dimen296
+\caption@indent=\dimen297
+\caption@parindent=\dimen298
+\caption@hangindent=\dimen299
+Package caption Info: Unknown document class (or package),
+(caption)             standard defaults will be used.
+Package caption Info: \@makecaption = \long macro:#1#2->\vskip \abovecaptionski
+p \sbox \@tempboxa {{\UzLStyle {float label}#1:} #2}\ifdim \wd \@tempboxa >\hsi
+ze {{\UzLStyle {float label}#1:} #2\par } \else \global \@minipagefalse \hb@xt@
+ \hsize {\hfil \box \@tempboxa \hfil }\fi \vskip \belowcaptionskip  on input li
+ne 1175.
+)
+
+Package caption Warning: Unknown document class (or package),
+(caption)                standard defaults will be used.
+See the caption package documentation for explanation.
+
+\c@caption@flags=\count462
+\c@continuedfloat=\count463
+Package caption Info: hyperref package is loaded.
+Package caption Info: listings package is loaded.
+)
+Package caption Info: New subtype `subfigure' on input line 238.
+\c@subfigure=\count464
+Package caption Info: New subtype `subtable' on input line 238.
+\c@subtable=\count465
+)
 Package csquotes Info: Checking for multilingual support...
 Package csquotes Info: ... found 'babel' package.
 Package csquotes Info: Adjusting default style.
 Package csquotes Info: Redefining alias 'default' -> 'english'.
-(./Masterarbeit.aux)
+ (./Masterarbeit.aux)
 \openout1 = Masterarbeit.aux
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 53.
@@ -2663,16 +2702,16 @@ LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
 
 ("C:/Program Files/MiKTeX/tex/context/base/mkii/supp-pdf.mkii"
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count462
-\scratchdimen=\dimen292
+\scratchcounter=\count466
+\scratchdimen=\dimen300
 \scratchbox=\box87
-\nofMPsegments=\count463
-\nofMParguments=\count464
+\nofMPsegments=\count467
+\nofMParguments=\count468
 \everyMPshowfont=\toks47
-\MPscratchCnt=\count465
-\MPscratchDim=\dimen293
-\MPnumerator=\count466
-\makeMPintoPDFobject=\count467
+\MPscratchCnt=\count469
+\MPscratchDim=\dimen301
+\MPnumerator=\count470
+\makeMPintoPDFobject=\count471
 \everyMPtoPDFconversion=\toks48
 ) ("C:/Program Files/MiKTeX/tex/latex/epstopdf-pkg/epstopdf-base.sty"
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
@@ -2721,7 +2760,7 @@ Package hyperref Info: Link coloring OFF on input line 53.
 \@outlinefile=\write5
 
 \openout5 = Masterarbeit.out
-\c@lstlisting=\count468
+\c@lstlisting=\count472
 Package biblatex Info: Trying to load language 'english'...
 Package biblatex Info: ... file 'english.lbx' found.
 
@@ -2750,7 +2789,9 @@ Package biblatex Info: ... file 'Masterarbeit.bbl' found.
 (./Masterarbeit.bbl)
 Package biblatex Info: Reference section=0 on input line 53.
 Package biblatex Info: Reference segment=0 on input line 53.
-<Logo_IMI_de.png, id=70, 240.9pt x 55.70813pt>
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: End \AtBeginDocument code.
+<Logo_IMI_de.png, id=78, 240.9pt x 55.70813pt>
 File: Logo_IMI_de.png Graphic file (type png)
 <use Logo_IMI_de.png>
 Package luatex.def Info: Logo_IMI_de.png  used on input line 53.
@@ -2763,7 +2804,7 @@ LaTeX Font Info:    Font shape `TU/AlegreyaSans(2)/m/it' will be
 (Font)              scaled to size 15.4pt on input line 53.
 LaTeX Font Info:    Font shape `TU/AlegreyaSans(2)/b/n' will be
 (Font)              scaled to size 12.0pt on input line 53.
-<uzl-thesis-logo-slogan.pdf, id=71, 142.26349pt x 11.38112pt>
+<uzl-thesis-logo-slogan.pdf, id=79, 142.26349pt x 11.38112pt>
 File: uzl-thesis-logo-slogan.pdf Graphic file (type pdf)
 <use uzl-thesis-logo-slogan.pdf>
 Package luatex.def Info: uzl-thesis-logo-slogan.pdf  used on input line 53.
@@ -2830,48 +2871,77 @@ LaTeX Font Info:    Font shape `TU/AlegreyaSans(2)/m/n' will be
 (Font)              scaled to size 13.0pt on input line 103.
  [4] [5] [6]
 Chapter 3.
+LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
+(Font)              scaled to size 10.9pt on input line 138.
+<images/image2.png, id=233, 462.528pt x 346.896pt>
+File: images/image2.png Graphic file (type png)
+<use images/image2.png>
+Package luatex.def Info: images/image2.png  used on input line 142.
+(luatex.def)             Requested size: 192.0548pt x 144.04384pt.
+<images/image1.png, id=234, 462.528pt x 346.896pt>
+File: images/image1.png Graphic file (type png)
+<use images/image1.png>
+Package luatex.def Info: images/image1.png  used on input line 149.
+(luatex.def)             Requested size: 192.0548pt x 144.04384pt.
 [7
 
-]
-LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 8.0pt on input line 142.
-LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 6.0pt on input line 142.
-LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 10.9pt on input line 151.
-<images/ArchitectureFourier-Net.png, id=225, 1351.0475pt x 513.92pt>
+<./images/image2.png><./images/image1.png>]
+Chapter 4.
+<images/ArchitectureFourier-Net.png, id=252, 1351.0475pt x 513.92pt>
 File: images/ArchitectureFourier-Net.png Graphic file (type png)
 <use images/ArchitectureFourier-Net.png>
 Package luatex.def Info: images/ArchitectureFourier-Net.png  used on input line
- 154.
+ 170.
 (luatex.def)             Requested size: 426.79135pt x 162.34047pt.
- [8<./images/ArchitectureFourier-Net.png>]
-<images/ArchitectureFourier-Net+.png, id=244, 1075.01625pt x 356.0803pt>
+[8
+
+]
+LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
+(Font)              scaled to size 8.0pt on input line 195.
+LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
+(Font)              scaled to size 6.0pt on input line 195.
+ [9<./images/ArchitectureFourier-Net.png>]
+<images/results1.png, id=282, 404.26031pt x 261.97874pt>
+File: images/results1.png Graphic file (type png)
+<use images/results1.png>
+Package luatex.def Info: images/results1.png  used on input line 212.
+(luatex.def)             Requested size: 192.0548pt x 124.46118pt.
+<images/results2.png, id=283, 404.26031pt x 261.97874pt>
+File: images/results2.png Graphic file (type png)
+<use images/results2.png>
+Package luatex.def Info: images/results2.png  used on input line 219.
+(luatex.def)             Requested size: 192.0548pt x 124.46118pt.
+ [10<./images/results1.png><./images/results2.png>]
+<images/ArchitectureFourier-Net+.png, id=300, 1075.01625pt x 356.0803pt>
 File: images/ArchitectureFourier-Net+.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+.png  used on input lin
-e 167.
+e 235.
 (luatex.def)             Requested size: 426.79135pt x 141.36465pt.
-<images/ArchitectureFourier-Net+CNN.png, id=246, 1078.0275pt x 218.31563pt>
+<images/ArchitectureFourier-Net+CNN.png, id=303, 1078.0275pt x 218.31563pt>
 File: images/ArchitectureFourier-Net+CNN.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+CNN.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+CNN.png  used on input 
-line 175.
+line 246.
 (luatex.def)             Requested size: 426.79135pt x 86.43193pt.
-<images/ArchitectureFourier-Net+Cascaded.png, id=249, 1409.265pt x 287.0725pt>
+<images/ArchitectureFourier-Net+Cascaded.png, id=306, 1409.265pt x 287.0725pt>
 File: images/ArchitectureFourier-Net+Cascaded.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+Cascaded.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+Cascaded.png  used on i
-nput line 183.
+nput line 257.
 (luatex.def)             Requested size: 426.79135pt x 86.93715pt.
- [9<./images/ArchitectureFourier-Net+.png><./images/ArchitectureFourier-Net+CNN.
-png>] [10<./images/ArchitectureFourier-Net+Cascaded.png>]
-Chapter 4.
-[11
+ [11<./images/ArchitectureFourier-Net+.png><./images/ArchitectureFourier-Net+CNN
+.png>] [12<./images/ArchitectureFourier-Net+Cascaded.png>]
+Chapter 5.
+[13
 
 ]
-Chapter 5.
-[12
+Chapter 6.
+[14
+
+]
+Chapter 7.
+[15
 
 ]
 
@@ -2880,17 +2950,23 @@ Package biblatex Warning: Name format 'last-first' deprecated.
 (biblatex)                Using 'family-given' now.
 
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/sc' will be
-(Font)              scaled to size 12.0pt on input line 207.
-[13
+(Font)              scaled to size 12.0pt on input line 282.
+[16
 
 ]
-Underfull \hbox (badness 1983) in paragraph at lines 207--207
+Underfull \hbox (badness 2970) in paragraph at lines 282--282
+[]\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
+ukcuoglu, K.  Spa-tial
+ []
+
+
+Underfull \hbox (badness 1661) in paragraph at lines 282--282
 \TU/Alegreya(0)/m/it/12 Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 . Springer In-t
 er-na-tional Pub-lish-ing, 󰋇󰋅󰋆󰋍, pp. 󰋌󰋇󰋎–󰋌󰋈󰋍. \
 TU/Alegreya(0)/m/sc/12 󰁳󰃑󰀹󰂘\TU/Alegreya(0)/m/n/12 :
  []
 
-[14] (./Masterarbeit.aux)
+[17] [18] (./Masterarbeit.aux)
  ***********
 LaTeX2e <2023-06-01> patch level 1
 L3 programming layer <2023-08-29>
@@ -2899,8 +2975,11 @@ L3 programming layer <2023-08-29>
 
 LaTeX Warning: There were undefined references.
 
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
 Package rerunfilecheck Info: File `Masterarbeit.out' has not changed.
-(rerunfilecheck)             Checksum: B75E46B561C3BB45A29D40952FECA087;2534.
+(rerunfilecheck)             Checksum: DDF223E16F19260E9414071E84C2D636;2746.
 
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
 (biblatex)                Masterarbeit
@@ -2912,19 +2991,21 @@ Package logreq Info: Writing requests to 'Masterarbeit.run.xml'.
 )
 
 Here is how much of LuaTeX's memory you used:
- 42564 strings out of 477259
+ 44102 strings out of 477259
  100000,2373549 words of node,token memory allocated
- 725 words of node memory still in use:
-   7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 42 attribute, 70 glue_spec
-, 23 attribute_list, 2 write, 2 pdf_action nodes
-   avail lists: 1:2,2:1389,3:464,4:125,5:880,6:52,7:7842,8:71,9:471,10:18,11:746
+ 754 words of node memory still in use:
+   7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 46 attribute, 71 glue_spec
+, 25 attribute_list, 2 write, 4 pdf_action nodes
+   avail lists: 1:2,2:1594,3:520,4:133,5:971,6:58,7:7868,8:71,9:385,10:15,11:746
 
- 62826 multiletter control sequences out of 65536+600000
+ 64316 multiletter control sequences out of 65536+600000
  214 fonts using 62919215 bytes
- 102i,7n,124p,1858b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 102i,8n,128p,1858b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+warning  (pdf backend): unreferenced destination with name 'figure.caption.18'
 <C:/Program Files/MiKTeX/fonts/opentype/public/lm/lmmonoprop10-regular.otf><C:/P
-rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><C:/Prog
-ram Files/MiKTeX/fonts/opentype/public/tex-gyre/texgyrechorus-mediumitalic.otf><
+rogram Files/MiKTeX/fonts/opentype/public/tex-gyre/texgyrechorus-mediumitalic.ot
+f><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><
 C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><C:/
 Program Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf
 ><C:/Program Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-mat
@@ -2934,9 +3015,9 @@ C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C:/Pro
 gram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C:/Pro
 gram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
-Output written on Masterarbeit.pdf (20 pages, 506489 bytes).
+Output written on Masterarbeit.pdf (24 pages, 924889 bytes).
 
-PDF statistics: 384 PDF objects out of 1000 (max. 8388607)
- 71 named destinations out of 1000 (max. 131072)
- 144 words of extra memory for PDF output out of 10000 (max. 100000000)
+PDF statistics: 463 PDF objects out of 1000 (max. 8388607)
+ 92 named destinations out of 1000 (max. 131072)
+ 160 words of extra memory for PDF output out of 10000 (max. 100000000)
 

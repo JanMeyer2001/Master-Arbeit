@@ -967,7 +967,58 @@
     \field{year}{2015}
   \endentry
 
-  \entry{Zhang2018}{misc}{}
+  \entry{BIRNet}{article}{}
+    \name{author}{4}{}{%
+      {{hash=FJ}{%
+         family={Fan},
+         familyi={F\bibinitperiod},
+         given={Jingfan},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=CX}{%
+         family={Cao},
+         familyi={C\bibinitperiod},
+         given={Xiaohuan},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=YPT}{%
+         family={Yap},
+         familyi={Y\bibinitperiod},
+         given={Pew-Thian},
+         giveni={P\bibinithyphendelim T\bibinitperiod},
+      }}%
+      {{hash=SD}{%
+         family={Shen},
+         familyi={S\bibinitperiod},
+         given={Dinggang},
+         giveni={D\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{FJ+1}
+    \strng{fullhash}{FJCXYPTSD1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.media.2019.03.006
+    \endverb
+    \field{issn}{1361-8415}
+    \field{pages}{193\bibrangedash 206}
+    \field{title}{BIRNet: Brain image registration using dual-supervised fully
+  convolutional networks}
+    \field{volume}{54}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/BIRNet.pdf:PDF
+    \endverb
+    \field{journaltitle}{Medical Image Analysis}
+    \field{month}{05}
+    \field{year}{2019}
+  \endentry
+
+  \entry{IC-Net}{misc}{}
     \name{author}{1}{}{%
       {{hash=ZJ}{%
          family={Zhang},
@@ -998,7 +1049,70 @@
     \field{year}{2018}
   \endentry
 
-  \entry{Mok2020}{inproceedings}{}
+  \entry{TransMorph}{article}{}
+    \name{author}{6}{}{%
+      {{hash=CJ}{%
+         family={Chen},
+         familyi={C\bibinitperiod},
+         given={Junyu},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=FEC}{%
+         family={Frey},
+         familyi={F\bibinitperiod},
+         given={Eric\bibnamedelima C.},
+         giveni={E\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=HY}{%
+         family={He},
+         familyi={H\bibinitperiod},
+         given={Yufan},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=SWP}{%
+         family={Segars},
+         familyi={S\bibinitperiod},
+         given={William\bibnamedelima P.},
+         giveni={W\bibinitperiod\bibinitdelim P\bibinitperiod},
+      }}%
+      {{hash=LY}{%
+         family={Li},
+         familyi={L\bibinitperiod},
+         given={Ye},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=DY}{%
+         family={Du},
+         familyi={D\bibinitperiod},
+         given={Yong},
+         giveni={Y\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{CJ+1}
+    \strng{fullhash}{CJFECHYSWPLYDY1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.media.2022.102615
+    \endverb
+    \field{issn}{1361-8415}
+    \field{pages}{102615}
+    \field{title}{TransMorph: Transformer for unsupervised medical image
+  registration}
+    \field{volume}{82}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/TransMorph.pdf:PDF
+    \endverb
+    \field{journaltitle}{Medical Image Analysis}
+    \field{month}{11}
+    \field{year}{2022}
+  \endentry
+
+  \entry{SYM-Net}{inproceedings}{}
     \name{author}{2}{}{%
       {{hash=MTC}{%
          family={Mok},
@@ -1034,6 +1148,519 @@
     \endverb
     \field{month}{06}
     \field{year}{2020}
+  \endentry
+
+  \entry{OASIS}{article}{}
+    \name{author}{6}{}{%
+      {{hash=MDS}{%
+         family={Marcus},
+         familyi={M\bibinitperiod},
+         given={Daniel\bibnamedelima S.},
+         giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod},
+      }}%
+      {{hash=WTH}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Tracy\bibnamedelima H.},
+         giveni={T\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+      {{hash=PJ}{%
+         family={Parker},
+         familyi={P\bibinitperiod},
+         given={Jamie},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=CJG}{%
+         family={Csernansky},
+         familyi={C\bibinitperiod},
+         given={John\bibnamedelima G.},
+         giveni={J\bibinitperiod\bibinitdelim G\bibinitperiod},
+      }}%
+      {{hash=MJC}{%
+         family={Morris},
+         familyi={M\bibinitperiod},
+         given={John\bibnamedelima C.},
+         giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=BRL}{%
+         family={Buckner},
+         familyi={B\bibinitperiod},
+         given={Randy\bibnamedelima L.},
+         giveni={R\bibinitperiod\bibinitdelim L\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {MIT Press - Journals}%
+    }
+    \strng{namehash}{MDS+1}
+    \strng{fullhash}{MDSWTHPJCJGMJCBRL1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1162/jocn.2007.19.9.1498
+    \endverb
+    \field{issn}{1530-8898}
+    \field{number}{9}
+    \field{pages}{1498\bibrangedash 1507}
+    \field{title}{Open Access Series of Imaging Studies (OASIS):
+  Cross-sectional MRI Data in Young, Middle Aged, Nondemented, and Demented
+  Older Adults}
+    \field{volume}{19}
+    \field{journaltitle}{Journal of Cognitive Neuroscience}
+    \field{month}{09}
+    \field{year}{2007}
+  \endentry
+
+  \entry{HyperMorph}{inbook}{}
+    \name{author}{5}{}{%
+      {{hash=HA}{%
+         family={Hoopes},
+         familyi={H\bibinitperiod},
+         given={Andrew},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=HM}{%
+         family={Hoffmann},
+         familyi={H\bibinitperiod},
+         given={Malte},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=FB}{%
+         family={Fischl},
+         familyi={F\bibinitperiod},
+         given={Bruce},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=GJ}{%
+         family={Guttag},
+         familyi={G\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=DAV}{%
+         family={Dalca},
+         familyi={D\bibinitperiod},
+         given={Adrian\bibnamedelima V.},
+         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Springer International Publishing}%
+    }
+    \strng{namehash}{HA+2}
+    \strng{fullhash}{HAHMFBGJDAV1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Information Processing in Medical Imaging}
+    \verb{doi}
+    \verb 10.1007/978-3-030-78191-0_1
+    \endverb
+    \field{isbn}{9783030781910}
+    \field{issn}{1611-3349}
+    \field{pages}{3\bibrangedash 17}
+    \field{title}{HyperMorph: Amortized Hyperparameter Learning for Image
+  Registration}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/HyperMorph - Amortized Hyperparameter Lear
+    \verb ning for Image Registration.pdf:PDF
+    \endverb
+    \field{year}{2021}
+  \endentry
+
+  \entry{Learn2Reg}{article}{}
+    \name{author}{53}{}{%
+      {{hash=HA}{%
+         family={Hering},
+         familyi={H\bibinitperiod},
+         given={Alessa},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=HL}{%
+         family={Hansen},
+         familyi={H\bibinitperiod},
+         given={Lasse},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=MTCW}{%
+         family={Mok},
+         familyi={M\bibinitperiod},
+         given={Tony C.\bibnamedelima W.},
+         giveni={T\bibinitperiod\bibinitdelim C\bibinitperiod\bibinitdelim
+  W\bibinitperiod},
+      }}%
+      {{hash=CACS}{%
+         family={Chung},
+         familyi={C\bibinitperiod},
+         given={Albert C.\bibnamedelima S.},
+         giveni={A\bibinitperiod\bibinitdelim C\bibinitperiod\bibinitdelim
+  S\bibinitperiod},
+      }}%
+      {{hash=SH}{%
+         family={Siebert},
+         familyi={S\bibinitperiod},
+         given={Hanna},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=HS}{%
+         family={Hager},
+         familyi={H\bibinitperiod},
+         given={Stephanie},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=LA}{%
+         family={Lange},
+         familyi={L\bibinitperiod},
+         given={Annkristin},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KS}{%
+         family={Kuckertz},
+         familyi={K\bibinitperiod},
+         given={Sven},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=HS}{%
+         family={Heldmann},
+         familyi={H\bibinitperiod},
+         given={Stefan},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=SW}{%
+         family={Shao},
+         familyi={S\bibinitperiod},
+         given={Wei},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=VS}{%
+         family={Vesal},
+         familyi={V\bibinitperiod},
+         given={Sulaiman},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=RM}{%
+         family={Rusu},
+         familyi={R\bibinitperiod},
+         given={Mirabela},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=SG}{%
+         family={Sonn},
+         familyi={S\bibinitperiod},
+         given={Geoffrey},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=ET}{%
+         family={Estienne},
+         familyi={E\bibinitperiod},
+         given={Theo},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=VM}{%
+         family={Vakalopoulou},
+         familyi={V\bibinitperiod},
+         given={Maria},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=HL}{%
+         family={Han},
+         familyi={H\bibinitperiod},
+         given={Luyi},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=HY}{%
+         family={Huang},
+         familyi={H\bibinitperiod},
+         given={Yunzhi},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=YPT}{%
+         family={Yap},
+         familyi={Y\bibinitperiod},
+         given={Pew-Thian},
+         giveni={P\bibinithyphendelim T\bibinitperiod},
+      }}%
+      {{hash=BM}{%
+         family={Brudfors},
+         familyi={B\bibinitperiod},
+         given={Mikael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BY}{%
+         family={Balbastre},
+         familyi={B\bibinitperiod},
+         given={Yael},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=JS}{%
+         family={Joutard},
+         familyi={J\bibinitperiod},
+         given={Samuel},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=MM}{%
+         family={Modat},
+         familyi={M\bibinitperiod},
+         given={Marc},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=LG}{%
+         family={Lifshitz},
+         familyi={L\bibinitperiod},
+         given={Gal},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=RD}{%
+         family={Raviv},
+         familyi={R\bibinitperiod},
+         given={Dan},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=LJ}{%
+         family={Lv},
+         familyi={L\bibinitperiod},
+         given={Jinxin},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=LQ}{%
+         family={Li},
+         familyi={L\bibinitperiod},
+         given={Qiang},
+         giveni={Q\bibinitperiod},
+      }}%
+      {{hash=JV}{%
+         family={Jaouen},
+         familyi={J\bibinitperiod},
+         given={Vincent},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=VD}{%
+         family={Visvikis},
+         familyi={V\bibinitperiod},
+         given={Dimitris},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=FC}{%
+         family={Fourcade},
+         familyi={F\bibinitperiod},
+         given={Constance},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=RM}{%
+         family={Rubeaux},
+         familyi={R\bibinitperiod},
+         given={Mathieu},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=PW}{%
+         family={Pan},
+         familyi={P\bibinitperiod},
+         given={Wentao},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=XZ}{%
+         family={Xu},
+         familyi={X\bibinitperiod},
+         given={Zhe},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=JB}{%
+         family={Jian},
+         familyi={J\bibinitperiod},
+         given={Bailiang},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=DBF}{%
+         family={De\bibnamedelima Benetti},
+         familyi={D\bibinitperiod\bibinitdelim B\bibinitperiod},
+         given={Francesca},
+         giveni={F\bibinitperiod},
+      }}%
+      {{hash=WM}{%
+         family={Wodzinski},
+         familyi={W\bibinitperiod},
+         given={Marek},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=GN}{%
+         family={Gunnarsson},
+         familyi={G\bibinitperiod},
+         given={Niklas},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=SJ}{%
+         family={Sjolund},
+         familyi={S\bibinitperiod},
+         given={Jens},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=GD}{%
+         family={Grzech},
+         familyi={G\bibinitperiod},
+         given={Daniel},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=QH}{%
+         family={Qiu},
+         familyi={Q\bibinitperiod},
+         given={Huaqi},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=LZ}{%
+         family={Li},
+         familyi={L\bibinitperiod},
+         given={Zeju},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=TA}{%
+         family={Thorley},
+         familyi={T\bibinitperiod},
+         given={Alexander},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=DJ}{%
+         family={Duan},
+         familyi={D\bibinitperiod},
+         given={Jinming},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=GC}{%
+         family={Grosbrohmer},
+         familyi={G\bibinitperiod},
+         given={Christoph},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=HA}{%
+         family={Hoopes},
+         familyi={H\bibinitperiod},
+         given={Andrew},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=RI}{%
+         family={Reinertsen},
+         familyi={R\bibinitperiod},
+         given={Ingerid},
+         giveni={I\bibinitperiod},
+      }}%
+      {{hash=XY}{%
+         family={Xiao},
+         familyi={X\bibinitperiod},
+         given={Yiming},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=LB}{%
+         family={Landman},
+         familyi={L\bibinitperiod},
+         given={Bennett},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=HY}{%
+         family={Huo},
+         familyi={H\bibinitperiod},
+         given={Yuankai},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=MK}{%
+         family={Murphy},
+         familyi={M\bibinitperiod},
+         given={Keelin},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=LN}{%
+         family={Lessmann},
+         familyi={L\bibinitperiod},
+         given={Nikolas},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=vGB}{%
+         prefix={van},
+         prefixi={v\bibinitperiod},
+         family={Ginneken},
+         familyi={G\bibinitperiod},
+         given={Bram},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=DAV}{%
+         family={Dalca},
+         familyi={D\bibinitperiod},
+         given={Adrian\bibnamedelima V.},
+         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+      {{hash=HMP}{%
+         family={Heinrich},
+         familyi={H\bibinitperiod},
+         given={Mattias\bibnamedelima P.},
+         giveni={M\bibinitperiod\bibinitdelim P\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{HA+1}
+  \strng{fullhash}{HAHLMTCWCACSSHHSLAKSHSSWVSRMSGETVMHLHYYPTBMBYJSMMLGRDLJLQJVVDFCRMPWXZJBDBFWMGNSJGDQHLZTADJGCHARIXYLBHYMKLNGBvDAVHMP1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2022.3213983
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{3}
+    \field{pages}{697\bibrangedash 712}
+    \field{title}{Learn2Reg: Comprehensive Multi-Task Medical Image
+  Registration Challenge, Dataset and Evaluation in the Era of Deep Learning}
+    \field{volume}{42}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Learn2Reg.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{03}
+    \field{year}{2023}
+  \endentry
+
+  \entry{SpatialTransformer}{article}{}
+    \name{author}{4}{}{%
+      {{hash=JM}{%
+         family={Jaderberg},
+         familyi={J\bibinitperiod},
+         given={Max},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=SK}{%
+         family={Simonyan},
+         familyi={S\bibinitperiod},
+         given={Karen},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=ZA}{%
+         family={Zisserman},
+         familyi={Z\bibinitperiod},
+         given={Andrew},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KK}{%
+         family={Kavukcuoglu},
+         familyi={K\bibinitperiod},
+         given={Koray},
+         giveni={K\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JM+1}
+    \strng{fullhash}{JMSKZAKK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spatial Transformer Networks}
+    \verb{url}
+    \verb https://api.semanticscholar.org/CorpusID:6099034
+    \endverb
+    \field{volume}{abs/1506.02025}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/SpatialTransformerNetworks.pdf:PDF
+    \endverb
+    \field{journaltitle}{ArXiv}
+    \field{year}{2015}
   \endentry
 
   \entry{Dalca2018}{inbook}{}
