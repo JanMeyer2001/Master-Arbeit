@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  10 MAY 2024 16:26
+This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  12 MAY 2024 19:26
  restricted system commands enabled.
 **Masterarbeit.tex
 (./Masterarbeit.tex
@@ -2872,16 +2872,16 @@ LaTeX Font Info:    Font shape `TU/AlegreyaSans(2)/m/n' will be
  [4] [5] [6]
 Chapter 3.
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 10.9pt on input line 138.
+(Font)              scaled to size 10.9pt on input line 139.
 <images/image2.png, id=233, 462.528pt x 346.896pt>
 File: images/image2.png Graphic file (type png)
 <use images/image2.png>
-Package luatex.def Info: images/image2.png  used on input line 142.
+Package luatex.def Info: images/image2.png  used on input line 143.
 (luatex.def)             Requested size: 192.0548pt x 144.04384pt.
 <images/image1.png, id=234, 462.528pt x 346.896pt>
 File: images/image1.png Graphic file (type png)
 <use images/image1.png>
-Package luatex.def Info: images/image1.png  used on input line 149.
+Package luatex.def Info: images/image1.png  used on input line 150.
 (luatex.def)             Requested size: 192.0548pt x 144.04384pt.
 [7
 
@@ -2891,57 +2891,90 @@ Chapter 4.
 File: images/ArchitectureFourier-Net.png Graphic file (type png)
 <use images/ArchitectureFourier-Net.png>
 Package luatex.def Info: images/ArchitectureFourier-Net.png  used on input line
- 170.
+ 171.
 (luatex.def)             Requested size: 426.79135pt x 162.34047pt.
 [8
 
 ]
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 8.0pt on input line 195.
+(Font)              scaled to size 8.0pt on input line 182.
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/n' will be
-(Font)              scaled to size 6.0pt on input line 195.
- [9<./images/ArchitectureFourier-Net.png>]
-<images/results1.png, id=282, 404.26031pt x 261.97874pt>
+(Font)              scaled to size 6.0pt on input line 182.
+<images/SYMNetArchitectureFCN.png, id=266, 1032.85875pt x 676.02562pt>
+File: images/SYMNetArchitectureFCN.png Graphic file (type png)
+<use images/SYMNetArchitectureFCN.png>
+Package luatex.def Info: images/SYMNetArchitectureFCN.png  used on input line 1
+87.
+(luatex.def)             Requested size: 426.79135pt x 279.3385pt.
+
+Overfull \hbox (1.82472pt too wide) in paragraph at lines 183--192
+\TU/Alegreya(0)/m/n/12 valued op-er-a-tions sac-ri-fice com-pu-ta-tional ef-fi-c
+iency. Other ap-proaches like \TU/Alegreya(0)/m/it/12 Deep-Flash \TU/Alegreya(0
+)/m/n/12 [[]󰋇󰋊[]]
+ []
+
+
+Overfull \hbox (0.38713pt too wide) in paragraph at lines 183--192
+\TU/Alegreya(0)/m/n/12 ever, in-creases train-ing and in-fer-ence cost. To bridg
+e the do-main gap be-tween real-valued
+ []
+
+[9<./images/ArchitectureFourier-Net.png>] [10<./images/SYMNetArchitectureFCN.png
+>] [11]
+<images/SpatialTransformer.png, id=312, 609.77812pt x 260.47313pt>
+File: images/SpatialTransformer.png Graphic file (type png)
+<use images/SpatialTransformer.png>
+Package luatex.def Info: images/SpatialTransformer.png  used on input line 238.
+
+(luatex.def)             Requested size: 426.79135pt x 182.31404pt.
+ [12<./images/SpatialTransformer.png>]
+<images/results1.png, id=327, 404.26031pt x 261.97874pt>
 File: images/results1.png Graphic file (type png)
 <use images/results1.png>
-Package luatex.def Info: images/results1.png  used on input line 212.
+Package luatex.def Info: images/results1.png  used on input line 278.
 (luatex.def)             Requested size: 192.0548pt x 124.46118pt.
-<images/results2.png, id=283, 404.26031pt x 261.97874pt>
+<images/results2.png, id=328, 404.26031pt x 261.97874pt>
 File: images/results2.png Graphic file (type png)
 <use images/results2.png>
-Package luatex.def Info: images/results2.png  used on input line 219.
+Package luatex.def Info: images/results2.png  used on input line 285.
 (luatex.def)             Requested size: 192.0548pt x 124.46118pt.
- [10<./images/results1.png><./images/results2.png>]
-<images/ArchitectureFourier-Net+.png, id=300, 1075.01625pt x 356.0803pt>
+ [13]
+Overfull \hbox (13.11916pt too wide) in paragraph at lines 295--297
+\TU/Alegreya(0)/m/n/12 limited spa-tial rep-re-sen-ta-tion of the im-ages as in-
+put, in-stead of their orig-i-nal full-resolution
+ []
+
+<images/ArchitectureFourier-Net+.png, id=347, 1075.01625pt x 356.0803pt>
 File: images/ArchitectureFourier-Net+.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+.png  used on input lin
-e 235.
+e 301.
 (luatex.def)             Requested size: 426.79135pt x 141.36465pt.
-<images/ArchitectureFourier-Net+CNN.png, id=303, 1078.0275pt x 218.31563pt>
+<images/ArchitectureFourier-Net+CNN.png, id=350, 1078.0275pt x 218.31563pt>
 File: images/ArchitectureFourier-Net+CNN.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+CNN.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+CNN.png  used on input 
-line 246.
+line 312.
 (luatex.def)             Requested size: 426.79135pt x 86.43193pt.
-<images/ArchitectureFourier-Net+Cascaded.png, id=306, 1409.265pt x 287.0725pt>
+[14<./images/results1.png><./images/results2.png>]
+<images/ArchitectureFourier-Net+Cascaded.png, id=364, 1409.265pt x 287.0725pt>
 File: images/ArchitectureFourier-Net+Cascaded.png Graphic file (type png)
 <use images/ArchitectureFourier-Net+Cascaded.png>
 Package luatex.def Info: images/ArchitectureFourier-Net+Cascaded.png  used on i
-nput line 257.
+nput line 323.
 (luatex.def)             Requested size: 426.79135pt x 86.93715pt.
- [11<./images/ArchitectureFourier-Net+.png><./images/ArchitectureFourier-Net+CNN
-.png>] [12<./images/ArchitectureFourier-Net+Cascaded.png>]
+ [15<./images/ArchitectureFourier-Net+.png><./images/ArchitectureFourier-Net+CNN
+.png><./images/ArchitectureFourier-Net+Cascaded.png>]
 Chapter 5.
-[13
+[16
 
 ]
 Chapter 6.
-[14
+[17
 
 ]
 Chapter 7.
-[15
+[18
 
 ]
 
@@ -2950,23 +2983,23 @@ Package biblatex Warning: Name format 'last-first' deprecated.
 (biblatex)                Using 'family-given' now.
 
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/sc' will be
-(Font)              scaled to size 12.0pt on input line 282.
-[16
+(Font)              scaled to size 12.0pt on input line 348.
+[19
 
 ]
-Underfull \hbox (badness 2970) in paragraph at lines 282--282
-[]\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
-ukcuoglu, K.  Spa-tial
- []
-
-
-Underfull \hbox (badness 1661) in paragraph at lines 282--282
+Underfull \hbox (badness 1661) in paragraph at lines 348--348
 \TU/Alegreya(0)/m/it/12 Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 . Springer In-t
 er-na-tional Pub-lish-ing, 󰋇󰋅󰋆󰋍, pp. 󰋌󰋇󰋎–󰋌󰋈󰋍. \
 TU/Alegreya(0)/m/sc/12 󰁳󰃑󰀹󰂘\TU/Alegreya(0)/m/n/12 :
  []
 
-[17] [18] (./Masterarbeit.aux)
+[20]
+Underfull \hbox (badness 2970) in paragraph at lines 348--348
+[]\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
+ukcuoglu, K.  Spa-tial
+ []
+
+[21] (./Masterarbeit.aux)
  ***********
 LaTeX2e <2023-06-01> patch level 1
 L3 programming layer <2023-08-29>
@@ -2975,11 +3008,8 @@ L3 programming layer <2023-08-29>
 
 LaTeX Warning: There were undefined references.
 
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
 Package rerunfilecheck Info: File `Masterarbeit.out' has not changed.
-(rerunfilecheck)             Checksum: DDF223E16F19260E9414071E84C2D636;2746.
+(rerunfilecheck)             Checksum: 4301EECC6E6EF1BFFE274C8D88B3EE32;2746.
 
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
 (biblatex)                Masterarbeit
@@ -2991,33 +3021,32 @@ Package logreq Info: Writing requests to 'Masterarbeit.run.xml'.
 )
 
 Here is how much of LuaTeX's memory you used:
- 44102 strings out of 477259
+ 44166 strings out of 477259
  100000,2373549 words of node,token memory allocated
- 754 words of node memory still in use:
-   7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 46 attribute, 71 glue_spec
-, 25 attribute_list, 2 write, 4 pdf_action nodes
-   avail lists: 1:2,2:1594,3:520,4:133,5:971,6:58,7:7868,8:71,9:385,10:15,11:746
+ 862 words of node memory still in use:
+   7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 82 attribute, 71 glue_spec
+, 43 attribute_list, 2 write, 4 pdf_action nodes
+   avail lists: 1:2,2:1600,3:533,4:133,5:991,6:58,7:8080,8:73,9:525,10:17,11:746
 
- 64316 multiletter control sequences out of 65536+600000
- 214 fonts using 62919215 bytes
- 102i,8n,128p,1858b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
-
-warning  (pdf backend): unreferenced destination with name 'figure.caption.18'
+ 64357 multiletter control sequences out of 65536+600000
+ 214 fonts using 62919455 bytes
+ 102i,13n,128p,1858b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Program Files/MiKTeX/fonts/opentype/public/lm/lmmonoprop10-regular.otf><C:/P
-rogram Files/MiKTeX/fonts/opentype/public/tex-gyre/texgyrechorus-mediumitalic.ot
-f><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><
-C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><C:/
-Program Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf
+rogram Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf>
+<C:/Program Files/MiKTeX/fonts/opentype/public/tex-gyre/texgyrechorus-mediumital
+ic.otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.
+otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf
 ><C:/Program Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-mat
-h.otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.ot
-f><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf><
-C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.otf><C:/P
-rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C:/Pro
-gram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C:/Pro
-gram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
-Output written on Masterarbeit.pdf (24 pages, 924889 bytes).
+h.otf><C:/Program Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagell
+a-math.otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Ital
+ic.otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.
+otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.otf>
+<C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C
+:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C
+:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
+Output written on Masterarbeit.pdf (27 pages, 1076516 bytes).
 
-PDF statistics: 463 PDF objects out of 1000 (max. 8388607)
- 92 named destinations out of 1000 (max. 131072)
+PDF statistics: 521 PDF objects out of 1000 (max. 8388607)
+ 109 named destinations out of 1000 (max. 131072)
  160 words of extra memory for PDF output out of 10000 (max. 100000000)
 

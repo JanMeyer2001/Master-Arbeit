@@ -42,7 +42,7 @@
 % arrows.meta, positioning and shapes), varioref, url 
 %
 %%%%%%%
-\usepackage{subcaption}
+\usepackage{subcaption}	% for subfigures
 
 
 % add bibliography
@@ -102,6 +102,7 @@ Some basic stuff about network training, testing and different architectures tha
 
 \subsection{Convolutional Neural Networks}
 Convolutional neural networks (CNNs) are a type of deep neural networks with regularized multilayer perceptron, which are mainly used for image processing. CNNs use convolution operations instead of general matrix multiplications in typical neural networks. These convolutional filters make CNNs very suitable for visual signal processing. Because of their excellent feature extraction ability, CNNs are some of the most successful models for image analysis. Different variants of CNN have been proposed and have achieved the-state-of-art performances in various image processing tasks. A typical CNN usually consists of multiple convolutional layers, max pooling layers, batch normalization layers, sometimes dropout layers, a sigmoid or softmax layer. In each convolutional layer, multiple channels of feature maps are extracted by sliding trainable convolutional kernels across the input feature maps. Hierarchical features with high-level abstraction are extracted using multiple convolutional layers. These feature maps usually go through multiple fully connected layer before reaching the final decision layer. Max pooling layers are often used to reduce the image sizes and to promote spatial invariance of the network. Batch normalization is used to reduce internal covariate shift among the training samples. Weight regularization and dropout layers are used to alleviate data overfitting~\cite{Fu2020}. The loss function is often defined as the difference between the predicted and the target output. CNNs are usually trained by minimizing the loss via gradient back propagation using optimization methods like Adam~\cite{Adam}. 
+% Convolutions and Deconvolutions genauer erklären?!
 
 \subsection{U-Net}
 The U-Net~\cite{U-Net} architecture is an extension of the typical CNNs structure typically used for image segmentation, however it can also be used for image registration tasks. It adopts symmetrical contractive and expansive paths with skip connections between them. The encoding blocks on the left extract important features from the image using convolution layers and max pooling, which are then stored in the latent space in the middle. From there it is reconstructed using upsampling and convolutions in the decoding blocks on the right. Additionally, skip connections are used to improve the spatial resolution of the segmentation. This architecture allows effective feature learning from a small number of training datasets~\cite{Fu2020}. 
@@ -173,31 +174,96 @@ is padded with zeros to the full resolution of the original displacement field. 
 \end{figure}
 
 \subsection{Encoder}
-Describe SYMNet, etc. in more detail here.\\
-The encoder of \emph{Fourier-Net} consists of a CNN, namely the \emph{SYMNet}~\cite{SYM-Net}.
+The encoder of \emph{Fourier-Net} consists of a CNN that generates the displacement field between the two input images. This network is the fully convolutional neural network (FCN) taken from the \emph{SYMNet}~\cite{SYM-Net}. It is very similar to the \emph{U-Net} as seen in Figure~\ref{fig:SYMNet}. \\
+The FCN concatenates the inputs images $X$ and $Y$ as a single 2-channel input and estimates two dense, non-linear displacement fields $\phi_{XY}$ and $\phi_{YX}$ from $X$ and $Y$ which combine to form $\mathbb{S}_\phi$. For each level in the encoding part of the FCN, two successive convolution layers are applied, which contain one $3 \times 3 \times 3$ convolution layer with a stride of 1, followed by a $3 \times 3 \times 3$ convolution layer with a stride of 2 to further compute the high-level features between the input images as well as downsample the features by half until the lowest level of the network is reached. For each level in the decoding part of the FCN, we concatenate the feature maps from the encoding part through skip connection and apply $3 \times 3 \times 3$ convolution with a stride of 1 and $2 \times 2 \times 2$ deconvolution layer for upsampling the feature maps to twice of its size. At the end of the decoding part, two $5 \times 5 \times 5$ convolution layers with a stride of 1 are appended to the last convolution layer and generate the displacement fields $\theta_{XY}$ and $\theta_{YX}$
+%, followed by a softsign activation function (i.e., Sof tSign(x) = x/1+|x|). It then multiplies itself by a constant c, to normalize the velocity fields within the range [−c, c]. We set c = 100 such that it is sufficient for large deformation. Empirically, the non-linear misalignment is usually less than 25 voxels in the deformable registration of brain MR scans with 1mm3 resolution. 
+Each convolution layer in the FCN is followed by a rectified linear unit (ReLU) activation, except for the output convolution layers, where a SoftSign activation function is used~\cite{SYM-Net}:
+\begin{equation}
+	\text{SoftSign}(x) = \frac{x}{1 + |x|} .
+\end{equation}
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=\linewidth]{SYMNetArchitectureFCN.png} 
+	\caption{Architecture of the FCN from \emph{SYMNet}~\cite{SYM-Net}.}
+	\label{fig:SYMNet}
+\end{figure}
+As discussed, the encoder aims to learn a displacement (or velocity field) in the band-limited Fourier domain. Intuitively, this may require convolutions to be able to handle complex-valued numbers, which can be done by using complex-valued CNNs~\cite{Trabelsi2017}, which are suitable when both input and output are complex values, however these complex-valued operations sacrifice computational efficiency. Other approaches like \emph{DeepFlash}~\cite{DeepFlash} tackle this problem by converting the input images to the Fourier domain and using two individual real-valued CNNs to learn the real and imaginary parts separately. This, however, increases training and inference cost. To bridge the domain gap between real-valued spatial images and complex-valued band-limited displacement fields without increasing complexity, \emph{Fourier-Net} uses a DFT layer at the end of the FCN. This is a simple and effective way to produce complex-valued band-limited displacement fields without the network being able to handle complex values itself. The DFT applied to the displacement field $\phi$ can be defined as follows:
+\begin{equation} \label{eq:DFT}
+	[\mathcal{F}]_{k,l} = \sum^{H-1}_{n=0} \sum^{W-1}_{m=0} \phi_{n,m} \cdot \exp \Bigg(i \cdot \bigg(\frac{2 \pi k}{H} \cdot n + \frac{2 \pi l}{W} \cdot m \bigg) \Big),
+\end{equation}
+where $\phi$ has size $H \times W$, $n \in [0,H-1]$ and $m \in [0,W-1]$ are the discrete indices in the spatial domain, and $k \in [0,H-1]$ and $l \in [0,W-1]$ are the discrete indices in the frequency domain with $i$ being the imaginary unit. However $\phi$ in this equation is actually a low-pass filtered displacement field coming from the FCN, which can be formulated as follows:
+\begin{equation} \label{eq:FCN}
+	\mathbb{S}_\phi = \text{FCN}(M,F;\Theta),
+\end{equation}
+with $M$ being the moving and $F$ the fixed image, as well as $\Theta$ representing the parameters of the FCN. Thus, the encoder can be defined mathematically as:
+\begin{equation}\label{eq:encoder}
+	\mathbb{B}_\phi = \mathcal{F}(\mathbb{S}_\phi) = \mathcal{F}(\text{FCN}(M,F;\Theta)),
+\end{equation}
+with the DFT layer $\mathcal{F}$, full-resolution spatial displacement field $\phi$ and the complex band-limited displacement field $\mathbb{B}_\phi$. \\
+For a $H \times W$ sized sampling mask $\mathcal{D}$ whose entries are zeros if they are on the positions of high-frequency signals in $\phi$ and ones if they are on the low-frequency positions, thus low-pass filtering the displacement field. With $\mathcal{D}$, the displacement field $\phi$ from equation~(\ref{eq:DFT}) can be recovered via the iDFT as follows~\cite{Fourier-Net}:
+\begin{equation} \label{eq:iDFT}
+	\phi_{n,m} = \frac{1}{HW} \sum^{H-1}_{k=0} \sum^{W-1}_{l=0} \mathcal{D}_{k,l} [\mathcal{F}(\phi)]_{k,l} \cdot \exp \Bigg(i \cdot \bigg(\frac{2 \pi n}{H} \cdot k + \frac{2 \pi m}{W} \cdot l \bigg) \Bigg).
+\end{equation}
 
 \subsection{Decoder}
-Describe DFT, etc. here.
+The decoder contains no learnable parameters, instead the usual expansive path is replaced with a zero-padding layer, an iDFT layer, and an optional squaring and scaling layer. The output from the encoder is a band-limited representation $\mathbb{B}_\phi$ of the displacement field. To recover the full-resolution displacement field $\phi$ in the spatial domain, we first pad the patch $\mathbb{B}_\phi$ containing mostly low frequency signals to the original image resolution with zeros. We then feed the zero-padded complex-valued coefficients to an iDFT layer consisting of two steps: shifting the Fourier coefficients from centers to corners and then applying the iDFT to convert them into the spatial domain. For this, the low-frequency signals are shifted to a center patch with size $\frac{H}{a} \times \frac{W}{b}$ with $a = 2 \cdot Z_a, b = 2 \cdot Z_b$ where $Z_a, Z_b \in \mathbb{Z}^+$, which is then center-cropped to get $\mathbb{B}_\phi$, and reconstructed using the iDFT, thus modifying equation~(\ref{eq:iDFT}) to:
+\begin{equation} \label{eq:decoder}
+	[\mathbb{S}_\phi]_{n,m} = \frac{ab}{HW} \sum^{\frac{H}{a}-1}_{k=1} \sum^{\frac{W}{b}-1}_{l=1} [\mathbb{B}_\phi]_{k,l} \cdot \exp \Bigg(i \cdot \bigg(\frac{2 \pi a n}{H} \cdot k + \frac{2 \pi b m}{W} \cdot l \bigg) \Bigg),
+\end{equation}
+with $n \in [0, \frac{H}{a}-1]$ and $m \in [0, \frac{W}{b}-1]$ being the indices of the spatial domain, while $k \in [0, \frac{H}{a}-1]$ and $l \in [0, \frac{W}{b}-1]$ are the indices of the frequency domain with $i$ being the imaginary unit. The output from \emph{Fourier-Net} is thus a full-resolution spatial displacement field as $\mathbb{S}_\phi$ contains all necessary information from $\phi$:
+\begin{equation}
+	[\mathbb{S}_\phi]_{n,m} = ab \cdot \phi_{an,bm}.
+\end{equation}
+Because both padding and iDFT layers are differentiable, \emph{Fourier-Net} can be optimized via back-propagation. For \emph{Diff-Fourier-Net} extra squaring and squaring layers are needed in the decoder turning the displacement field  into a stationary velocity field. Typically seven scaling and squaring layers are used to impose such diffeomorphism~\cite{Fourier-Net,Dalca2018}.
 
 \subsection{Diffeomorphism}
 Describe what a diffeomorphism is. Describe Squaring and Scaling layers.\\
-A diffeomorphic deformation is defined as a smooth and invertible deformation, thus the output of the iDFT layer can be regarded as a stationary velocity field denoted by $v$ instead of the displacement field $\theta$. In group theory, $v$ is a member of Lie algebra, and it can be exponentiated to obtain the diffeomorphic deformation. This specific version is then called \emph{Fourier-Net Diff} A diagram of this can be seen in Figure~\ref{fig:Fourier-Net}. 
+A diffeomorphic deformation is defined as a smooth and invertible deformation, thus the output of the iDFT layer can be regarded as a stationary velocity field denoted by $v$ instead of the displacement field $\phi$. In group theory, $v$ is a member of Lie algebra, and it can be exponentiated to obtain the diffeomorphic deformation. This specific version is then called \emph{Fourier-Net Diff} A diagram of this can be seen in Figure~\ref{fig:Fourier-Net}. 
 
 \subsection{SpatialTransformer}
-Describe the Spatial Transformer.\\
-For this warping layer the \emph{spatial transformer}~\cite{SpatialTransformer}
-%similar to~\cite{Voxelmorph} 
-is used.
+The warping layer of \emph{Fourier-Net} utilizes the \emph{Spatial Transformer}~\cite{SpatialTransformer}, which allows for spatial image manipulation within the network. This is a differentiable and learnable module for neural networks which applies a spatial transformation to a feature map during a single forward pass. The spatial transformer mechanism is split into three parts as seen in Figure~\ref{fig:SpatialTransformer}. First is the localization network, which takes the input and outputs the parameters for the transformation. These are then used to create a sample grid using the grid generator. Lastly, the sampler produces the output feature map based on the input at the grid points.\\
+From the input feature map $U \in \mathbb{R}^{H \times W \times C}$ with width $W$, height $H$ and channels $C$ the localization network $f_{\text{loc}}$ computes the parameters $\theta = f_{\text{loc}}(U)$ of the transformation $\mathcal{T}_\theta$ which is later applied to the feature map. Thus the size of $\theta$ varies depending on the transformation. 
+%(e.g. 6D for an affine transformation). 
+The localization network function can both be implemented as a fully-connected network or as a CNN, but should include a final regression layer to produce the transformation parameters~\cite{SpatialTransformer}.\\
+In order to warp the input feature map, each output pixel is computed by applying a sampling kernel centered at a particular location in the input feature map. The output pixels are defined to lie on a regular grid $G = {G_i}$ of pixels, forming an output feature map $V \in \mathbb{R}^{H' \times W' \times C}$, where $H'$ and $W'$ are the height and width of the grid with C again being the number of channels, which is the same for input and output.\\
+In order to perform a spatial transformation of the input feature map $U$, the sampler must take the set of sampling points $\mathcal{T}_\theta(G)$, along and produce the sampled output feature map $V$. Each coordinate $(x_i^s, y_i^s)$ in $\mathcal{T}_\theta(G)$ defines the spatial location in the input where a sampling kernel is applied to get the value at a particular pixel in the output:
+\begin{equation}
+	V_i^c = \sum^{H}_{n} \sum^{W}_{m} U_{nm}^c k(x_i^s - m; \Phi_x) k(y_i^s - n; \Phi_y),
+\end{equation}
+with $\Phi_x$ and $\Phi_y$ being the parameters for a generic sampling  kernel $k$ that defines the image interpolation, $U_{nm}^c$ is the value of the input feature maps at location $(n,m)$ in the channel $c \in [1, ..., C]$ and $V_i^c$ is the value for every pixel $i \in [1, ..., H'W']$ for the output feature map. Any sampling kernel can be used, as long as (sub-)gradients can be defined with respect to $(x_i^s, y_i^s)$ to allow the loss gradients to flow back not only to the input feature map, but also to the sampling grid coordinates and therefore back to the transformation parameters $\phi$ and localization network, thus enabling back-propagation.
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=\linewidth]{SpatialTransformer.png} 
+	\caption{Architecture of the \emph{Spatial Transformer} taken from~\cite{SpatialTransformer}.}
+	\label{fig:SpatialTransformer}
+\end{figure}
+
 
 \subsection{Loss Function}
-Describe Parts of the loss function.\\After the moving image has been warped the unsupervised loss $\mathcal{L}$ can be calculated as follows:
-\begin{equation}
-	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ (\phi_i(\Theta) + \text{Id}) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla \phi_i(\Theta) ||^2_2 \bigg) \bigg] ,
+The loss function consists of two parts to enable unsupervised learning, which are balanced using the scalar parameter $\lambda$. The first, $\mathcal{L}_{1}$, measures the similarity between the fixed image and the moving image after warping, while the second, $\mathcal{L}_{2}$, ensures a smooth displacement field. Thus, the unsupervised loss $\mathcal{L}$ can be calculated as follows:
+\begin{equation}	\label{eq:unsupervisedLoss}
+	\begin{split} 
+		\mathcal{L}(\Theta) &= \min  \bigg( \mathcal{L}_{1} (\phi(\Theta))  + \lambda \cdot \mathcal{L}_{2} (\phi(\Theta)) \bigg) \\
+		&= \min  \bigg( \mathcal{L}_{1} (v(\Theta))  + \lambda \cdot \mathcal{L}_{2} (v(\Theta)) \bigg),
+	\end{split}
 \end{equation}
-where $\circ$ denotes the warping operation, $N$ the number of training pairs with moving images $I_{M_i}$ and fixed images $I_{F_i}$, $\Theta$ the network parameters, $\phi$ the displacement field, Id the identity grid and $\nabla$ the first order gradient. The two terms of the loss, $\mathcal{L}_{Sim}$ determining the similarity between warped moving images and fixed images via MSE or NCC, and the second term defining the smoothness of the displacement fields, are balanced using the scalar parameter $\lambda$.\\
-When using the squaring and scaling layers, thus making the deformation of the moving image diffeomorphic, the loss can be modified by replacing the displacement field $\theta$ with the velocity field $v$:
-\begin{equation}
-	\mathcal{L}(\Theta) = \min \bigg[ \bigg( \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (I_{M_i} \circ Exp(v_i(\Theta) - I_{F_i}) \bigg) + \lambda \cdot \bigg( \frac{1}{N} \sum^{N}_{i=1} || \nabla v_i(\Theta) ||^2_2 \bigg) \bigg] .
+for both displacement fields $\phi$ and velocity fields $v$. The first part of the loss function consists of:
+\begin{equation} \label{eq:L1-LossDisp}
+	\mathcal{L}_{1} (\phi(\Theta)) = \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (M_i \circ (\phi_i(\Theta) + \text{Id}) - F_i),
+\end{equation}
+where $\circ$ denotes the warping operation, $N$ the number of training pairs with moving images $M_i$ and fixed images $F_i$, $\Theta$ the network parameters, $\phi_i$ the displacement field, Id the identity grid. $\mathcal{L}_{Sim}$ determines the similarity between warped moving images and fixed images via MSE or NCC, and the second term of the unsupervised loss, $\mathcal{L}_{2}$, defines the smoothness regularization function that controls smoothness of the displacement fields:
+\begin{equation} \label{eq:L2-LossDisp}
+	\mathcal{L}_{2} (\phi(\Theta)) = \frac{1}{N} \sum^{N}_{i=1} || \nabla \phi_i(\Theta) ||^2_2,
+\end{equation}
+with $\nabla$ denoting the first order gradient and $|| \cdot ||_2^2$ denoting the squared $L_2$-Norm. \\
+When using the squaring and scaling layers, thus making the deformation of the moving image diffeomorphic, the loss needs to be modified by replacing the displacement field $\theta$ with the velocity field $v$. Thus, both parts of the of the loss function need to be changed:
+\begin{equation}	\label{eq:L1-LossVeloc}
+	\mathcal{L}_{1} (v(\Theta)) = \frac{1}{N} \sum^{N}_{i=1} \mathcal{L}_{Sim} (M_i \circ Exp(v_i(\Theta) - F_i),
+\end{equation}
+\begin{equation} \label{eq:L2-LossVeloc}
+	\mathcal{L}_{2} (v(\Theta)) = \frac{1}{N} \sum^{N}_{i=1} || \nabla v_i(\Theta) ||^2_2  \bigg .
 \end{equation}
 
 \subsection{Training}

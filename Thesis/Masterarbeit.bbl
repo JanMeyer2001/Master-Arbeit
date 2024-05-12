@@ -1619,50 +1619,6 @@
     \field{year}{2023}
   \endentry
 
-  \entry{SpatialTransformer}{article}{}
-    \name{author}{4}{}{%
-      {{hash=JM}{%
-         family={Jaderberg},
-         familyi={J\bibinitperiod},
-         given={Max},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=SK}{%
-         family={Simonyan},
-         familyi={S\bibinitperiod},
-         given={Karen},
-         giveni={K\bibinitperiod},
-      }}%
-      {{hash=ZA}{%
-         family={Zisserman},
-         familyi={Z\bibinitperiod},
-         given={Andrew},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=KK}{%
-         family={Kavukcuoglu},
-         familyi={K\bibinitperiod},
-         given={Koray},
-         giveni={K\bibinitperiod},
-      }}%
-    }
-    \strng{namehash}{JM+1}
-    \strng{fullhash}{JMSKZAKK1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \field{title}{Spatial Transformer Networks}
-    \verb{url}
-    \verb https://api.semanticscholar.org/CorpusID:6099034
-    \endverb
-    \field{volume}{abs/1506.02025}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/SpatialTransformerNetworks.pdf:PDF
-    \endverb
-    \field{journaltitle}{ArXiv}
-    \field{year}{2015}
-  \endentry
-
   \entry{Dalca2018}{inbook}{}
     \name{author}{4}{}{%
       {{hash=DAV}{%
@@ -1712,6 +1668,175 @@
     \verb ic Diffeomorphic Registration (Pre-VoxelMorph).pdf:PDF
     \endverb
     \field{year}{2018}
+  \endentry
+
+  \entry{Trabelsi2017}{misc}{}
+    \name{author}{10}{}{%
+      {{hash=TC}{%
+         family={Trabelsi},
+         familyi={T\bibinitperiod},
+         given={Chiheb},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=BO}{%
+         family={Bilaniuk},
+         familyi={B\bibinitperiod},
+         given={Olexa},
+         giveni={O\bibinitperiod},
+      }}%
+      {{hash=ZY}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Ying},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=SD}{%
+         family={Serdyuk},
+         familyi={S\bibinitperiod},
+         given={Dmitriy},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=SS}{%
+         family={Subramanian},
+         familyi={S\bibinitperiod},
+         given={Sandeep},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=SJF}{%
+         family={Santos},
+         familyi={S\bibinitperiod},
+         given={João\bibnamedelima Felipe},
+         giveni={J\bibinitperiod\bibinitdelim F\bibinitperiod},
+      }}%
+      {{hash=MS}{%
+         family={Mehri},
+         familyi={M\bibinitperiod},
+         given={Soroush},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=RN}{%
+         family={Rostamzadeh},
+         familyi={R\bibinitperiod},
+         given={Negar},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=BY}{%
+         family={Bengio},
+         familyi={B\bibinitperiod},
+         given={Yoshua},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=PCJ}{%
+         family={Pal},
+         familyi={P\bibinitperiod},
+         given={Christopher\bibnamedelima J},
+         giveni={C\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Neural and Evolutionary Computing (cs.NE), Machine Learning (cs.LG),
+  FOS: Computer and information sciences, FOS: Computer and information
+  sciences}
+    \strng{namehash}{TC+1}
+    \strng{fullhash}{TCBOZYSDSSSJFMSRNBYPCJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.48550/ARXIV.1705.09792
+    \endverb
+    \field{title}{Deep Complex Networks}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/DeepComplexNetworks.pdf:PDF
+    \endverb
+    \field{year}{2017}
+  \endentry
+
+  \entry{DeepFlash}{misc}{}
+    \name{author}{2}{}{%
+      {{hash=WJ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Jian},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=ZM}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Miaomiao},
+         giveni={M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Image and Video Processing (eess.IV), Computer Vision and Pattern
+  Recognition (cs.CV), FOS: Electrical engineering, electronic engineering,
+  information engineering, FOS: Electrical engineering, electronic engineering,
+  information engineering, FOS: Computer and information sciences, FOS:
+  Computer and information sciences}
+    \strng{namehash}{WJZM1}
+    \strng{fullhash}{WJZM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.48550/ARXIV.2004.02097
+    \endverb
+    \field{title}{DeepFLASH: An Efficient Network for Learning-based Medical
+  Image Registration}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/3. Wang, Jian, and Miaomiao Zhang. 'Deepfl
+    \verb ash. An efficient network for learning-based medical image registrati
+    \verb on'.pdf:PDF
+    \endverb
+    \field{year}{2020}
+  \endentry
+
+  \entry{SpatialTransformer}{article}{}
+    \name{author}{4}{}{%
+      {{hash=JM}{%
+         family={Jaderberg},
+         familyi={J\bibinitperiod},
+         given={Max},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=SK}{%
+         family={Simonyan},
+         familyi={S\bibinitperiod},
+         given={Karen},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=ZA}{%
+         family={Zisserman},
+         familyi={Z\bibinitperiod},
+         given={Andrew},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KK}{%
+         family={Kavukcuoglu},
+         familyi={K\bibinitperiod},
+         given={Koray},
+         giveni={K\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JM+1}
+    \strng{fullhash}{JMSKZAKK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spatial Transformer Networks}
+    \verb{url}
+    \verb https://api.semanticscholar.org/CorpusID:6099034
+    \endverb
+    \field{volume}{abs/1506.02025}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/SpatialTransformerNetworks.pdf:PDF
+    \endverb
+    \field{journaltitle}{ArXiv}
+    \field{year}{2015}
   \endentry
 \enddatalist
 \endinput

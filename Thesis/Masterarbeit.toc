@@ -27,15 +27,15 @@
 \contentsline {chapter}{\numberline {4}Network Architectures}{8}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Fourier-Net}{8}{section.4.1}%
 \contentsline {subsection}{Encoder}{8}{section*.10}%
-\contentsline {subsection}{Decoder}{9}{section*.11}%
-\contentsline {subsection}{Diffeomorphism}{9}{section*.12}%
-\contentsline {subsection}{SpatialTransformer}{9}{section*.13}%
-\contentsline {subsection}{Loss Function}{9}{section*.14}%
-\contentsline {subsection}{Training}{10}{section*.15}%
-\contentsline {section}{\numberline {4.2}Fourier Net+}{10}{section.4.2}%
-\contentsline {subsection}{Changes to the Encoder}{11}{section*.18}%
-\contentsline {subsection}{Effects of Cascading}{12}{section*.20}%
-\contentsline {chapter}{\numberline {5}Experiments}{13}{chapter.5}%
-\contentsline {chapter}{\numberline {6}Results and Discussion}{14}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Conclusion}{15}{chapter.7}%
-\contentsline {chapter}{Bibliography}{16}{chapter*.22}%
+\contentsline {subsection}{Decoder}{11}{section*.12}%
+\contentsline {subsection}{Diffeomorphism}{11}{section*.13}%
+\contentsline {subsection}{SpatialTransformer}{11}{section*.14}%
+\contentsline {subsection}{Loss Function}{13}{section*.16}%
+\contentsline {subsection}{Training}{13}{section*.17}%
+\contentsline {section}{\numberline {4.2}Fourier Net+}{14}{section.4.2}%
+\contentsline {subsection}{Changes to the Encoder}{15}{section*.20}%
+\contentsline {subsection}{Effects of Cascading}{15}{section*.22}%
+\contentsline {chapter}{\numberline {5}Experiments}{16}{chapter.5}%
+\contentsline {chapter}{\numberline {6}Results and Discussion}{17}{chapter.6}%
+\contentsline {chapter}{\numberline {7}Conclusion}{18}{chapter.7}%
+\contentsline {chapter}{Bibliography}{19}{chapter*.24}%
