@@ -208,28 +208,27 @@ def train():
                         vout_ifft1 = F.pad(vout_ifft1, p3d, "constant", 0)
                         vout_ifft2 = F.pad(vout_ifft2, p3d, "constant", 0)
                         vout_ifft3 = F.pad(vout_ifft3, p3d, "constant", 0)
-                        vdisp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft1)))# * (img_x * img_y * img_z / 8))))
-                        vdisp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft2)))# * (img_x * img_y * img_z / 8))))
-                        vdisp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft3)))# * (img_x * img_y * img_z / 8))))
+                        vdisp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft1)))
+                        vdisp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft2)))
+                        vdisp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(vout_ifft3)))
                         vf_xy = torch.cat([vdisp_mf_1.unsqueeze(0).unsqueeze(0), vdisp_mf_2.unsqueeze(0).unsqueeze(0), vdisp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
-    #            print(F_xy.max())
                         warped_xv_seg= transform(xv_seg.float().to(device), vf_xy.permute(0, 2, 3, 4, 1), mod = 'nearest')
                         for bs_index in range(bs):
                             dice_bs=dice(warped_xv_seg[bs_index,...].data.cpu().numpy().copy(),yv_seg[bs_index,...].data.cpu().numpy().copy())
                             Dices_Validation.append(dice_bs)
-                    modelname = 'DiceVal_{:.4f}_Step_{:04d}.pth'.format(np.mean(Dices_Validation), step)
+                    modelname = 'DiceVal_{:.4f}_Step_{:06d}_Epoch_{:03d}.pth'.format(np.mean(Dices_Validation), step, epoch)
                     f = open(csv_name, 'a')
                     with f:
                         writer = csv.writer(f)
                         writer.writerow([epoch, np.mean(Dices_Validation)])
                     save_checkpoint(model.state_dict(), model_dir+'/model/', modelname)
                     np.save(model_dir + 'Loss.npy', lossall)
+                    print("one epoch pass")
+                    epoch = epoch + 1
             step += 1
 
             if step > iteration:
                 break
-        print("one epoch pass")
-        epoch = epoch + 1
     np.save(model_dir + 'Loss.npy', lossall)
     print('Training ended on ', time.ctime())
     
