@@ -1,5 +1,4 @@
 import os
-import glob
 import sys
 from argparse import ArgumentParser
 import numpy as np
@@ -12,7 +11,6 @@ import matplotlib.pyplot as plt
 import csv
 import time
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
-from natsort import natsorted
 
 parser = ArgumentParser()
 parser.add_argument("--lr", type=float,
@@ -22,21 +20,9 @@ parser.add_argument("--bs", type=int,
 parser.add_argument("--iteration", type=int,
                     dest="iteration", default=320001,
                     help="number of total iterations")
-parser.add_argument("--local_ori", type=float,
-                    dest="local_ori", default=1000.0,
-                    help="Local Orientation Consistency loss: suggested range 1 to 1000")
-parser.add_argument("--magnitude", type=float,
-                    dest="magnitude", default=0.001,
-                    help="magnitude loss: suggested range 0.001 to 1.0")
-parser.add_argument("--mask_labda", type=float,
-                    dest="mask_labda", default=0.25,
-                    help="mask_labda loss: suggested range 0.1 to 10")
-parser.add_argument("--data_labda", type=float,
-                    dest="data_labda", default=0.02,
-                    help="data_labda loss: suggested range 0.1 to 10")
-parser.add_argument("--smth_labda", type=float,
-                    dest="smth_labda", default=0.02,
-                    help="labda loss: suggested range 0.1 to 10")
+parser.add_argument("--smth_lambda", type=float,
+                    dest="smth_lambda", default=0.02,
+                    help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--checkpoint", type=int,
                     dest="checkpoint", default=800,
                     help="frequency of saving models")
@@ -50,57 +36,36 @@ parser.add_argument("--datapath", type=str,
 parser.add_argument("--trainingset", type=int,
                     dest="trainingset", default=3,
                     help="1 Half : 200 Images, 2 The other Half 200 Images 3 All 400 Images")
-parser.add_argument("--using_l2", type=int,
-                    dest="using_l2",
+parser.add_argument("--choose_loss", type=int,
+                    dest="choose_loss",
                     default=1,
-                    help="using l2 or not")
+                    help="choose similarity loss: SAD (0), MSE (1), NCC (2)")
 opt = parser.parse_args()
 
 lr = opt.lr
 bs = opt.bs
 iteration = opt.iteration
 start_channel = opt.start_channel
-local_ori = opt.local_ori
-magnitude = opt.magnitude
 n_checkpoint = opt.checkpoint
-smooth = opt.smth_labda
+smooth = opt.smth_lambda
 datapath = opt.datapath
-mask_labda = opt.mask_labda
-data_labda = opt.data_labda
 trainingset = opt.trainingset
-using_l2 = opt.using_l2
+choose_loss = opt.choose_loss
 
-def dice(pred1, truth1):
-    mask4_value1 = np.unique(pred1)
-    mask4_value2 = np.unique(truth1)
-    mask_value4 = list(set(mask4_value1) & set(mask4_value2))
-    dice_list=[]
-    for k in mask_value4[1:]:
-        truth = truth1 == k
-        pred = pred1 == k
-        intersection = np.sum(pred * truth) * 2.0
-        dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
-    return np.mean(dice_list)
 
-def save_checkpoint(state, save_dir, save_filename, max_model_num=6):
-    torch.save(state, save_dir + save_filename)
-    model_lists = natsorted(glob.glob(save_dir + '*'))
-    while len(model_lists) > max_model_num:
-        os.remove(model_lists[0])
-        model_lists = natsorted(glob.glob(save_dir + '*'))
 
 def train():
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
     model = SYMNet(2, 2, start_channel).cuda()
     
-    if using_l2 == 1:
+    if choose_loss == 1:
         loss_similarity = MSE().loss
-    elif using_l2 == 0:
+    elif choose_loss == 0:
         loss_similarity = SAD().loss
-    elif using_l2 == 2:
+    elif choose_loss == 2:
         loss_similarity = NCC(win=9)
-    elif using_l2 == 3:
+    elif choose_loss == 3:
         ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
         ssim_module = SSIM(data_range=1, size_average=True, channel=1) # channel=1 for grayscale images
         loss_similarity = SAD().loss
@@ -118,17 +83,17 @@ def train():
     lossall = np.zeros((3, iteration))
     train_set = TrainDataset(datapath,trainingset = trainingset) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    valid_set = ValidationDataset(opt.datapath)
+    valid_set = ValidationDataset(datapath)
     valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
-    model_dir = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(using_l2,start_channel,smooth, trainingset, lr)
-    model_dir_png = './L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Png/'.format(using_l2,start_channel,smooth, trainingset, lr)
+    model_dir = './Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(choose_loss,start_channel,smooth, trainingset, lr)
+    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Png/'.format(choose_loss,start_channel,smooth, trainingset, lr)
     
     if not os.path.isdir(model_dir_png):
         os.mkdir(model_dir_png)
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
 
-    csv_name = model_dir_png + 'L2ss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(using_l2,start_channel,smooth, trainingset, lr)
+    csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, trainingset, lr)
     f = open(csv_name, 'w')
     with f:
         fnames = ['Index','Dice']
@@ -164,8 +129,8 @@ def train():
             D_f_xy = diff_transform(f_xy)
             grid, X_Y = transform(X, D_f_xy.permute(0, 2, 3, 1))
                                                            
-            if using_l2 == 3:
-                loss1 = (1 - ms_ssim_module(X_Y , Y)) + (1 - ssim_module(X_Y , Y))# + 0 * loss_similarity(Y, X_Y)
+            if choose_loss == 3:
+                loss1 = (1 - ms_ssim_module(X_Y , Y)) + (1 - ssim_module(X_Y , Y))
             else:
                 loss1 = loss_similarity(Y, X_Y)
             loss5 = loss_smooth(f_xy)
@@ -217,7 +182,6 @@ def train():
                 break
             step += 1
         print("one epoch pass")
-        # epoch = epoch + 1
     np.save(model_dir_png + '/loss_SYMNet.npy', lossall)
 
 def save_flow(X, Y, X_Y, f_xy, sample_path):

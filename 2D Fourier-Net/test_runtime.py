@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import numpy as np
 import torch
 from Models import *
-from Functions import ValidationDataset
+from Functions import *
 import torch.utils.data as Data
 import csv
 
@@ -42,7 +42,7 @@ def test(modelpath):
     model.load_state_dict(torch.load(modelpath, map_location = device))
     model.eval()
     transform.eval()
-    test_set = ValidationDataset(opt.datapath,img_file='test_list.txt')
+    test_set = TestDataset(opt.datapath)
     test_generator = Data.DataLoader(dataset=test_set, batch_size=bs,
                                          shuffle=False, num_workers=2)
     for __, __, mov_img, fix_img, mov_lab, fix_lab in test_generator:
@@ -55,8 +55,8 @@ def test(modelpath):
             p3d = (72, 72, 60, 60)
             out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
             out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-            disp_mf_1 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-            disp_mf_2 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
+            disp_mf_1 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft1)))
+            disp_mf_2 = torch.real(torch.fft.ifft2(torch.fft.ifftshift(out_ifft2)))
             V_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
             
 if __name__ == '__main__':
