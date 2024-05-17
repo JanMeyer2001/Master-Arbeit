@@ -12,7 +12,7 @@ stct_i = 0
 file_dir = './Quantitative_Results/'
 for stct in outstruct:
     tar_idx = []
-    with open(file_dir+'L2ss_2_Chan_16_Smth_5.0_LR_0.0001_Test_Bilinear.csv', "r") as f:
+    with open(file_dir+'Loss_2_Chan_16_Smth_5.0_LR_0.0001_Test_Bilinear.csv', "r") as f:
         reader = csv.reader(f, delimiter="\t")
         for i, line in enumerate(reader):
             if i == 1:
@@ -36,7 +36,7 @@ for stct in outstruct:
 print(exp_data.mean())
 print(exp_data.std())
 my_list = []
-with open(file_dir+'L2ss_2_Chan_16_Smth_5.0_LR_0.0001_Test_Bilinear.csv', newline='') as f:
+with open(file_dir+'Loss_2_Chan_16_Smth_5.0_LR_0.0001_Test_Bilinear.csv', newline='') as f:
     reader = csv.reader(f)
     my_list = [row[-1] for row in reader]
 my_list = my_list[2:]
