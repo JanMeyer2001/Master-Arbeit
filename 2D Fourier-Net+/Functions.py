@@ -13,6 +13,8 @@ from os import listdir
 from os.path import join, isfile
 import matplotlib.pyplot as plt
 import itertools
+from natsort import natsorted
+import glob
 
 
 def rotate_image(image):
@@ -156,7 +158,7 @@ class TestDataset(Data.Dataset):
         'Generates one sample of data'
         # Select sample
         img_A, img_B, label_A, label_B = load_validation_pair(self.data_path, self.filename[index][0], self.filename[index][1])
-        return self.filename[index][0],self.filename[index][1], img_A, img_B, label_A, label_B
+        return img_A, img_B, label_A, label_B
   
 def load_test_pair(data_path, filename1, filename2):
     # Load images and labels
@@ -183,3 +185,71 @@ def load_test_pair(data_path, filename1, filename2):
     image6 = np.reshape(image6, (1,) + image6.shape)
     #"""
     return image1, image2, image5, image6
+
+    
+def jacobian_determinant_vxm(disp):
+    """
+    jacobian determinant of a displacement field.
+    NB: to compute the spatial gradients, we use np.gradient.
+    Parameters:
+        disp: 2D or 3D displacement field of size [*vol_shape, nb_dims],
+              where vol_shape is of len nb_dims
+    Returns:
+        jacobian determinant (scalar)
+    """
+
+    # check inputs
+    # disp = disp.transpose(1, 2, 3, 0)
+    disp = disp.transpose(1, 2, 0)
+    volshape = disp.shape[:-1]
+    nb_dims = len(volshape)
+    assert len(volshape) in (2, 3), 'flow has to be 2D or 3D'
+
+    # compute grid
+    
+    import pystrum.pynd.ndutils as nd
+    grid_lst = nd.volsize2ndgrid(volshape)
+    grid = np.stack(grid_lst, len(volshape))
+
+    # compute gradients
+    J = np.gradient(disp + grid)
+
+    # 3D glow
+    if nb_dims == 3:
+        dx = J[0]
+        dy = J[1]
+        dz = J[2]
+
+        # compute jacobian components
+        Jdet0 = dx[..., 0] * (dy[..., 1] * dz[..., 2] - dy[..., 2] * dz[..., 1])
+        Jdet1 = dx[..., 1] * (dy[..., 0] * dz[..., 2] - dy[..., 2] * dz[..., 0])
+        Jdet2 = dx[..., 2] * (dy[..., 0] * dz[..., 1] - dy[..., 1] * dz[..., 0])
+
+        return Jdet0 - Jdet1 + Jdet2
+
+    else:  # must be 2
+
+        dfdx = J[0]
+        dfdy = J[1]
+
+        return dfdx[..., 0] * dfdy[..., 1] - dfdy[..., 0] * dfdx[..., 1]
+
+
+def dice(pred1, truth1):
+    mask4_value1 = np.unique(pred1)
+    mask4_value2 = np.unique(truth1)
+    mask_value4 = list(set(mask4_value1) & set(mask4_value2))
+    dice_list=[]
+    for k in mask_value4[1:]:
+        truth = truth1 == k
+        pred = pred1 == k
+        intersection = np.sum(pred * truth) * 2.0
+        dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
+    return np.mean(dice_list)
+
+def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
+    torch.save(state, save_dir + save_filename)
+    model_lists = natsorted(glob.glob(save_dir + '*'))
+    while len(model_lists) > max_model_num:
+        os.remove(model_lists[0])
+        model_lists = natsorted(glob.glob(save_dir + '*'))
