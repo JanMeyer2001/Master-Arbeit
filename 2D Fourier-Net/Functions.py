@@ -13,6 +13,8 @@ from os import listdir
 from os.path import join, isfile
 import matplotlib.pyplot as plt
 import itertools
+from natsort import natsorted
+import glob
 
 
 def rotate_image(image):
@@ -183,3 +185,83 @@ def load_test_pair(data_path, filename1, filename2):
     image6 = np.reshape(image6, (1,) + image6.shape)
     #"""
     return image1, image2, image5, image6
+
+
+def jacobian_determinant_vxm(disp):
+    """
+    jacobian determinant of a displacement field.
+    NB: to compute the spatial gradients, we use np.gradient.
+    Parameters:
+        disp: 2D or 3D displacement field of size [*vol_shape, nb_dims],
+              where vol_shape is of len nb_dims
+    Returns:
+        jacobian determinant (scalar)
+    """
+
+    # check inputs
+    # disp = disp.transpose(1, 2, 3, 0)
+    disp = disp.transpose(1, 2, 0)
+    volshape = disp.shape[:-1]
+    nb_dims = len(volshape)
+    assert len(volshape) in (2, 3), 'flow has to be 2D or 3D'
+
+    # compute grid
+    
+    import pystrum.pynd.ndutils as nd
+    grid_lst = nd.volsize2ndgrid(volshape)
+    grid = np.stack(grid_lst, len(volshape))
+
+    # compute gradients
+    J = np.gradient(disp + grid)
+
+    # 3D glow
+    if nb_dims == 3:
+        dx = J[0]
+        dy = J[1]
+        dz = J[2]
+
+        # compute jacobian components
+        Jdet0 = dx[..., 0] * (dy[..., 1] * dz[..., 2] - dy[..., 2] * dz[..., 1])
+        Jdet1 = dx[..., 1] * (dy[..., 0] * dz[..., 2] - dy[..., 2] * dz[..., 0])
+        Jdet2 = dx[..., 2] * (dy[..., 0] * dz[..., 1] - dy[..., 1] * dz[..., 0])
+
+        return Jdet0 - Jdet1 + Jdet2
+
+    else:  # must be 2
+
+        dfdx = J[0]
+        dfdy = J[1]
+
+        return dfdx[..., 0] * dfdy[..., 1] - dfdy[..., 0] * dfdx[..., 1]
+
+
+def dice(img,img2):
+    assert img.shape == img2.shape
+    if len(img.shape) == 2:
+        lenIntersection=0
+        for x in range(img.shape[0]):
+            for y in range(img.shape[1]):
+                if ( np.array_equal(img[x][y],img2[x][y]) ):
+                    lenIntersection+=1      
+        lenimg=img.shape[0]*img.shape[1]
+        lenimg2=img2.shape[0]*img2.shape[1]  
+        value = (2. * lenIntersection  / (lenimg + lenimg2))
+    elif len(img.shape) == 3:
+        lenIntersection=0
+        for x in range(img.shape[0]):
+            for y in range(img.shape[1]):
+                for z in range(img.shape[2]):
+                    if (np.array_equal(img[x][y][z],img2[x][y][z])):
+                        lenIntersection+=1      
+        lenimg=img.shape[0]*img.shape[1]*img.shape[2]
+        lenimg2=img2.shape[0]*img2.shape[1]*img.shape[2]
+        value = (2. * lenIntersection  / (lenimg + lenimg2))    
+    return value
+
+
+def save_checkpoint(state, save_dir, save_filename, max_model_num=6):
+    torch.save(state, save_dir + save_filename)
+    model_lists = natsorted(glob.glob(save_dir + '*'))
+    while len(model_lists) > max_model_num:
+        os.remove(model_lists[0])
+        model_lists = natsorted(glob.glob(save_dir + '*'))
