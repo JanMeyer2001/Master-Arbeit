@@ -187,6 +187,10 @@ class SpatialTransform(nn.Module):
         flow_d = flow[:,:,:,:,0]
         flow_h = flow[:,:,:,:,1]
         flow_w = flow[:,:,:,:,2]
+        #Softsign
+        #disp_d = (grid_d + (flow_d * 2 / d2)).squeeze(1)
+        #disp_h = (grid_h + (flow_h * 2 / h2)).squeeze(1)
+        #disp_w = (grid_w + (flow_w * 2 / w2)).squeeze(1)
         
         # Remove Channel Dimension
         disp_d = (grid_d + (flow_d)).squeeze(1)
@@ -196,6 +200,7 @@ class SpatialTransform(nn.Module):
         warped = torch.nn.functional.grid_sample(mov_image, sample_grid, mode = mod, align_corners = True)
         
         return warped
+
 class DiffeomorphicTransform(nn.Module):
     def __init__(self, time_step=7):
         super(DiffeomorphicTransform, self).__init__()
@@ -226,10 +231,6 @@ class DiffeomorphicTransform(nn.Module):
             deformation = torch.stack((disp_w, disp_h, disp_d), 4)  # shape (N, D, H, W, 3)
             flow = flow + torch.nn.functional.grid_sample(flow, deformation, mode='bilinear', padding_mode="border", align_corners = True)
         return flow
-
-
-
-
 
 def smoothloss(y_pred):
     #print('smoothloss y_pred.shape    ',y_pred.shape)
