@@ -15,15 +15,10 @@ class Cascade(nn.Module):
 
         super(Cascade, self).__init__()
         self.net1 = Net_80_40(self.in_channel, self.n_classes, self.start_channel)
-        # self.net2 = Net_80_40(self.in_channel, self.n_classes, self.start_channel)
-        # self.net3 = Net_80_40(self.in_channel, self.n_classes, self.start_channel)
-        # self.net4 = Net_80_40(self.in_channel, self.n_classes, self.start_channel)
         self.warp = SpatialTransform()
     def forward(self, x, y):
-        # in_pair = torch.cat((x, y), 1)
+        transform = SpatialTransform().cuda()
         
-        
-            
         X_temp = x.squeeze().squeeze()
         Y_temp = y.squeeze().squeeze()
         X_temp_fourier_all = torch.fft.fftn(X_temp)
@@ -39,11 +34,37 @@ class Cascade(nn.Module):
         X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         # Y_temp_low_spatial_high = torch.real(torch.fft.ifftn(Y_temp_fouriehigh).unsqueeze(0).unsqueeze(0))
         Y_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(Y_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
-            
+                    
+        fxy = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        X_Y = transform(x, fxy.permute(0, 2, 3, 4, 1))
+
+        # second cascade
+        X_temp_fourier_all = torch.fft.fftn(X_Y.squeeze().squeeze())
+                
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144,56:168]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        fxy_1 = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        fxy = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        X_Y = transform(X_Y, fxy.permute(0, 2, 3, 4, 1))
         
-        return fxy_1
+        # third cascade
+        X_temp_fourier_all = torch.fft.fftn(X_Y.squeeze().squeeze())
+                
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144,56:168]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        
+        fxy = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        X_Y = transform(X_Y, fxy.permute(0, 2, 3, 4, 1))
+        
+        # forth cascade
+        X_temp_fourier_all = torch.fft.fftn(X_Y.squeeze().squeeze())
+                
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144,56:168]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        
+        fxy = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        
+        return fxy
 
     
 class Net_80_40(nn.Module):
@@ -217,16 +238,16 @@ class Net_80_40(nn.Module):
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
         out_ifft3 = torch.fft.fftshift(torch.fft.fftn(out_3))
-        # print(out_ifft1.shape)
-        p3d = (84, 84, 72, 72, 60, 60)
-        out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-        out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
+        #pad = (84, 84, 72, 72, 60, 60) #--> old
+        pad = (68, 68, 88, 88, 60, 60)
+        out_ifft1 = F.pad(out_ifft1, pad, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, pad, "constant", 0)
+        out_ifft3 = F.pad(out_ifft3, pad, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))
         fxy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0), disp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
-        return fxy#, f_yx
+        return fxy
 
 
 class SpatialTransform(nn.Module):
