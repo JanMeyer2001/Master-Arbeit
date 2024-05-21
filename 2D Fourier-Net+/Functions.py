@@ -15,6 +15,10 @@ import matplotlib.pyplot as plt
 import itertools
 from natsort import natsorted
 import glob
+import h5py
+import fastmri
+from fastmri.data import transforms as T
+from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 
 
 def rotate_image(image):
@@ -253,3 +257,14 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     while len(model_lists) > max_model_num:
         os.remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
+
+def readfile2numpy(file_name):
+    '''
+    read the data from mat and convert to numpy array
+    '''
+    hf = h5py.File(file_name)
+    keys = list(hf.keys())
+    assert len(keys) == 1, f"Expected only one key in file, got {len(keys)} instead"
+    new_value = hf[keys[0]][()]
+    data = new_value["real"] + 1j*new_value["imag"]
+    return data  
