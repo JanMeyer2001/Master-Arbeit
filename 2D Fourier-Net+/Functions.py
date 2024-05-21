@@ -49,6 +49,56 @@ def rescale_intensity(image, thres=(0.0, 100.0)):
     image2 = (image2.astype(np.float32) - val_l) / (val_h - val_l)
     return image2
 
+class TrainDatasetCMR(Data.Dataset):
+  'Characterizes a dataset for PyTorch'
+  def __init__(self, data_path):
+        'Initialization'
+        super(TrainDatasetCMR, self).__init__()
+        self.data_path = join(data_path, 'TrainingSet', 'AccFactor04') #FullSample
+        self.names = [f.path for f in os.scandir(data_path) if f.is_dir()]
+        #self.foldernames = list(zip(self.names[:-1], self.names[1:]))
+        self.foldernames = list(itertools.permutations(self.names, 2))
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.foldernames)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_train_pair_CMR(self.foldernames[index][0], self.foldernames[index][1])
+        return  mov_img, fix_img
+
+def load_train_pair_CMR(foldername1, foldername2):
+    # Load k-spaces 
+    fullmulti1 = readfile2numpy(os.path.join(foldername1, 'cine_sax.mat')) #data_path, 
+    slice_kspace1 = fullmulti1[0,0] 
+    slice_kspace1 = T.to_tensor(slice_kspace1) 
+    
+    fullmulti2 = readfile2numpy(os.path.join(foldername2, 'cine_sax.mat')) #data_path, 
+    slice_kspace2 = fullmulti2[0,0] 
+    slice_kspace2 = T.to_tensor(slice_kspace2) 
+
+    # create mask for subsampling
+    #mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4])
+    #mask_func = RandomMaskFunc(center_fractions=[0.08], accelerations=[4])
+
+    # subsample the k-space
+    #slice_kspace1, mask, _ = T.apply_mask(slice_kspace1, mask_func)  
+
+    # Apply Inverse Fourier Transform to get the complex image      
+    image1 = fastmri.ifft2c(slice_kspace1)        
+    image2 = fastmri.ifft2c(slice_kspace1)  
+
+    # Compute absolute value to get a real image      
+    image1 = fastmri.complex_abs(image1)        
+    image2 = fastmri.complex_abs(image2)   
+
+    # combine the coil images to a coil-combined one
+    image1 = fastmri.rss(image1, dim=0)
+    image2 = fastmri.rss(image2, dim=0)
+
+    return image1, image2
+
 class TrainDataset(Data.Dataset):
   'Characterizes a dataset for PyTorch'
   def __init__(self, data_path, trainingset = 1):
@@ -78,10 +128,10 @@ class TrainDataset(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_train_pair(self.data_path, self.filename[index][0], self.filename[index][1])
+        mov_img, fix_img = load_train_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         return  mov_img, fix_img
 
-def load_train_pair(data_path, filename1, filename2):
+def load_train_pair_OASIS(data_path, filename1, filename2):
     # Load images and labels
     nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1)) 
     image1 = nim1.get_fdata()[:,96,:]
