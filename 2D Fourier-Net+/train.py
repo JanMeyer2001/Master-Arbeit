@@ -17,7 +17,7 @@ parser = ArgumentParser()
 parser.add_argument("--lr", type=float,
                     dest="lr", default=1e-4, help="learning rate")
 parser.add_argument("--bs", type=int,
-                    dest="bs", default=10, help="batch_size")
+                    dest="bs", default=1, help="batch_size")
 parser.add_argument("--iteration", type=int,
                     dest="iteration", default=320001,
                     help="number of total iterations")
@@ -25,18 +25,15 @@ parser.add_argument("--smth_lambda", type=float,
                     dest="smth_lambda", default=0.02,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--checkpoint", type=int,
-                    dest="checkpoint", default=4000,
+                    dest="checkpoint", default=400,
                     help="frequency of saving models")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    default='/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',
+                    default='/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04', #FullSample
                     help="data path for training images")
-parser.add_argument("--trainingset", type=int,
-                    dest="trainingset", default=4,
-                    help="1 Half : 200 Images, 2 The other Half 200 Images 3 All 400 Images")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss",
                     default=1,
@@ -50,7 +47,6 @@ start_channel = opt.start_channel
 n_checkpoint = opt.checkpoint
 smooth = opt.smth_lambda
 datapath = opt.datapath
-trainingset = opt.trainingset
 choose_loss = opt.choose_loss
 
 def train():
@@ -76,19 +72,26 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     lossall = np.zeros((3, iteration))
+    # load CMR data
+    train_set = TrainDatasetCMR(datapath) 
+    training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
+    """
+    # path for OASIS dataset
+    datapath = /imagedata/Learn2Reg_Dataset_release_v1.1/OASIS
     train_set = TrainDataset(datapath,trainingset = trainingset) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    valid_set = ValidationDataset(opt.datapath)
+    valid_set = ValidationDataset(datapath)
     valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
-    model_dir = './Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Pth/'.format(choose_loss,start_channel,smooth, trainingset, lr)
-    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}_Png/'.format(choose_loss,start_channel,smooth, trainingset, lr)
+    """
+    model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Pth/'.format(choose_loss,start_channel,smooth, lr)
+    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Png/'.format(choose_loss,start_channel,smooth, lr)
     
     if not os.path.isdir(model_dir_png):
         os.mkdir(model_dir_png)
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
 
-    csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_Set_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, trainingset, lr)
+    csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, lr)
     f = open(csv_name, 'w')
     with f:
         fnames = ['Index','Dice']
@@ -96,7 +99,7 @@ def train():
         writer.writeheader()
     
     step = 1
-
+    print('Started training on ', time.ctime())
     while step <= iteration:
         if step == 1:
             start = time.time()
@@ -110,7 +113,7 @@ def train():
             mov_img = mov_img.cuda().float()
             
             Df_xy = model(mov_img, fix_img)
-            __, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            grid, warped_mov = transform(mov_img.unsqueeze(0), Df_xy.permute(0, 2, 3, 1)) #
            
             loss1 = loss_similarity(fix_img, warped_mov) 
             loss5 = loss_smooth(Df_xy)
@@ -123,9 +126,11 @@ def train():
             lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
             sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
-
+            
+            """
             if (step % n_checkpoint == 0) or (step==1):
                 with torch.no_grad():
+                    
                     Dices_Validation = []
                     for vmov_img, vfix_img, vmov_lab, vfix_lab in valid_generator:
                         model.eval()
@@ -142,7 +147,7 @@ def train():
                     with f:
                         writer = csv.writer(f)
                         writer.writerow([step, csv_dice])
-            
+            """
             if (step % n_checkpoint == 0):
                 sample_path = os.path.join(model_dir, '{:06d}-images.jpg'.format(step))
                 save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
@@ -152,6 +157,7 @@ def train():
                 break
         print("one epoch pass")
     np.save(model_dir + '/Loss.npy', lossall)
+    print('Training ended on ', time.ctime())
 
 def save_flow(X, Y, X_Y, f_xy, sample_path):
     x = X.data.cpu().numpy()
