@@ -20,126 +20,88 @@ class Cascade(nn.Module):
         self.warp = SpatialTransform()
         
     def forward(self, x, y):
-        # in_pair = torch.cat((x, y), 1)
-        
-        
-            
         X_temp = x.squeeze().squeeze()
         Y_temp = y.squeeze().squeeze()
         X_temp_fourier_all = torch.fft.fftn(X_temp)
         Y_temp_fourier_all = torch.fft.fftn(Y_temp)
         
+        # compressing the images
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
+        Y_temp_fourier_low = torch.fft.fftshift(Y_temp_fourier_all)[40:120,48:144]
         
-        # X_temp_fourier_high = X_temp_fourier_all[40:120,48:144]#[40:120,48:144,84:140]
-        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        # Y_temp_fourier_high = Y_temp_fourier_all[40:120,48:144]#[40:120,48:144,84:140]
-        Y_temp_fourier_low = torch.fft.fftshift(Y_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        
-        # X_temp_low_spatial_high = torch.real(torch.fft.ifftn(X_temp_fourier_high).unsqueeze(0).unsqueeze(0))
         X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
-        # Y_temp_low_spatial_high = torch.real(torch.fft.ifftn(Y_temp_fourier_high).unsqueeze(0).unsqueeze(0))
         Y_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(Y_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
             
-        
+        # input into the network
         out_1, out_2 = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
-        
-        # out_1, out_2, out_3 = self.net(x, y)
-        
+
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
-        # out_3 = out_3.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        # out_ifft3 = torch.fft.fftshift(torch.fft.fftn(out_3))
-        # print(out_ifft1.shape)
-        # p3d = (84, 84, 72, 72, 60, 60)
-        p3d = (72, 72, 60, 60)
-        out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-        # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-        # disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
-        # fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0), disp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
+        #padxy = (72, 72, 60, 60) # old padding for image size (224,192)
+        #padxy = (232, 232, 103, 103) # new padding for image size (246,512)
+        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-            
+           
         __, x2 = self.warp(x, fxy_1.permute(0, 2, 3, 1))
-        
-        
+                
         X2_temp = x2.squeeze().squeeze()
         X2_temp_fourier_all = torch.fft.fftn(X2_temp)
         
-        
-        # X2_temp_fourier_high = X2_temp_fourier_all[40:120,48:144]#[40:120,48:144,84:140]
         X2_temp_fourier_low = torch.fft.fftshift(X2_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        # X2_temp_low_spatial_high = torch.real(torch.fft.ifftn(X2_temp_fourier_high).unsqueeze(0).unsqueeze(0))
         X2_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X2_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
         out_1, out_2 = self.net2(X2_temp_low_spatial_low, Y_temp_low_spatial_low)
         
-        
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
-        # out_3 = out_3.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        # out_ifft3 = torch.fft.fftshift(torch.fft.fftn(out_3))
-        # print(out_ifft1.shape)
-        # p3d = (84, 84, 72, 72, 60, 60)
-        p3d = (72, 72, 60, 60)
-        out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-        # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-        # disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
-        # fxy_2 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0), disp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
+        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_2 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-            
-        
+                  
         __, fxy_2_ = self.warp(fxy_1, fxy_2.permute(0, 2, 3, 1))
         
         fxy_2_ = fxy_2_ + fxy_2
-        
-        
+                
         __, x3 = self.warp(x, fxy_2_.permute(0, 2, 3, 1))
-        
-        
+                
         X3_temp = x3.squeeze().squeeze()
         X3_temp_fourier_all = torch.fft.fftn(X3_temp)
         
-        
-        # X2_temp_fourier_high = X2_temp_fourier_all[40:120,48:144]#[40:120,48:144,84:140]
-        X3_temp_fourier_low = torch.fft.fftshift(X3_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        # X2_temp_low_spatial_high = torch.real(torch.fft.ifftn(X2_temp_fourier_high).unsqueeze(0).unsqueeze(0))
+        X3_temp_fourier_low = torch.fft.fftshift(X3_temp_fourier_all)[40:120,48:144]
         X3_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X3_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
         out_1, out_2 = self.net3(X3_temp_low_spatial_low, Y_temp_low_spatial_low)
         
-        
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
-        # out_3 = out_3.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        # out_ifft3 = torch.fft.fftshift(torch.fft.fftn(out_3))
-        # print(out_ifft1.shape)
-        p3d = (72, 72, 60, 60)
-        out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-        # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-        # disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
-        # fxy_3 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0), disp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
+        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_3 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-            
-        
-        
+           
         __, fxy_3_ = self.warp(fxy_2_, fxy_3.permute(0, 2, 3, 1))
         fxy_3_ = fxy_3_ + fxy_3
-        
-        
         
         __, x4 = self.warp(x, fxy_3_.permute(0, 2, 3, 1))
         
@@ -147,37 +109,26 @@ class Cascade(nn.Module):
         X4_temp = x4.squeeze().squeeze()
         X4_temp_fourier_all = torch.fft.fftn(X4_temp)
         
-        
-        # X2_temp_fourier_high = X2_temp_fourier_all[40:120,48:144]#[40:120,48:144,84:140]
-        X4_temp_fourier_low = torch.fft.fftshift(X4_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        # X2_temp_low_spatial_high = torch.real(torch.fft.ifftn(X2_temp_fourier_high).unsqueeze(0).unsqueeze(0))
+        X4_temp_fourier_low = torch.fft.fftshift(X4_temp_fourier_all)[40:120,48:144]
         X4_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X4_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
         out_1, out_2 = self.net4(X4_temp_low_spatial_low, Y_temp_low_spatial_low)
-        
-        
+                
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
-        # out_3 = out_3.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        # out_ifft3 = torch.fft.fftshift(torch.fft.fftn(out_3))
-        # print(out_ifft1.shape)
-        p3d = (72, 72, 60, 60)
-        out_ifft1 = F.pad(out_ifft1, p3d, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, p3d, "constant", 0)
-        # out_ifft3 = F.pad(out_ifft3, p3d, "constant", 0)
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))# * (img_x * img_y * img_z / 8))))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))# * (img_x * img_y * img_z / 8))))
-        # disp_mf_3 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft3)))# * (img_x * img_y * img_z / 8))))
-        # fxy_3 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0), disp_mf_3.unsqueeze(0).unsqueeze(0)], dim = 1)
+        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_4 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-            
-        
-        
+           
         __, fxy_4_ = self.warp(fxy_3_, fxy_4.permute(0, 2, 3, 1))
         fxy_4_ = fxy_4_ + fxy_4
-        
         
         return fxy_4_
 
@@ -418,26 +369,16 @@ class SpatialTransform(nn.Module):
     def __init__(self):
         super(SpatialTransform, self).__init__()
     def forward(self, mov_image, flow, mod = 'bilinear'):
-        # d2, h2, w2 = mov_image.shape[-3:]
         h2, w2 = mov_image.shape[-2:]
-        # grid_d, grid_h, grid_w = torch.meshgrid([torch.linspace(-1, 1, d2), torch.linspace(-1, 1, h2), torch.linspace(-1, 1, w2)])
         grid_h, grid_w = torch.meshgrid([torch.linspace(-1, 1, h2), torch.linspace(-1, 1, w2)])
         grid_h = grid_h.to(flow.device).float()
-        # grid_d = grid_d.to(flow.device).float()
         grid_w = grid_w.to(flow.device).float()
-        # grid_d = nn.Parameter(grid_d, requires_grad=False)
         grid_w = nn.Parameter(grid_w, requires_grad=False)
         grid_h = nn.Parameter(grid_h, requires_grad=False)
         flow_h = flow[:,:,:,0]
         flow_w = flow[:,:,:,1]
-        # flow_w = flow[:,:,:,2]
-        #Softsign
-        #disp_d = (grid_d + (flow_d * 2 / d2)).squeeze(1)
-        #disp_h = (grid_h + (flow_h * 2 / h2)).squeeze(1)
-        #disp_w = (grid_w + (flow_w * 2 / w2)).squeeze(1)
         
         # Remove Channel Dimension
-        # disp_d = (grid_d + (flow_d)).squeeze(1)
         disp_h = (grid_h + (flow_h)).squeeze(1)
         disp_w = (grid_w + (flow_w)).squeeze(1)
         sample_grid = torch.stack((disp_w, disp_h), 3)  # shape (N, D, H, W, 3)
