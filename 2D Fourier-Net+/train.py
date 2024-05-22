@@ -113,7 +113,7 @@ def train():
             mov_img = mov_img.cuda().float()
             
             Df_xy = model(mov_img, fix_img)
-            grid, warped_mov = transform(mov_img.unsqueeze(0), Df_xy.permute(0, 2, 3, 1)) #
+            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
            
             loss1 = loss_similarity(fix_img, warped_mov) 
             loss5 = loss_smooth(Df_xy)
@@ -163,9 +163,9 @@ def save_flow(X, Y, X_Y, f_xy, sample_path):
     x = X.data.cpu().numpy()
     y = Y.data.cpu().numpy()
     x_pred = X_Y.data.cpu().numpy()
-    x_pred = x_pred[0,...]
-    x = x[0,...]
-    y = y[0,...]
+    x_pred = x_pred[0, 0,...]
+    x = x[0, 0,...]
+    y = y[0, 0,...]
     
     flow = f_xy.data.cpu().numpy()
     op_flow =flow[0,:,:,:]
@@ -173,51 +173,42 @@ def save_flow(X, Y, X_Y, f_xy, sample_path):
     plt.subplots(figsize=(7, 4))
     plt.axis('off')
 
-    moving_image = rotate_image(x[0, :, :])
     plt.subplot(2,3,1)
-    plt.imshow(moving_image, cmap='gray', vmin=0, vmax=1)
+    plt.imshow(x, cmap='gray', vmax = 0.0015)
     plt.title('Moving Image')
     plt.axis('off')
 
-    fixed_image = rotate_image(y[0, :, :])
     plt.subplot(2,3,2)
-    plt.imshow(fixed_image, cmap='gray', vmin=0, vmax=1)
+    plt.imshow(y, cmap='gray', vmax = 0.0015)
     plt.title('Fixed Image')
     plt.axis('off')
 
-    warped_image = rotate_image(x_pred[0, :, :])
     plt.subplot(2,3,3)
-    plt.imshow(warped_image, cmap='gray', vmin=0, vmax=1)
+    plt.imshow(x_pred, cmap='gray', vmax = 0.0015)
     plt.title('Warped Image')
     plt.axis('off')
 
     plt.subplot(2,3,4)
     interval = 5
-    [w,h,j] = op_flow.shape
-    op_flow_new = np.zeros([w,j,h])
-    op_flow_new[0,:,:] = rotate_image(op_flow[0,:,:])
-    op_flow_new[1,:,:] = rotate_image(op_flow[1,:,:])
 
-    for i in range(0,op_flow_new.shape[1]-1,interval):
-        plt.plot(op_flow_new[0,i,:], op_flow_new[1,i,:],c='g',lw=1)
+    for i in range(0,op_flow.shape[1]-1,interval):
+        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
     #plot the vertical lines
-    for i in range(0,op_flow_new.shape[2]-1,interval):
-        plt.plot(op_flow_new[0,:,i], op_flow_new[1,:,i],c='g',lw=1)
+    for i in range(0,op_flow.shape[2]-1,interval):
+        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
 
     plt.xlim(-1, 1)
     plt.ylim(-1, 1)
     plt.title('Displacement Field')
     plt.axis('off')
 
-    diff_before = rotate_image(abs(x[0, :, :]-y[0, :, :]))
     plt.subplot(2,3,5)
-    plt.imshow(diff_before, cmap='gray', vmin=0, vmax=1)
+    plt.imshow(abs(x-y), cmap='gray', vmax = 0.0015)
     plt.title('Difference before')
     plt.axis('off')
     
-    diff_after = rotate_image(abs(x_pred[0, :, :]-y[0, :, :]))
     plt.subplot(2,3,6)
-    plt.imshow(diff_after, cmap='gray', vmin=0, vmax=1)
+    plt.imshow(abs(x_pred-y), cmap='gray', vmax = 0.0015)
     plt.title('Difference after')
     plt.axis('off')
     plt.savefig(sample_path,bbox_inches='tight')
