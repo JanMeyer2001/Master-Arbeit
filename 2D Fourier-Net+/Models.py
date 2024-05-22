@@ -49,16 +49,16 @@ class Cascade(nn.Module):
         disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
         disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-           
-        __, x2 = self.warp(x, fxy_1.permute(0, 2, 3, 1))
+         
+        __, x = self.warp(x, fxy_1.permute(0, 2, 3, 1))
                 
-        X2_temp = x2.squeeze().squeeze()
-        X2_temp_fourier_all = torch.fft.fftn(X2_temp)
+        X_temp = x.squeeze().squeeze()
+        X_temp_fourier_all = torch.fft.fftn(X_temp)
         
-        X2_temp_fourier_low = torch.fft.fftshift(X2_temp_fourier_all)[40:120,48:144]#[40:120,48:144,84:140]
-        X2_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X2_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        out_1, out_2 = self.net2(X2_temp_low_spatial_low, Y_temp_low_spatial_low)
+        out_1, out_2 = self.net2(X_temp_low_spatial_low, Y_temp_low_spatial_low)
         
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
@@ -77,15 +77,15 @@ class Cascade(nn.Module):
         
         fxy_2_ = fxy_2_ + fxy_2
                 
-        __, x3 = self.warp(x, fxy_2_.permute(0, 2, 3, 1))
+        __, x = self.warp(x, fxy_2_.permute(0, 2, 3, 1))
                 
-        X3_temp = x3.squeeze().squeeze()
-        X3_temp_fourier_all = torch.fft.fftn(X3_temp)
+        X_temp = x.squeeze().squeeze()
+        X_temp_fourier_all = torch.fft.fftn(X_temp)
         
-        X3_temp_fourier_low = torch.fft.fftshift(X3_temp_fourier_all)[40:120,48:144]
-        X3_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X3_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        out_1, out_2 = self.net3(X3_temp_low_spatial_low, Y_temp_low_spatial_low)
+        out_1, out_2 = self.net3(X_temp_low_spatial_low, Y_temp_low_spatial_low)
         
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
@@ -103,16 +103,15 @@ class Cascade(nn.Module):
         __, fxy_3_ = self.warp(fxy_2_, fxy_3.permute(0, 2, 3, 1))
         fxy_3_ = fxy_3_ + fxy_3
         
-        __, x4 = self.warp(x, fxy_3_.permute(0, 2, 3, 1))
+        __, x = self.warp(x, fxy_3_.permute(0, 2, 3, 1))
         
+        X_temp = x.squeeze().squeeze()
+        X_temp_fourier_all = torch.fft.fftn(X_temp)
         
-        X4_temp = x4.squeeze().squeeze()
-        X4_temp_fourier_all = torch.fft.fftn(X4_temp)
+        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
+        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        X4_temp_fourier_low = torch.fft.fftshift(X4_temp_fourier_all)[40:120,48:144]
-        X4_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X4_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
-        
-        out_1, out_2 = self.net4(X4_temp_low_spatial_low, Y_temp_low_spatial_low)
+        out_1, out_2 = self.net4(X_temp_low_spatial_low, Y_temp_low_spatial_low)
                 
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
@@ -130,7 +129,7 @@ class Cascade(nn.Module):
         __, fxy_4_ = self.warp(fxy_3_, fxy_4.permute(0, 2, 3, 1))
         fxy_4_ = fxy_4_ + fxy_4
         
-        return fxy_4_
+        return fxy_4_ #fxy_1
 
 class UNet(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):
