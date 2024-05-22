@@ -19,6 +19,7 @@ import h5py
 import fastmri
 from fastmri.data import transforms as T
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
+import torch.nn.functional as F
 
 
 def rotate_image(image):
@@ -87,7 +88,7 @@ def load_train_pair_CMR(foldername1, foldername2):
 
     # Apply Inverse Fourier Transform to get the complex image      
     image1 = fastmri.ifft2c(slice_kspace1)        
-    image2 = fastmri.ifft2c(slice_kspace1)  
+    image2 = fastmri.ifft2c(slice_kspace2)  
 
     # Compute absolute value to get a real image      
     image1 = fastmri.complex_abs(image1)        
@@ -96,6 +97,12 @@ def load_train_pair_CMR(foldername1, foldername2):
     # combine the coil images to a coil-combined one
     image1 = fastmri.rss(image1, dim=0)
     image2 = fastmri.rss(image2, dim=0)
+
+    # interpolate images to be the same size
+    if image1.shape != [246,512]:
+        image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+    if image2.shape != [246,512]:
+        image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
 
     return image1, image2
 
