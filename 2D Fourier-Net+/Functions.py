@@ -54,7 +54,7 @@ class TrainDatasetCMR(Data.Dataset):
   def __init__(self, data_path):
         'Initialization'
         super(TrainDatasetCMR, self).__init__()
-        self.data_path = join(data_path, 'TrainingSet', 'AccFactor04') #FullSample
+        self.data_path = data_path
         self.names = [f.path for f in os.scandir(data_path) if f.is_dir()]
         #self.foldernames = list(zip(self.names[:-1], self.names[1:]))
         self.foldernames = list(itertools.permutations(self.names, 2))
