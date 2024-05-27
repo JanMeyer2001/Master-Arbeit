@@ -41,7 +41,7 @@ def show_coils(data, slice_nums, cmap=None, vmax = 0.0005):
 # fully sampled data from CMRxRecon
 data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
 names = [f.path for f in os.scandir(data_path) if f.is_dir() and f.name.endswith('P120')]
-print('name of fully sampled data: ', names[0])
+#print('name of fully sampled data: ', names[0])
 
 # read files from mat to numpy
 fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
@@ -51,15 +51,18 @@ fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
 slice_kspace = fullmulti[0,0] 
 
 # plot the final image
-plt.subplot(1, 2, 1)
+plt.subplot(1, 1, 1)
 plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray')
-plt.title('Fully Sampled')
+#plt.title('Fully Sampled')
 plt.axis('off')
+plt.tight_layout()
+plt.savefig('./Thesis/Images/k-space_fullysampled.png') 
+plt.close
 
 # Data from CMRxRecon
 data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
 names = [f.path for f in os.scandir(data_path) if f.is_dir() and f.name.endswith('P120')]
-print('name of subsampled data: ', names[0])
+#print('name of subsampled data: ', names[0])
 
 # read files from mat to numpy
 fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
@@ -69,12 +72,10 @@ fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
 slice_kspace = fullmulti[0,0] 
 
 # plot the final image
-plt.subplot(1, 2, 2)
+plt.subplot(1, 1, 1)
 plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray')
-plt.title('Subsampled')
+#plt.title('Subsampled')
 plt.axis('off')
-
 plt.tight_layout()
-plt.savefig('./Thesis/Images/k-space.png') 
+plt.savefig('./Thesis/Images/k-space_subsampled.png') 
 plt.close
-
