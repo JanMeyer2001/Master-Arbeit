@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+from  Functions import *
 
 class Cascade(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):
@@ -19,21 +21,44 @@ class Cascade(nn.Module):
         self.net4 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
         self.warp = SpatialTransform()
         
-    def forward(self, x, y):
-        X_temp = x.squeeze().squeeze()
-        Y_temp = y.squeeze().squeeze()
-        X_temp_fourier_all = torch.fft.fftn(X_temp)
-        Y_temp_fourier_all = torch.fft.fftn(Y_temp)
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
         
         # compressing the images
-        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
-        Y_temp_fourier_low = torch.fft.fftshift(Y_temp_fourier_all)[40:120,48:144]
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        offsetx = 80
+        offsety = 96
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
         
-        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
-        Y_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(Y_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        F_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(F_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
             
+        # normalize images have data range [0,1]
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        F_temp_low_spatial_low = normalize(F_temp_low_spatial_low)
+
+        """
+        plt.subplots(figsize=(4, 2))
+        plt.axis('off')
+
+        plt.subplot(4,2,1)
+        plt.imshow(M_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.title('M')
+        plt.axis('off')
+
+        plt.subplot(4,2,2)
+        plt.imshow(F_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.title('F')
+        plt.axis('off')        
+        """
+
         # input into the network
-        out_1, out_2 = self.net1(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        out_1, out_2 = self.net1(M_temp_low_spatial_low, F_temp_low_spatial_low)
 
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
@@ -41,8 +66,8 @@ class Cascade(nn.Module):
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
         #padxy = (72, 72, 60, 60) # old padding for image size (224,192)
         #padxy = (232, 232, 103, 103) # new padding for image size (246,512)
-        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
-        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
         padxy = (pady, pady, padx, padx) # adaptive padding
         out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
         out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
@@ -50,22 +75,32 @@ class Cascade(nn.Module):
         disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
         fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
          
-        __, x = self.warp(x, fxy_1.permute(0, 2, 3, 1))
+        __, Moving = self.warp(Moving, fxy_1.permute(0, 2, 3, 1))
                 
-        X_temp = x.squeeze().squeeze()
-        X_temp_fourier_all = torch.fft.fftn(X_temp)
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
         
-        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
-        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        out_1, out_2 = self.net2(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        """
+        plt.subplot(4,2,3)
+        plt.imshow(M_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+
+        plt.subplot(4,2,4)
+        plt.imshow(F_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+        """
+        out_1, out_2 = self.net2(M_temp_low_spatial_low, F_temp_low_spatial_low)
         
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
-        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
         padxy = (pady, pady, padx, padx) # adaptive padding
         out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
         out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
@@ -77,22 +112,32 @@ class Cascade(nn.Module):
         
         fxy_2_ = fxy_2_ + fxy_2
                 
-        __, x = self.warp(x, fxy_2_.permute(0, 2, 3, 1))
+        __, Moving = self.warp(Moving, fxy_2_.permute(0, 2, 3, 1))
                 
-        X_temp = x.squeeze().squeeze()
-        X_temp_fourier_all = torch.fft.fftn(X_temp)
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
         
-        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
-        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        out_1, out_2 = self.net3(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        """
+        plt.subplot(4,2,5)
+        plt.imshow(M_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+
+        plt.subplot(4,2,6)
+        plt.imshow(F_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+        """
+        out_1, out_2 = self.net3(M_temp_low_spatial_low, F_temp_low_spatial_low)
         
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
-        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
         padxy = (pady, pady, padx, padx) # adaptive padding
         out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
         out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
@@ -103,22 +148,35 @@ class Cascade(nn.Module):
         __, fxy_3_ = self.warp(fxy_2_, fxy_3.permute(0, 2, 3, 1))
         fxy_3_ = fxy_3_ + fxy_3
         
-        __, x = self.warp(x, fxy_3_.permute(0, 2, 3, 1))
+        __, Moving = self.warp(Moving, fxy_3_.permute(0, 2, 3, 1))
         
-        X_temp = x.squeeze().squeeze()
-        X_temp_fourier_all = torch.fft.fftn(X_temp)
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
         
-        X_temp_fourier_low = torch.fft.fftshift(X_temp_fourier_all)[40:120,48:144]
-        X_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(X_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
         
-        out_1, out_2 = self.net4(X_temp_low_spatial_low, Y_temp_low_spatial_low)
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        """
+        plt.subplot(4,2,7)
+        plt.imshow(M_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+
+        plt.subplot(4,2,8)
+        plt.imshow(F_temp_low_spatial_low.data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+        plt.axis('off')
+        
+        plt.savefig('CompressedImages',bbox_inches='tight')
+        plt.close()
+        """
+        out_1, out_2 = self.net4(M_temp_low_spatial_low, F_temp_low_spatial_low)
                 
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
         out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
         out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        padx = int((X_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
-        pady = int((X_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
         padxy = (pady, pady, padx, padx) # adaptive padding
         out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
         out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
