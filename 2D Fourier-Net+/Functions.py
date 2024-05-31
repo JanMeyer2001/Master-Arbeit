@@ -20,7 +20,12 @@ import fastmri
 from fastmri.data import transforms as T
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import torch.nn.functional as F
+from skimage.io import imread
+from torchvision.io import read_image
 
+def crop_image(img,tolerance=0.01):
+    mask = img>tolerance
+    return img[np.ix_(mask.any(1),mask.any(0))]
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -50,61 +55,128 @@ def rescale_intensity(image, thres=(0.0, 100.0)):
     image2 = (image2.astype(np.float32) - val_l) / (val_h - val_l)
     return image2
 
+def normalize(image):
+    """ expects an image as tensor and normalizes the values between [0,1] """
+    return (image - torch.min(image)) / (torch.max(image) - torch.min(image))
+
 class TrainDatasetCMR(Data.Dataset):
-  'Characterizes a dataset for PyTorch'
-  def __init__(self, data_path):
+  'Training dataset for CMR data'
+  def __init__(self, data_path, mode):
         'Initialization'
         super(TrainDatasetCMR, self).__init__()
+        # choose subfolder according to mode
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        else:
+            print('Invalid mode for CMR training dataset!!')
+        # get names and paths of training data
         self.data_path = data_path
-        self.names = [f.path for f in os.scandir(data_path) if f.is_dir()]
-        #self.foldernames = list(zip(self.names[:-1], self.names[1:]))
-        self.foldernames = list(itertools.permutations(self.names, 2))
+        self.names = []  
+        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'TrainingSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        for folder in self.foldernames:
+            names = [f.path for f in os.scandir(join(data_path, 'TrainingSet', subfolder, folder)) if isfile(join(data_path, 'TrainingSet', subfolder, folder, f))]
+            self.names = self.names+names
+        self.paths = list(itertools.permutations(self.names[0:-20], 2))
             
   def __len__(self):
         'Denotes the total number of samples'
-        return len(self.foldernames)
+        return len(self.paths)
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_train_pair_CMR(self.foldernames[index][0], self.foldernames[index][1])
+        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
 
 def load_train_pair_CMR(foldername1, foldername2):
-    # Load k-spaces 
-    fullmulti1 = readfile2numpy(os.path.join(foldername1, 'cine_sax.mat')) #data_path, 
-    slice_kspace1 = fullmulti1[0,0] 
-    slice_kspace1 = T.to_tensor(slice_kspace1) 
+    # read in images 
+    image1 = imread(foldername1, as_gray=True)
+    image2 = imread(foldername2, as_gray=True)
+    """
+    # convert to tensor
+    image1 = torch.from_numpy(image1).unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0)
+    """
+    # crop images
+    image1 = crop_image(image1)
+    image2 = crop_image(image2)
+    # convert to tensor
+    image1 = torch.from_numpy(image1)
+    image2 = torch.from_numpy(image2)
+    # interpolate to size [246, 512]
+    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
     
-    fullmulti2 = readfile2numpy(os.path.join(foldername2, 'cine_sax.mat')) #data_path, 
-    slice_kspace2 = fullmulti2[0,0] 
-    slice_kspace2 = T.to_tensor(slice_kspace2) 
-
-    # create mask for subsampling
-    #mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4])
-    #mask_func = RandomMaskFunc(center_fractions=[0.08], accelerations=[4])
-
-    # subsample the k-space
-    #slice_kspace1, mask, _ = T.apply_mask(slice_kspace1, mask_func)  
-
-    # Apply Inverse Fourier Transform to get the complex image      
-    image1 = fastmri.ifft2c(slice_kspace1)        
-    image2 = fastmri.ifft2c(slice_kspace2)  
-
-    # Compute absolute value to get a real image      
-    image1 = fastmri.complex_abs(image1)        
-    image2 = fastmri.complex_abs(image2)   
-
-    # combine the coil images to a coil-combined one
-    image1 = fastmri.rss(image1, dim=0)
-    image2 = fastmri.rss(image2, dim=0)
-
-    # interpolate images to be the same size
-    if image1.shape != [246,512]:
-        image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-    if image2.shape != [246,512]:
-        image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-
     return image1, image2
+
+class ValidationDatasetCMR(Data.Dataset):
+  'Validation dataset for CMR data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        else:
+            print('Invalid mode for CMR training dataset!!')
+        # get names and paths of training data
+        self.data_path = data_path
+        self.names = []  
+        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'TrainingSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        for folder in self.foldernames:
+            names = [f.path for f in os.scandir(join(data_path, 'TrainingSet', subfolder, folder)) if isfile(join(data_path, 'TrainingSet', subfolder, folder, f))]
+            self.names = self.names+names
+        self.paths = list(itertools.permutations(self.names[-20:len(self.names)], 2))
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
+  
+class TestDatasetCMR(Data.Dataset):
+  'Test dataset for CMR data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        self.data_path = data_path
+        # choose subfolder according to mode
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        else:
+            print('Invalid mode for CMR training dataset!!')
+        # get names and paths of training data
+        self.data_path = data_path
+        self.names = []  
+        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'ValidationSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        for folder in self.foldernames:
+            names = [f.path for f in os.scandir(join(data_path, 'ValidationSet', subfolder, folder)) if isfile(join(data_path, 'ValdiationSet', subfolder, folder, f))]
+            self.names = self.names+names
+        self.zip_pathname_1 = list(zip(self.names[:-1], self.names[1:]))
+        self.zip_pathname_2 = list(zip(self.names[1:], self.names[:-1]))
+        self.paths = self.zip_pathname_1 + self.zip_pathname_2
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
+
 
 class TrainDataset(Data.Dataset):
   'Characterizes a dataset for PyTorch'
@@ -314,14 +386,3 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     while len(model_lists) > max_model_num:
         os.remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
-
-def readfile2numpy(file_name):
-    '''
-    read the data from mat and convert to numpy array
-    '''
-    hf = h5py.File(file_name)
-    keys = list(hf.keys())
-    assert len(keys) == 1, f"Expected only one key in file, got {len(keys)} instead"
-    new_value = hf[keys[0]][()]
-    data = new_value["real"] + 1j*new_value["imag"]
-    return data  
