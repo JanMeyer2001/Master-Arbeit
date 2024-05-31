@@ -41,19 +41,23 @@ def save_slice(fullmulti, frame, slice, savepath):
     # normalize images have data range [0,1]
     image = (image - torch.min(image)) / (torch.max(image) - torch.min(image))
     # interpolate images to be the same size
-    image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+    image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0).squeeze(0)
     # save image to target dir as png
     save_image(image, savepath + '/Frame' + str(frame) + '_Slice' + str(slice) + '.png')
 
 
 
 # path for fully sampled CMR k-space data
-data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
+data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
+#data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
+
 # get all patient folders
 folderpaths = [f.path for f in os.scandir(data_path) if f.is_dir() and not (f.name.find('P') == -1)]
 
 # target path for reconstructed images
-image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/'
+image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor04/'
+#image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/'
+
 # create dir if not already there 
 if not os.path.isdir(image_path):
     os.mkdir(image_path)
