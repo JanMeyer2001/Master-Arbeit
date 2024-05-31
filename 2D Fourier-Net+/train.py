@@ -25,19 +25,24 @@ parser.add_argument("--smth_lambda", type=float,
                     dest="smth_lambda", default=0.02,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--checkpoint", type=int,
-                    dest="checkpoint", default=400,
+                    dest="checkpoint", default=1, #400
                     help="frequency of saving models")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
                     help="number of start channels")
 parser.add_argument("--datapath", type=str,
                     dest="datapath",
-                    default='/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04', #FullSample
+                    default='/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
+                    #default='/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample', #AccFactor04
                     help="data path for training images")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss",
                     default=1,
                     help="choose similarity loss: SAD (0), MSE (1), NCC (2), SSIM (3)")
+parser.add_argument("--mode", type=int,
+                    dest="mode",
+                    default='0',
+                    help="choose dataset mode: fully sampled (0) or 4x accelerated (1) and 8x accelerated (2)")
 opt = parser.parse_args()
 
 lr = opt.lr
@@ -48,6 +53,7 @@ n_checkpoint = opt.checkpoint
 smooth = opt.smth_lambda
 datapath = opt.datapath
 choose_loss = opt.choose_loss
+mode = opt.mode
 
 def train():
     use_cuda = True
@@ -72,32 +78,37 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     lossall = np.zeros((3, iteration))
+    
     # load CMR data
-    train_set = TrainDatasetCMR(datapath) 
+    train_set = TrainDatasetCMR(datapath, mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
+    validation_set = ValidationDatasetCMR(datapath, mode) 
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=bs, shuffle=True, num_workers=4)
+
     """
     # path for OASIS dataset
-    datapath = /imagedata/Learn2Reg_Dataset_release_v1.1/OASIS
-    train_set = TrainDataset(datapath,trainingset = trainingset) 
+    datapath = '/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS'
+    train_set = TrainDataset(datapath,trainingset = 4) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    valid_set = ValidationDataset(datapath)
-    valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
+    #valid_set = ValidationDataset(datapath)
+    #valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
     """
-    model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Pth/'.format(choose_loss,start_channel,smooth, lr)
-    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Png/'.format(choose_loss,start_channel,smooth, lr)
+    model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(choose_loss,start_channel,smooth, lr, mode)
+    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(choose_loss,start_channel,smooth, lr, mode)
     
     if not os.path.isdir(model_dir_png):
         os.mkdir(model_dir_png)
+    
     if not os.path.isdir(model_dir):
         os.mkdir(model_dir)
-
+    """
     csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, lr)
     f = open(csv_name, 'w')
     with f:
         fnames = ['Index','Dice']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
-    
+    """
     step = 1
     print('Started training on ', time.ctime())
     while step <= iteration:
@@ -127,70 +138,69 @@ def train():
             sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
             
-            """
+            #"""
             if (step % n_checkpoint == 0) or (step==1):
                 with torch.no_grad():
-                    
-                    Dices_Validation = []
-                    for vmov_img, vfix_img, vmov_lab, vfix_lab in valid_generator:
+                    #Dices_Validation = []
+                    for mov_img, fix_img in validation_generator: #vmov_lab, vfix_lab
                         model.eval()
-                        V_xy = model(vmov_img.float().to(device), vfix_img.float().to(device))
+                        V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
                         DV_xy = V_xy
+                        grid, warped_mov = transform(mov_img.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
+                        """
                         grid, warped_vmov_lab = transform(vmov_lab.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
                         dice_bs = dice(warped_vmov_lab[0,...].data.cpu().numpy().copy(),vfix_lab[0,...].data.cpu().numpy().copy())
                         Dices_Validation.append(dice_bs)
+                        """
+                    """
                     modelname = 'DiceVal_{:.4f}_Step_{:06d}.pth'.format(np.mean(Dices_Validation), step)
                     csv_dice = np.mean(Dices_Validation)
-                    save_checkpoint(model.state_dict(), model_dir, modelname)
-                    np.save(model_dir + 'Loss.npy', lossall)
                     f = open(csv_name, 'a')
                     with f:
                         writer = csv.writer(f)
                         writer.writerow([step, csv_dice])
-            """
+                    """
+                    modelname = 'Step_{:06d}.pth'.format(step)      # change later when Dice-Score is available
+                    save_checkpoint(model.state_dict(), model_dir, modelname)
+                    np.save(model_dir + 'Loss.npy', lossall)
+            #"""
             if (step % n_checkpoint == 0):
-                sample_path = os.path.join(model_dir, '{:06d}-images.jpg'.format(step))
+                sample_path = os.path.join(model_dir_png, '{:06d}-images.jpg'.format(step))
                 save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+                print("one epoch pass")
             step += 1
 
             if step > iteration:
                 break
-        print("one epoch pass")
     np.save(model_dir + '/Loss.npy', lossall)
     print('Training ended on ', time.ctime())
 
 def save_flow(X, Y, X_Y, f_xy, sample_path):
-    x = X.data.cpu().numpy()
-    y = Y.data.cpu().numpy()
-    x_pred = X_Y.data.cpu().numpy()
-    x_pred = x_pred[0, 0,...]
-    x = x[0, 0,...]
-    y = y[0, 0,...]
-    
-    flow = f_xy.data.cpu().numpy()
-    op_flow =flow[0,:,:,:]
+    x = X.data.cpu().numpy()[0, 0, ...]
+    y = Y.data.cpu().numpy()[0, 0, ...]
+    x_pred = X_Y.data.cpu().numpy()[0, 0, ...] #normalize()
+    op_flow = f_xy.data.cpu().numpy()[0,:,:,:]
     
     plt.subplots(figsize=(7, 4))
     plt.axis('off')
 
     plt.subplot(2,3,1)
-    plt.imshow(x, cmap='gray', vmax = 0.0015)
+    plt.imshow(x, cmap='gray', vmin=0, vmax = 1)
     plt.title('Moving Image')
     plt.axis('off')
 
     plt.subplot(2,3,2)
-    plt.imshow(y, cmap='gray', vmax = 0.0015)
+    plt.imshow(y, cmap='gray', vmin=0, vmax = 1)
     plt.title('Fixed Image')
     plt.axis('off')
 
     plt.subplot(2,3,3)
-    plt.imshow(x_pred, cmap='gray', vmax = 0.0015)
+    plt.imshow(x_pred, cmap='gray', vmin=0, vmax = 1)
     plt.title('Warped Image')
     plt.axis('off')
 
     plt.subplot(2,3,4)
     interval = 5
-
     for i in range(0,op_flow.shape[1]-1,interval):
         plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
     #plot the vertical lines
@@ -203,12 +213,12 @@ def save_flow(X, Y, X_Y, f_xy, sample_path):
     plt.axis('off')
 
     plt.subplot(2,3,5)
-    plt.imshow(abs(x-y), cmap='gray', vmax = 0.0015)
+    plt.imshow(abs(x-y), cmap='gray', vmin=0, vmax = 1)
     plt.title('Difference before')
     plt.axis('off')
     
     plt.subplot(2,3,6)
-    plt.imshow(abs(x_pred-y), cmap='gray', vmax = 0.0015)
+    plt.imshow(abs(x_pred-y), cmap='gray', vmin=0, vmax = 1)
     plt.title('Difference after')
     plt.axis('off')
     plt.savefig(sample_path,bbox_inches='tight')
