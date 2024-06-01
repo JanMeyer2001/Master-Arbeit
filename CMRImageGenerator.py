@@ -19,8 +19,11 @@ parser = ArgumentParser()
 
 parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose mode: fully sampled (0) or 4x accelerated (1) and 8x accelerated (2)")
+parser.add_argument("--set", type=int, dest="set", default='0',
+                    help="choose subset: training data (0), validation data (1) or test data (2)")
 opt = parser.parse_args()
 mode = opt.mode
+set = opt.set
 
 def readfile2numpy(file_name):
     '''
@@ -53,22 +56,30 @@ def save_slice(fullmulti, frame, slice, savepath):
     # save image to target dir as png
     save_image(image, savepath + '/Frame' + str(frame) + '_Slice' + str(slice) + '.png')
 
+if set == 0:
+    set = 'TrainingSet'
+elif set == 1:
+    set = 'ValidationSet'
+elif set == 2:
+    set = 'TestSet'
+else:
+    print('Wrong input for set!! Choose either training set (0), validation set (1) or test set (2)')    
 
 if mode == 0:
     # path for fully sampled CMR k-space data
-    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/' + set + '/FullSample'
     # target path for reconstructed images
-    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/'
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/' + set + '/FullySampled/'
 elif mode == 1:
     # path for accelerated CMR k-space data
-    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/' + set + '/AccFactor04'
     # target path for reconstructed images
-    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor04/'
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/' + set + '/AccFactor04/'
 elif mode == 2:
     # path for accelerated CMR k-space data
-    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor08'
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/' + set + '/AccFactor08'
     # target path for reconstructed images
-    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor08/'
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/' + set + '/AccFactor08/'
 else:
     print('Wrong input for mode!! Choose either fully sampled (0), 4x accelerated (1) or 8x accelerated (2)')    
 
@@ -90,26 +101,27 @@ for path in folderpaths:
         print('Expected time remaining: ', ((end-start)*(len(folderpaths)-1))/60, ' minutes.') 
     
     folder = os.path.basename(path)
-    #print('working on folder: ', folder)
-    
-    # ensure that all target folders exist
-    if not os.path.isdir(os.path.join(image_path, folder)):
-        os.mkdir(os.path.join(image_path, folder)+'/')
-    
-    # Load k-space
-    fullmulti = readfile2numpy(os.path.join(path, 'cine_sax.mat'))  
-    [nframe, nslice, ncoil, ny, nx] = fullmulti.shape
-    
-    # get image for every frame/slice and save it to the corresponding folder
-    for slice in range(nslice):
-        # ensure that subfolder for each slice exists
-        subfolder = 'Slice' + str(slice)
-        if not os.path.isdir(os.path.join(image_path, folder, subfolder)):
-            os.mkdir(os.path.join(image_path, folder, subfolder)+'/')
+    if folder != 'P004': # this folder in the ValidationSet-FullSample causes issues...
+        print('working on folder: ', folder)
+        
+        # ensure that all target folders exist
+        if not os.path.isdir(os.path.join(image_path, folder)):
+            os.mkdir(os.path.join(image_path, folder)+'/')
+        
+        # Load k-space
+        fullmulti = readfile2numpy(os.path.join(path, 'cine_sax.mat'))  
+        [nframe, nslice, ncoil, ny, nx] = fullmulti.shape
+        
+        # get image for every frame/slice and save it to the corresponding folder
+        for slice in range(nslice):
+            # ensure that subfolder for each slice exists
+            subfolder = 'Slice' + str(slice)
+            if not os.path.isdir(os.path.join(image_path, folder, subfolder)):
+                os.mkdir(os.path.join(image_path, folder, subfolder)+'/')
 
-        for frame in range(nframe):
-            #save all frames into the subfolder of the slice
-            save_slice(fullmulti, frame, slice, os.path.join(image_path, folder, subfolder))
+            for frame in range(nframe):
+                #save all frames into the subfolder of the slice
+                save_slice(fullmulti, frame, slice, os.path.join(image_path, folder, subfolder))
     i = i+1
 
 print('Finished generating image data on ', time.ctime())        
