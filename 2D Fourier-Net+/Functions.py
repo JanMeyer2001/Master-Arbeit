@@ -59,6 +59,43 @@ def normalize(image):
     """ expects an image as tensor and normalizes the values between [0,1] """
     return (image - torch.min(image)) / (torch.max(image) - torch.min(image))
 
+def get_image_pairs(set, data_path, subfolder):
+    """ get the corresponding paths of image pairs for the dataset """
+    image_pairs = []  
+    # get folder names for patients
+    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)][0:2]
+    for patient in patients:
+        # get subfolder names for image slices
+        slices = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+        for slice in slices:
+            # get all frames for each slice
+            frames = [f.path for f in os.scandir(join(data_path, set, subfolder, patient, slice)) if isfile(join(data_path, set, subfolder, patient, slice, f))]
+            # add all combinations of the frames to a list 
+            image_pairs = image_pairs+list(itertools.permutations(frames, 2))
+    return image_pairs
+
+def load_image_pair_CMR(pathname1, pathname2):
+    """ expects paths for files and loads the corresponding images """
+    # read in images 
+    image1 = imread(pathname1, as_gray=True)
+    image2 = imread(pathname2, as_gray=True)
+    
+    # convert to tensor
+    image1 = torch.from_numpy(image1).unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0)
+    """
+    # crop images
+    image1 = crop_image(image1)
+    image2 = crop_image(image2)
+    # convert to tensor
+    image1 = torch.from_numpy(image1)
+    image2 = torch.from_numpy(image2)
+    # interpolate to size [246, 512]
+    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+    """
+    return image1, image2
+
 class TrainDatasetCMR(Data.Dataset):
   'Training dataset for CMR data'
   def __init__(self, data_path, mode):
@@ -73,14 +110,9 @@ class TrainDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor08' 
         else:
             print('Invalid mode for CMR training dataset!!')
-        # get names and paths of training data
+        # get paths of training data
         self.data_path = data_path
-        self.names = []  
-        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'TrainingSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
-        for folder in self.foldernames:
-            names = [f.path for f in os.scandir(join(data_path, 'TrainingSet', subfolder, folder)) if isfile(join(data_path, 'TrainingSet', subfolder, folder, f))]
-            self.names = self.names+names
-        self.paths = list(itertools.permutations(self.names[0:-20], 2))
+        self.paths = get_image_pairs(set='TrainingSet', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -88,29 +120,8 @@ class TrainDatasetCMR(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
+        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
-
-def load_train_pair_CMR(foldername1, foldername2):
-    # read in images 
-    image1 = imread(foldername1, as_gray=True)
-    image2 = imread(foldername2, as_gray=True)
-    """
-    # convert to tensor
-    image1 = torch.from_numpy(image1).unsqueeze(0)
-    image2 = torch.from_numpy(image2).unsqueeze(0)
-    """
-    # crop images
-    image1 = crop_image(image1)
-    image2 = crop_image(image2)
-    # convert to tensor
-    image1 = torch.from_numpy(image1)
-    image2 = torch.from_numpy(image2)
-    # interpolate to size [246, 512]
-    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-    
-    return image1, image2
 
 class ValidationDatasetCMR(Data.Dataset):
   'Validation dataset for CMR data'
@@ -127,12 +138,7 @@ class ValidationDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.names = []  
-        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'TrainingSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
-        for folder in self.foldernames:
-            names = [f.path for f in os.scandir(join(data_path, 'TrainingSet', subfolder, folder)) if isfile(join(data_path, 'TrainingSet', subfolder, folder, f))]
-            self.names = self.names+names
-        self.paths = list(itertools.permutations(self.names[-20:len(self.names)], 2))
+        self.paths = get_image_pairs(set='ValidationSet', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -140,7 +146,7 @@ class ValidationDatasetCMR(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
+        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
   
 class TestDatasetCMR(Data.Dataset):
@@ -159,6 +165,9 @@ class TestDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
+        self.paths = get_image_pairs(set='TestSet', data_path=data_path, subfolder=subfolder)
+
+        """
         self.names = []  
         self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'ValidationSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
         for folder in self.foldernames:
@@ -167,14 +176,14 @@ class TestDatasetCMR(Data.Dataset):
         self.zip_pathname_1 = list(zip(self.names[:-1], self.names[1:]))
         self.zip_pathname_2 = list(zip(self.names[1:], self.names[:-1]))
         self.paths = self.zip_pathname_1 + self.zip_pathname_2
-            
+        """  
   def __len__(self):
         'Denotes the total number of samples'
         return len(self.paths)
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_train_pair_CMR(self.paths[index][0], self.paths[index][1])
+        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
 
 
