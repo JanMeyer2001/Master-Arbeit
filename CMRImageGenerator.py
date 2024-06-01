@@ -12,7 +12,15 @@ from fastmri.data import transforms as T
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import torch.nn.functional as F
 from torchvision.utils import save_image
+from argparse import ArgumentParser
+import time
 
+parser = ArgumentParser()
+
+parser.add_argument("--mode", type=int, dest="mode", default='0',
+                    help="choose mode: fully sampled (0) or 4x accelerated (1) and 8x accelerated (2)")
+opt = parser.parse_args()
+mode = opt.mode
 
 def readfile2numpy(file_name):
     '''
@@ -46,25 +54,43 @@ def save_slice(fullmulti, frame, slice, savepath):
     save_image(image, savepath + '/Frame' + str(frame) + '_Slice' + str(slice) + '.png')
 
 
-
-# path for fully sampled CMR k-space data
-data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
-#data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
+if mode == 0:
+    # path for fully sampled CMR k-space data
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
+    # target path for reconstructed images
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/'
+elif mode == 1:
+    # path for accelerated CMR k-space data
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
+    # target path for reconstructed images
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor04/'
+elif mode == 2:
+    # path for accelerated CMR k-space data
+    data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor08'
+    # target path for reconstructed images
+    image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor08/'
+else:
+    print('Wrong input for mode!! Choose either fully sampled (0), 4x accelerated (1) or 8x accelerated (2)')    
 
 # get all patient folders
 folderpaths = [f.path for f in os.scandir(data_path) if f.is_dir() and not (f.name.find('P') == -1)]
-
-# target path for reconstructed images
-image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/AccFactor04/'
-#image_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/'
 
 # create dir if not already there 
 if not os.path.isdir(image_path):
     os.mkdir(image_path)
 
+i = 0
+print('Started generating image data on ', time.ctime())
+
 for path in folderpaths:
+    if i == 0:
+        start = time.time()
+    elif i == 1:
+        end = time.time()
+        print('Expected time remaining: ', ((end-start)*(len(folderpaths)-1))/60, ' minutes.') 
+    
     folder = os.path.basename(path)
-    print('working on folder: ', folder)
+    #print('working on folder: ', folder)
     
     # ensure that all target folders exist
     if not os.path.isdir(os.path.join(image_path, folder)):
@@ -75,7 +101,15 @@ for path in folderpaths:
     [nframe, nslice, ncoil, ny, nx] = fullmulti.shape
     
     # get image for every frame/slice and save it to the corresponding folder
-    for frame in range(nframe):
-        for slice in range(nslice):
-            save_slice(fullmulti, frame, slice, os.path.join(image_path, folder))
-            
+    for slice in range(nslice):
+        # ensure that subfolder for each slice exists
+        subfolder = 'Slice' + str(slice)
+        if not os.path.isdir(os.path.join(image_path, folder, subfolder)):
+            os.mkdir(os.path.join(image_path, folder, subfolder)+'/')
+
+        for frame in range(nframe):
+            #save all frames into the subfolder of the slice
+            save_slice(fullmulti, frame, slice, os.path.join(image_path, folder, subfolder))
+    i = i+1
+
+print('Finished generating image data on ', time.ctime())        
