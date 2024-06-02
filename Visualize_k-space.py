@@ -11,6 +11,7 @@ import scipy
 import h5py
 import fastmri
 from fastmri.data import transforms as T
+import torch.nn.functional as F
 
 def readfile2numpy(file_name):
     '''
@@ -50,13 +51,27 @@ fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
 # choose frame and slice
 slice_kspace = fullmulti[0,0] 
 
+slice_kspace = T.to_tensor(slice_kspace) 
+# Apply Inverse Fourier Transform to get the complex image  
+image = fastmri.ifft2c(slice_kspace)
+# Compute absolute value to get a real image      
+image = fastmri.complex_abs(image) 
+# combine the coil images to a coil-combined one
+image = fastmri.rss(image, dim=0)
+# normalize images have data range [0,1]
+image = (image - torch.min(image)) / (torch.max(image) - torch.min(image))
+# interpolate images to be the same size
+image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0).squeeze(0)
+
 # plot the final image
 plt.subplot(1, 1, 1)
-plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray')
+#plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray') # for plotting k-space
+plt.imshow(image, cmap='gray') # for plotting coresponding reconstructed image
 #plt.title('Fully Sampled')
 plt.axis('off')
 plt.tight_layout()
-plt.savefig('./Thesis/Images/k-space_fullysampled.png') 
+#plt.savefig('./Thesis/Images/k-space_fullysampled.png') # for saving the k-space plot
+plt.savefig('./Thesis/Images/image_fullysampled.png') # for saving the image
 plt.close
 
 # Data from CMRxRecon
@@ -71,11 +86,25 @@ fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
 # choose frame and slice
 slice_kspace = fullmulti[0,0] 
 
+slice_kspace = T.to_tensor(slice_kspace) 
+# Apply Inverse Fourier Transform to get the complex image  
+image = fastmri.ifft2c(slice_kspace)
+# Compute absolute value to get a real image      
+image = fastmri.complex_abs(image) 
+# combine the coil images to a coil-combined one
+image = fastmri.rss(image, dim=0)
+# normalize images have data range [0,1]
+image = (image - torch.min(image)) / (torch.max(image) - torch.min(image))
+# interpolate images to be the same size
+image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0).squeeze(0)
+
 # plot the final image
 plt.subplot(1, 1, 1)
-plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray')
+#plt.imshow(np.log(np.abs(slice_kspace) + 1e-9)[0,:,:], cmap='gray') # for plotting k-space
+plt.imshow(image, cmap='gray') # for plotting coresponding reconstructed image
 #plt.title('Subsampled')
 plt.axis('off')
 plt.tight_layout()
-plt.savefig('./Thesis/Images/k-space_subsampled.png') 
+#plt.savefig('./Thesis/Images/k-space_subsampled.png') # for saving the k-space plot
+plt.savefig('./Thesis/Images/image_subsampled.png') # for saving the image
 plt.close
