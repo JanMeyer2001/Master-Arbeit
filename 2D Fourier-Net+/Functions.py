@@ -21,11 +21,6 @@ from fastmri.data import transforms as T
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import torch.nn.functional as F
 from skimage.io import imread
-from torchvision.io import read_image
-
-def crop_image(img,tolerance=0.01):
-    mask = img>tolerance
-    return img[np.ix_(mask.any(1),mask.any(0))]
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -63,7 +58,7 @@ def get_image_pairs(set, data_path, subfolder):
     """ get the corresponding paths of image pairs for the dataset """
     image_pairs = []  
     # get folder names for patients
-    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)][0:2]
+    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
     for patient in patients:
         # get subfolder names for image slices
         slices = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
@@ -71,14 +66,14 @@ def get_image_pairs(set, data_path, subfolder):
             # get all frames for each slice
             frames = [f.path for f in os.scandir(join(data_path, set, subfolder, patient, slice)) if isfile(join(data_path, set, subfolder, patient, slice, f))]
             # add all combinations of the frames to a list 
-            image_pairs = image_pairs+list(itertools.permutations(frames, 2))
+            image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
     return image_pairs
 
 def load_image_pair_CMR(pathname1, pathname2):
     """ expects paths for files and loads the corresponding images """
     # read in images 
-    image1 = imread(pathname1, as_gray=True)
-    image2 = imread(pathname2, as_gray=True)
+    image1 = imread(pathname1, as_gray=True)/255
+    image2 = imread(pathname2, as_gray=True)/255
     
     # convert to tensor
     image1 = torch.from_numpy(image1).unsqueeze(0)
@@ -112,7 +107,7 @@ class TrainDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(set='TrainingSet', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs(set='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -138,7 +133,7 @@ class ValidationDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(set='ValidationSet', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs(set='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
