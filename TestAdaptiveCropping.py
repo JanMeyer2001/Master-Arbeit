@@ -41,7 +41,7 @@ def extract_differences(path):
     return images[-1,:,:], mean_diff
 
 #data_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/ValidationSet/FullySampled/P010' #AccFactor04
-data_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/P120' #AccFactor04
+data_path = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TrainingSet/FullySampled/P111' #AccFactor04
 slices = [f.path for f in os.scandir(data_path) if f.is_dir() and not (f.name.find('Slice') == -1)]
 diffs_frames = torch.zeros([len(slices), 246, 512])
 
@@ -144,6 +144,9 @@ plt.tight_layout()
 plt.savefig('./Thesis/Images/AdaptiveCropping.png') 
 plt.close
 #"""
+
+plt.subplots(figsize=(7, 4))
+plt.axis('off')
 
 plt.subplot(1,1,1) 
 plt.imshow(image, cmap='gray', vmin=0, vmax = 1)
