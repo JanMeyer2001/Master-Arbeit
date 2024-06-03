@@ -22,20 +22,25 @@
 \contentsline {section}{\numberline {2.4}Deep Learning for Image Registration}{5}{section.2.4}%
 \contentsline {subsection}{Supervised Registration}{5}{section*.6}%
 \contentsline {subsection}{Unsupervised Registration}{6}{section*.7}%
-\contentsline {chapter}{\numberline {3}Data}{7}{chapter.3}%
-\contentsline {section}{\numberline {3.1}OASIS}{7}{section.3.1}%
-\contentsline {chapter}{\numberline {4}Network Architectures}{8}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Fourier-Net}{8}{section.4.1}%
-\contentsline {subsection}{Encoder}{8}{section*.10}%
-\contentsline {subsection}{Decoder}{11}{section*.12}%
-\contentsline {subsection}{Diffeomorphism}{11}{section*.13}%
-\contentsline {subsection}{SpatialTransformer}{11}{section*.14}%
-\contentsline {subsection}{Loss Function}{13}{section*.16}%
-\contentsline {subsection}{Training}{13}{section*.17}%
-\contentsline {section}{\numberline {4.2}Fourier Net+}{14}{section.4.2}%
-\contentsline {subsection}{Changes to the Encoder}{15}{section*.20}%
-\contentsline {subsection}{Effects of Cascading}{15}{section*.22}%
-\contentsline {chapter}{\numberline {5}Experiments}{16}{chapter.5}%
-\contentsline {chapter}{\numberline {6}Results and Discussion}{17}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Conclusion}{18}{chapter.7}%
-\contentsline {chapter}{Bibliography}{19}{chapter*.24}%
+\contentsline {section}{\numberline {2.5}MRI Image Reconstruction}{6}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Data}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}OASIS}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}CMRxRecon}{8}{section.3.2}%
+\contentsline {subsection}{Image Reconstruction}{9}{section*.9}%
+\contentsline {subsection}{Pre-Processing}{9}{section*.12}%
+\contentsline {chapter}{\numberline {4}Network Architectures}{13}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Fourier-Net}{13}{section.4.1}%
+\contentsline {subsection}{Encoder}{13}{section*.15}%
+\contentsline {subsection}{Decoder}{16}{section*.17}%
+\contentsline {subsection}{Diffeomorphic Transforms}{17}{section*.19}%
+\contentsline {subsection}{Spatial Transformer}{18}{section*.20}%
+\contentsline {subsection}{Loss Function}{19}{section*.22}%
+\contentsline {subsection}{Training on OASIS}{20}{section*.23}%
+\contentsline {subsection}{Training on CMRxRecon}{21}{section*.25}%
+\contentsline {section}{\numberline {4.2}Fourier Net+}{21}{section.4.2}%
+\contentsline {subsection}{Changes to the Encoder}{22}{section*.27}%
+\contentsline {subsection}{Effects of Cascading}{22}{section*.30}%
+\contentsline {chapter}{\numberline {5}Experiments}{24}{chapter.5}%
+\contentsline {chapter}{\numberline {6}Results and Discussion}{25}{chapter.6}%
+\contentsline {chapter}{\numberline {7}Conclusion}{26}{chapter.7}%
+\contentsline {chapter}{Bibliography}{27}{chapter*.32}%
