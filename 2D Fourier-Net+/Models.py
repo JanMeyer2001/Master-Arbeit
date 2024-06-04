@@ -30,8 +30,8 @@ class Cascade(nn.Module):
         # compressing the images
         centerx = int((M_temp_fourier_all.shape[0])/2)
         centery = int((M_temp_fourier_all.shape[1])/2)
-        offsetx = 80
-        offsety = 96
+        offsetx = 24 #80
+        offsety = 24 #96
         M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
         F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
         
