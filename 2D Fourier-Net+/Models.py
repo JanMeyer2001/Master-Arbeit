@@ -613,7 +613,7 @@ class MSE:
         return torch.mean((y_true - y_pred) ** 2)
 class SAD:
     """
-    Mean squared error loss.
+    Mean absolute error loss.
     """
 
     def loss(self, y_true, y_pred):

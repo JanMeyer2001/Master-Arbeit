@@ -10,7 +10,9 @@ import torch.utils.data as Data
 import matplotlib.pyplot as plt
 import csv
 import time
-
+from skimage.metrics import structural_similarity, mean_squared_error
+import warnings
+warnings.filterwarnings("ignore")
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 parser = ArgumentParser()
@@ -25,7 +27,7 @@ parser.add_argument("--smth_lambda", type=float,
                     dest="smth_lambda", default=0.02,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--checkpoint", type=int,
-                    dest="checkpoint", default=1, #400
+                    dest="checkpoint", default=1, 
                     help="frequency of saving models")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
@@ -42,7 +44,7 @@ parser.add_argument("--choose_loss", type=int,
 parser.add_argument("--mode", type=int,
                     dest="mode",
                     default='0',
-                    help="choose dataset mode: fully sampled (0) or 4x accelerated (1) and 8x accelerated (2)")
+                    help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
 
 lr = opt.lr
@@ -55,173 +57,145 @@ datapath = opt.datapath
 choose_loss = opt.choose_loss
 mode = opt.mode
 
-def train():
-    use_cuda = True
-    device = torch.device("cuda" if use_cuda else "cpu")
-    model = Cascade(2, 2, start_channel).cuda()
-    if choose_loss == 1:
-        loss_similarity = MSE().loss
-    elif choose_loss == 0:
-        loss_similarity = SAD().loss
-    elif choose_loss == 2:
-        loss_similarity = NCC(win=9)
-    elif choose_loss == 3:
-        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
-        loss_similarity = SAD().loss
-    loss_smooth = smoothloss
+use_cuda = True
+device = torch.device("cuda" if use_cuda else "cpu")
+model = Cascade(2, 2, start_channel).cuda()
+if choose_loss == 1:
+    loss_similarity = MSE().loss
+elif choose_loss == 0:
+    loss_similarity = SAD().loss
+elif choose_loss == 2:
+    loss_similarity = NCC(win=9)
+elif choose_loss == 3:
+    ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
+    loss_similarity = SAD().loss
+loss_smooth = smoothloss
 
-    transform = SpatialTransform().cuda()
+transform = SpatialTransform().cuda()
 
-    for param in transform.parameters():
-        param.requires_grad = False
-        param.volatile = True
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+for param in transform.parameters():
+    param.requires_grad = False
+    param.volatile = True
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    lossall = np.zeros((3, iteration))
+lossall = np.zeros((3, iteration))
+
+# load CMR data
+train_set = TrainDatasetCMR(datapath, mode) 
+training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
+validation_set = ValidationDatasetCMR(datapath, mode) 
+validation_generator = Data.DataLoader(dataset=validation_set, batch_size=bs, shuffle=True, num_workers=4)
+
+"""
+# path for OASIS dataset
+datapath = '/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS'
+train_set = TrainDataset(datapath,trainingset = 4) 
+training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
+#valid_set = ValidationDataset(datapath)
+#valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
+"""
+model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(choose_loss,start_channel,smooth, lr, mode)
+model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(choose_loss,start_channel,smooth, lr, mode)
+
+if not os.path.isdir(model_dir_png):
+    os.mkdir(model_dir_png)
+
+if not os.path.isdir(model_dir):
+    os.mkdir(model_dir)
+
+csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode{}.csv'.format(choose_loss,start_channel,smooth, lr, mode)
+f = open(csv_name, 'w')
+with f:
+    fnames = ['Index','MSE','SSIM']
+    writer = csv.DictWriter(f, fieldnames=fnames)
+    writer.writeheader()
+
+"""
+csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, lr)
+f = open(csv_name, 'w')
+with f:
+    fnames = ['Index','Dice']
+    writer = csv.DictWriter(f, fieldnames=fnames)
+    writer.writeheader()
+"""
+step = 1
+print('\nStarted training on ', time.ctime())
+while step <= iteration:
+    if step == 1:
+        start = time.time()
+    elif step == 2:
+        end = time.time()
+        print('Expected time for training: ', ((end-start)*(iteration-1))/60, ' minutes.')    
     
-    # load CMR data
-    train_set = TrainDatasetCMR(datapath, mode) 
-    training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    validation_set = ValidationDatasetCMR(datapath, mode) 
-    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=bs, shuffle=True, num_workers=4)
+    for mov_img, fix_img in training_generator:
 
-    """
-    # path for OASIS dataset
-    datapath = '/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS'
-    train_set = TrainDataset(datapath,trainingset = 4) 
-    training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=True, num_workers=4)
-    #valid_set = ValidationDataset(datapath)
-    #valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
-    """
-    model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(choose_loss,start_channel,smooth, lr, mode)
-    model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(choose_loss,start_channel,smooth, lr, mode)
-    
-    if not os.path.isdir(model_dir_png):
-        os.mkdir(model_dir_png)
-    
-    if not os.path.isdir(model_dir):
-        os.mkdir(model_dir)
-    """
-    csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, lr)
-    f = open(csv_name, 'w')
-    with f:
-        fnames = ['Index','Dice']
-        writer = csv.DictWriter(f, fieldnames=fnames)
-        writer.writeheader()
-    """
-    step = 1
-    print('Started training on ', time.ctime())
-    while step <= iteration:
-        if step == 1:
-            start = time.time()
-        elif step == 2:
-            end = time.time()
-            print('Expected time for training: ', ((end-start)*(iteration-1))/60, ' minutes.')    
+        fix_img = fix_img.cuda().float()
+        mov_img = mov_img.cuda().float()
         
-        for mov_img, fix_img in training_generator:
+        Df_xy = model(mov_img, fix_img)
+        grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+        
+        loss1 = loss_similarity(fix_img, warped_mov) 
+        loss5 = loss_smooth(Df_xy)
+        
+        loss = loss1 + smooth * loss5
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-            fix_img = fix_img.cuda().float()
-            mov_img = mov_img.cuda().float()
-            
-            Df_xy = model(mov_img, fix_img)
-            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-           
-            loss1 = loss_similarity(fix_img, warped_mov) 
-            loss5 = loss_smooth(Df_xy)
-            
-            loss = loss1 + smooth * loss5
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
-            sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
-            sys.stdout.flush()
-            
-            #"""
-            if (step % n_checkpoint == 0) or (step==1):
-                with torch.no_grad():
-                    #Dices_Validation = []
-                    for mov_img, fix_img in validation_generator: #vmov_lab, vfix_lab
-                        model.eval()
-                        V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
-                        DV_xy = V_xy
-                        grid, warped_mov = transform(mov_img.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
-                        """
-                        grid, warped_vmov_lab = transform(vmov_lab.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
-                        dice_bs = dice(warped_vmov_lab[0,...].data.cpu().numpy().copy(),vfix_lab[0,...].data.cpu().numpy().copy())
-                        Dices_Validation.append(dice_bs)
-                        """
+        lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
+        sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
+        sys.stdout.flush()
+        
+        #"""
+        if (step % n_checkpoint == 0) or (step==1):
+            with torch.no_grad():
+                model.eval()
+                #Dices_Validation = []
+                MSE_Validation = []
+                SSIM_Validation = []
+                for mov_img, fix_img in validation_generator: #vmov_lab, vfix_lab
+                    V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
+                    grid, warped_mov = transform(mov_img.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+                    # convert to numpy
+                    warped_mov = warped_mov[0,0,:,:].cpu().numpy()
+                    fix_img = fix_img[0,0,:,:].cpu().numpy()
+                    # calculate MSE and SSIM
+                    MSE_Validation.append(mean_squared_error(warped_mov, fix_img))
+                    SSIM_Validation.append(structural_similarity(warped_mov, fix_img, data_range=1))
+                    # change later when Dice-Score is available
                     """
-                    modelname = 'DiceVal_{:.4f}_Step_{:06d}.pth'.format(np.mean(Dices_Validation), step)
-                    csv_dice = np.mean(Dices_Validation)
-                    f = open(csv_name, 'a')
-                    with f:
-                        writer = csv.writer(f)
-                        writer.writerow([step, csv_dice])
+                    grid, warped_vmov_lab = transform(vmov_lab.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
+                    dice_bs = dice(warped_vmov_lab[0,...].data.cpu().numpy().copy(),vfix_lab[0,...].data.cpu().numpy().copy())
+                    Dices_Validation.append(dice_bs)
                     """
-                    modelname = 'Step_{:06d}.pth'.format(step)      # change later when Dice-Score is available
-                    save_checkpoint(model.state_dict(), model_dir, modelname)
-                    np.save(model_dir + 'Loss.npy', lossall)
-            #"""
-            if (step % n_checkpoint == 0):
-                sample_path = os.path.join(model_dir_png, '{:06d}-images.jpg'.format(step))
-                save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
-                print("one epoch pass")
-            step += 1
+                """
+                modelname = 'DiceVal_{:.4f}_Step_{:06d}.pth'.format(np.mean(Dices_Validation), step)
+                csv_dice = np.mean(Dices_Validation)
+                f = open(csv_name, 'a')
+                with f:
+                    writer = csv.writer(f)
+                    writer.writerow([step, csv_dice])
+                """
+                csv_MSE = np.mean(MSE_Validation)
+                csv_SSIM = np.mean(SSIM_Validation)
+                print('mean MSE: ', csv_MSE)
+                print('mean SSIM: ', csv_SSIM)
+                modelname = 'Step_{:06d}_MSE_{:.6f}_SSIM_{:.6f}.pth'.format(step, csv_MSE, csv_SSIM)
+                f = open(csv_name, 'a')
+                with f:
+                    writer = csv.writer(f)
+                    writer.writerow([step, csv_MSE, csv_SSIM])     
+                save_checkpoint(model.state_dict(), model_dir, modelname)
+                np.save(model_dir_png + 'Loss.npy', lossall)
+        #"""
+        if (step % n_checkpoint == 0):
+            sample_path = os.path.join(model_dir_png, 'Step_{:06d}-images.jpg'.format(step))
+            save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+            print("one epoch pass")
+        step += 1
 
-            if step > iteration:
-                break
-    np.save(model_dir + '/Loss.npy', lossall)
-    print('Training ended on ', time.ctime())
-
-def save_flow(X, Y, X_Y, f_xy, sample_path):
-    x = X.data.cpu().numpy()[0, 0, ...]
-    y = Y.data.cpu().numpy()[0, 0, ...]
-    x_pred = X_Y.data.cpu().numpy()[0, 0, ...] #normalize()
-    op_flow = f_xy.data.cpu().numpy()[0,:,:,:]
-    
-    plt.subplots(figsize=(7, 4))
-    plt.axis('off')
-
-    plt.subplot(2,3,1)
-    plt.imshow(x, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Moving Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,2)
-    plt.imshow(y, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Fixed Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,3)
-    plt.imshow(x_pred, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Warped Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,4)
-    interval = 5
-    for i in range(0,op_flow.shape[1]-1,interval):
-        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
-    #plot the vertical lines
-    for i in range(0,op_flow.shape[2]-1,interval):
-        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
-
-    plt.xlim(-1, 1)
-    plt.ylim(-1, 1)
-    plt.title('Displacement Field')
-    plt.axis('off')
-
-    plt.subplot(2,3,5)
-    plt.imshow(abs(x-y), cmap='gray', vmin=0, vmax = 1)
-    plt.title('Difference before')
-    plt.axis('off')
-    
-    plt.subplot(2,3,6)
-    plt.imshow(abs(x_pred-y), cmap='gray', vmin=0, vmax = 1)
-    plt.title('Difference after')
-    plt.axis('off')
-    plt.savefig(sample_path,bbox_inches='tight')
-    plt.close()
-
-train()
+        if step > iteration:
+            break
+np.save(model_dir + '/Loss.npy', lossall)
+print('\nTraining ended on ', time.ctime())
