@@ -66,7 +66,7 @@ def get_image_pairs(set, data_path, subfolder):
             # get all frames for each slice
             frames = [f.path for f in os.scandir(join(data_path, set, subfolder, patient, slice)) if isfile(join(data_path, set, subfolder, patient, slice, f))]
             # add all combinations of the frames to a list 
-            image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
+            image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
     return image_pairs
 
 def load_image_pair_CMR(pathname1, pathname2):
@@ -102,7 +102,9 @@ class TrainDatasetCMR(Data.Dataset):
         elif mode == 1:
             subfolder = 'AccFactor04'
         elif mode == 2:
-            subfolder = 'AccFactor08' 
+            subfolder = 'AccFactor08'
+        elif mode == 3:
+            subfolder = 'AccFactor10'  
         else:
             print('Invalid mode for CMR training dataset!!')
         # get paths of training data
@@ -129,6 +131,8 @@ class ValidationDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor04'
         elif mode == 2:
             subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
         else:
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
@@ -156,6 +160,8 @@ class TestDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor04'
         elif mode == 2:
             subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
         else:
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
@@ -213,6 +219,55 @@ class TrainDataset(Data.Dataset):
         'Generates one sample of data'
         mov_img, fix_img = load_train_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         return  mov_img, fix_img
+
+def save_flow(X, Y, X_Y, f_xy, sample_path):
+    x = X.data.cpu().numpy()[0, 0, ...]
+    y = Y.data.cpu().numpy()[0, 0, ...]
+    x_pred = X_Y.data.cpu().numpy()[0, 0, ...] #normalize()
+    op_flow = f_xy.data.cpu().numpy()[0,:,:,:]
+    
+    plt.subplots(figsize=(7, 4))
+    plt.axis('off')
+
+    plt.subplot(2,3,1)
+    plt.imshow(x, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Moving Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,2)
+    plt.imshow(y, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Fixed Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,3)
+    plt.imshow(x_pred, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Warped Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,4)
+    interval = 5
+    for i in range(0,op_flow.shape[1]-1,interval):
+        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
+    #plot the vertical lines
+    for i in range(0,op_flow.shape[2]-1,interval):
+        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
+
+    plt.xlim(-1, 1)
+    plt.ylim(-1, 1)
+    plt.title('Displacement Field')
+    plt.axis('off')
+
+    plt.subplot(2,3,5)
+    plt.imshow(abs(x-y), cmap='gray', vmin=0, vmax = 1)
+    plt.title('Difference before')
+    plt.axis('off')
+    
+    plt.subplot(2,3,6)
+    plt.imshow(abs(x_pred-y), cmap='gray', vmin=0, vmax = 1)
+    plt.title('Difference after')
+    plt.axis('off')
+    plt.savefig(sample_path,bbox_inches='tight')
+    plt.close()
 
 def load_train_pair_OASIS(data_path, filename1, filename2):
     # Load images and labels
@@ -390,3 +445,52 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     while len(model_lists) > max_model_num:
         os.remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
+
+##############################################
+### Helper Functions for CMRImageGenerator ###
+##############################################
+
+def readfile2numpy(file_name):
+    '''
+    read the data from mat and convert to numpy array
+    '''
+    hf = h5py.File(file_name)
+    keys = list(hf.keys())
+    assert len(keys) == 1, f"Expected only one key in file, got {len(keys)} instead"
+    new_value = hf[keys[0]][()]
+    data = new_value["real"] + 1j*new_value["imag"]
+
+    return data  
+
+def extract_slice(fullmulti, slice, frame, H, W):
+    '''
+    generate slice, reconstruct image from k-space, normalize to [0,1], interpolate to [246,512] and save image
+    '''
+    slice_kspace = fullmulti[frame, slice] 
+    # convert to tensor
+    slice_kspace = T.to_tensor(slice_kspace) 
+    # Apply Inverse Fourier Transform to get the complex image  
+    image = fastmri.ifft2c(slice_kspace)
+    # Compute absolute value to get a real image      
+    image = fastmri.complex_abs(image) 
+    # combine the coil images to a coil-combined one
+    image = fastmri.rss(image, dim=0)
+    # normalize images have data range [0,1]
+    image = normalize(image)
+    # interpolate images to be the same size
+    image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (H, W), mode='bilinear').squeeze(0).squeeze(0)
+
+    return image
+
+def extract_differences(images, frames, slices, H, W):
+    ''' take mean of frames and sum them over all slices of a patient  '''
+    differences = torch.zeros([slices,frames-1, H, W]) 
+    for slice in range(slices):
+        for i in range(frames):
+            if i>1:
+                differences[slice,i-2,:,:] = abs(images[slice,i-1,:,:]-images[slice,i-2,:,:])
+
+    mean_diff_frames = torch.sum(differences, dim=1)/differences.shape[1] # mean over all differences
+    diffs_slices = torch.sum(mean_diff_frames, dim=0) # sum over all differences between slices
+
+    return diffs_slices
