@@ -157,12 +157,9 @@ while step <= iteration:
                 for mov_img, fix_img in validation_generator: #vmov_lab, vfix_lab
                     V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
                     grid, warped_mov = transform(mov_img.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
-                    # convert to numpy
-                    warped_mov = warped_mov[0,0,:,:].cpu().numpy()
-                    fix_img = fix_img[0,0,:,:].cpu().numpy()
                     # calculate MSE and SSIM
-                    MSE_Validation.append(mean_squared_error(warped_mov, fix_img))
-                    SSIM_Validation.append(structural_similarity(warped_mov, fix_img, data_range=1))
+                    MSE_Validation.append(mean_squared_error(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
+                    SSIM_Validation.append(structural_similarity(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
                     # change later when Dice-Score is available
                     """
                     grid, warped_vmov_lab = transform(vmov_lab.float().to(device), DV_xy.permute(0, 2, 3, 1), mod = 'nearest')
@@ -179,7 +176,7 @@ while step <= iteration:
                 """
                 csv_MSE = np.mean(MSE_Validation)
                 csv_SSIM = np.mean(SSIM_Validation)
-                print('mean MSE: ', csv_MSE)
+                print('\nmean MSE: ', csv_MSE)
                 print('mean SSIM: ', csv_SSIM)
                 modelname = 'Step_{:06d}_MSE_{:.6f}_SSIM_{:.6f}.pth'.format(step, csv_MSE, csv_SSIM)
                 f = open(csv_name, 'a')
