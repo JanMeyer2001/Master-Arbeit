@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt 
 import csv 
 from argparse import ArgumentParser
