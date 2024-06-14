@@ -103,7 +103,7 @@ if not os.path.isdir(model_dir_png):
 if not os.path.isdir(model_dir):
     os.mkdir(model_dir)
 
-csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode{}.csv'.format(choose_loss,start_channel,smooth, lr, mode)
+csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(choose_loss,start_channel,smooth, lr, mode)
 f = open(csv_name, 'w')
 with f:
     fnames = ['Index','MSE','SSIM']
