@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import csv
 import time
 from skimage.metrics import structural_similarity, mean_squared_error
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 parser = ArgumentParser()
 parser.add_argument("--bs", type=int,

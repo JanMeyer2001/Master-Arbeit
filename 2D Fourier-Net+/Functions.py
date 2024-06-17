@@ -54,19 +54,23 @@ def normalize(image):
     """ expects an image as tensor and normalizes the values between [0,1] """
     return (image - torch.min(image)) / (torch.max(image) - torch.min(image))
 
-def get_image_pairs(set, data_path, subfolder):
+def get_image_pairs(subset, data_path, subfolder):
     """ get the corresponding paths of image pairs for the dataset """
     image_pairs = []  
     # get folder names for patients
-    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
     for patient in patients:
         # get subfolder names for image slices
-        slices = [os.path.basename(f.path) for f in os.scandir(join(data_path, set, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+        slices = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
         for slice in slices:
             # get all frames for each slice
-            frames = [f.path for f in os.scandir(join(data_path, set, subfolder, patient, slice)) if isfile(join(data_path, set, subfolder, patient, slice, f))]
-            # add all combinations of the frames to a list 
-            image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
+            frames = [f.path for f in os.scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+            if subset == 'TestSet':
+                # add pairs of the frames to a list 
+                image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
+            else:    
+                # add all combinations of the frames to a list 
+                image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
     return image_pairs
 
 def load_image_pair_CMR(pathname1, pathname2):
@@ -109,7 +113,7 @@ class TrainDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(set='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs(subset='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -137,7 +141,7 @@ class ValidationDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(set='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs(subset='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -166,7 +170,7 @@ class TestDatasetCMR(Data.Dataset):
             print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(set='TestSet', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs(subset='TestSet/Croped', data_path=data_path, subfolder=subfolder)
 
         """
         self.names = []  
@@ -186,6 +190,63 @@ class TestDatasetCMR(Data.Dataset):
         'Generates one sample of data'
         mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
+
+class TestDatasetCMRBenchmark(Data.Dataset):
+  'Test dataset for benchmark of subsampled CMR data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        else:
+            print('Invalid mode for CMR training dataset!!')
+        # get names and paths of training data
+        subset = 'TestSet/Croped'
+        self.image_pairs_fullySampled = []  
+        self.image_pairs_subSampled = []  
+        # get folder names for patients
+        patients_fullySampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_subSampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        
+        for patient in patients_fullySampled:
+            if patient in patients_subSampled:
+                # get subfolder names for image slices
+                slices_fullySampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_subSampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                for slice in slices_fullySampled:
+                    if slice in slices_subSampled:
+                        # get all frames for each slice
+                        frames_fullySampled = [f.path for f in os.scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))]
+                        frames_subSampled = [f.path for f in os.scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+                        # add pairs of the frames to a list 
+                        self.image_pairs_fullySampled = self.image_pairs_fullySampled + list(zip(frames_fullySampled[:-1], frames_fullySampled[1:]))
+                        self.image_pairs_subSampled = self.image_pairs_subSampled + list(zip(frames_subSampled[:-1], frames_subSampled[1:]))
+        
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.image_pairs_fullySampled)
+
+  def __getitem__(self, index):
+        'Generates two image pairs (1x fully sampled, 1x subsampled)'
+        # read in image data
+        mov_img_fullySampled = imread(self.image_pairs_fullySampled[index][0], as_gray=True)/255
+        fix_img_fullySampled = imread(self.image_pairs_fullySampled[index][1], as_gray=True)/255
+        mov_img_subSampled = imread(self.image_pairs_subSampled[index][0], as_gray=True)/255
+        fix_img_subSampled = imread(self.image_pairs_subSampled[index][1], as_gray=True)/255
+        
+        # convert to tensor
+        mov_img_fullySampled = torch.from_numpy(mov_img_fullySampled).unsqueeze(0)
+        fix_img_fullySampled = torch.from_numpy(fix_img_fullySampled).unsqueeze(0)
+        mov_img_subSampled = torch.from_numpy(mov_img_subSampled).unsqueeze(0)
+        fix_img_subSampled = torch.from_numpy(fix_img_subSampled).unsqueeze(0)
+
+        return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
 
 
 class TrainDataset(Data.Dataset):

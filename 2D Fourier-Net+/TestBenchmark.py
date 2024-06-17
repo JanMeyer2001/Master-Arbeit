@@ -15,7 +15,7 @@ parser = ArgumentParser()
 parser.add_argument("--lr", type=float,
                     dest="lr", default=1e-4, help="learning rate")
 parser.add_argument("--smth_lambda", type=float,
-                    dest="smth_lambda", default=0.02,
+                    dest="smth_lambda", default=0.01,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
@@ -25,9 +25,11 @@ parser.add_argument("--datapath", type=str,
                     default='/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
                     help="data path for training images")
 parser.add_argument("--choose_loss", type=int,
-                    dest="choose_loss",
-                    default=1,
+                    dest="choose_loss", default=1,
                     help="choose similarity loss: SAD (0), MSE (1), NCC (2), SSIM (3)")
+parser.add_argument("--mode", type=int,
+                    dest="mode", default='0',
+                    help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
 
 lr = opt.lr
@@ -35,6 +37,7 @@ start_channel = opt.start_channel
 smooth = opt.smth_lambda
 datapath = opt.datapath
 choose_loss = opt.choose_loss
+mode = opt.mode
 
 def test(modelpath):
     bs = 1
@@ -50,36 +53,39 @@ def test(modelpath):
     NegJ=[]
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
-    test_set = TestDatasetCMR(data_path=datapath, mode=0)
+    test_set = TestDatasetCMRBenchmark(data_path=datapath, mode=0)
     test_generator = Data.DataLoader(dataset=test_set, batch_size=bs, shuffle=False, num_workers=2)
     times = []
     
-    csv_name = './TestMetrics-Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_0.csv'.format(choose_loss,start_channel,smooth, lr)
+    csv_name = './TestMetrics-Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(choose_loss,start_channel,smooth, lr, mode)
     f = open(csv_name, 'w')
     with f:
-        fnames = ['Index','MSE','SSIM','Time','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
+        fnames = ['Image Pair','MSE','SSIM','Time','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
     
     image_num = 1 
-    for mov_img, fix_img in test_generator: #, mov_lab, fix_lab
+    for mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled in test_generator: #, mov_lab, fix_lab
         with torch.no_grad():
             start = time.time()
-            V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
-            __, warped_mov_img = transform(mov_img.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
-            #__, warped_mov_lab = transform(mov_lab.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+            # calculate displacement on subsampled data
+            V_xy = model(mov_img_subSampled.float().to(device), fix_img_subSampled.float().to(device))
+            # but warp fully sampled data
+            __, warped_mov_img_fullySampled = transform(mov_img_fullySampled.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+            
+            #__, warped_mov_lab = transform(mov_lab.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest') # old code for dice score
         
             # get inference time
             inference_time = time.time()-start
             times.append(inference_time)
 
             # convert to numpy
-            warped_mov_img = warped_mov_img[0,0,:,:].cpu().numpy()
-            fix_img = fix_img[0,0,:,:].cpu().numpy()
+            warped_mov_img_fullySampled = warped_mov_img_fullySampled[0,0,:,:].cpu().numpy()
+            fix_img_fullySampled = fix_img_fullySampled[0,0,:,:].cpu().numpy()
             
-            # calculate metrics
-            MSE = mean_squared_error(warped_mov_img, fix_img)
-            SSIM = structural_similarity(warped_mov_img, fix_img, data_range=1)
+            # calculate metrics on fully sampled images
+            MSE = mean_squared_error(warped_mov_img_fullySampled, fix_img_fullySampled)
+            SSIM = structural_similarity(warped_mov_img_fullySampled, fix_img_fullySampled, data_range=1)
 
             MSE_test.append(MSE)
             SSIM_test.append(SSIM)
@@ -129,7 +135,7 @@ def test(modelpath):
     #print('Mean Dice Score: ', np.mean(Dices), 'Std Dice Score: ', np.std(Dices))
 
 if __name__ == '__main__':
-    model_path='./Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_0_Pth/'.format(choose_loss,start_channel,smooth, lr)
+    model_path='./Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(choose_loss,start_channel,smooth, lr, mode)
     model_idx = -1
     from natsort import natsorted
     print('Best model: {}'.format(natsorted(os.listdir(model_path))[model_idx]))
