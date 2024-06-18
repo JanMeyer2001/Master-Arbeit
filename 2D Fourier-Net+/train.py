@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 from argparse import ArgumentParser
 import numpy as np
 import torch
@@ -45,6 +46,12 @@ parser.add_argument("--mode", type=int,
                     dest="mode",
                     default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
+parser.add_argument("--F_Net_plus", type=bool,
+                    dest="F_Net_plus", default=True, action=argparse.BooleanOptionalAction, 
+                    help="choose whether to use Fourier-Net (False) or Fourier-Net+ (True) as the model")
+parser.add_argument("--diffeo", type=bool,
+                    dest="diffeo", default=True, action=argparse.BooleanOptionalAction, 
+                    help="choose whether to use a diffeomorphic transform (True) or not (False)")
 opt = parser.parse_args()
 
 lr = opt.lr
@@ -56,10 +63,21 @@ smooth = opt.smth_lambda
 datapath = opt.datapath
 choose_loss = opt.choose_loss
 mode = opt.mode
+F_Net_plus = opt.F_Net_plus
+diffeo = opt.diffeo
 
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
-model = Cascade(2, 2, start_channel).cuda()
+
+# choose the model
+model_name = 0
+if F_Net_plus:
+    model = Cascade(2, 2, start_channel).cuda()
+    model_name = 1
+else:
+    model = Fourier_Net(2, 2, start_channel).cuda()  
+
+# choose the loss function for similarity
 if choose_loss == 1:
     loss_similarity = MSE().loss
 elif choose_loss == 0:
@@ -71,11 +89,18 @@ elif choose_loss == 3:
     loss_similarity = SAD().loss
 loss_smooth = smoothloss
 
+# choose whether to use a diffeomorphic transform or not
+diffeo_name = 0
+if diffeo:
+    diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+    diffeo_name = 1
+
 transform = SpatialTransform().cuda()
 
 for param in transform.parameters():
     param.requires_grad = False
     param.volatile = True
+
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 lossall = np.zeros((3, iteration))
@@ -94,8 +119,9 @@ training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=T
 #valid_set = ValidationDataset(datapath)
 #valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
 """
-model_dir = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(choose_loss,start_channel,smooth, lr, mode)
-model_dir_png = './Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(choose_loss,start_channel,smooth, lr, mode)
+
+model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
+model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
 
 if not os.path.isdir(model_dir_png):
     os.mkdir(model_dir_png)
@@ -103,23 +129,17 @@ if not os.path.isdir(model_dir_png):
 if not os.path.isdir(model_dir):
     os.mkdir(model_dir)
 
-csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(choose_loss,start_channel,smooth, lr, mode)
+csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
 f = open(csv_name, 'w')
 with f:
     fnames = ['Index','MSE','SSIM']
+    #fnames = ['Index','Dice']
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
-"""
-csv_name = model_dir_png + 'Loss_{}_Chan_{}_Smth_{}_LR_{}.csv'.format(choose_loss,start_channel,smooth, lr)
-f = open(csv_name, 'w')
-with f:
-    fnames = ['Index','Dice']
-    writer = csv.DictWriter(f, fieldnames=fnames)
-    writer.writeheader()
-"""
 step = 1
 print('\nStarted training on ', time.ctime())
+
 while step <= iteration:
     if step == 1:
         start = time.time()
@@ -132,7 +152,11 @@ while step <= iteration:
         fix_img = fix_img.cuda().float()
         mov_img = mov_img.cuda().float()
         
-        Df_xy = model(mov_img, fix_img)
+        f_xy = model(mov_img, fix_img)
+        if diffeo:
+            Df_xy = diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
         grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
         
         loss1 = loss_similarity(fix_img, warped_mov) 
@@ -155,8 +179,14 @@ while step <= iteration:
                 MSE_Validation = []
                 SSIM_Validation = []
                 for mov_img, fix_img in validation_generator: #vmov_lab, vfix_lab
-                    V_xy = model(mov_img.float().to(device), fix_img.float().to(device))
-                    grid, warped_mov = transform(mov_img.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+                    fix_img = fix_img.cuda().float()
+                    mov_img = mov_img.cuda().float()
+                    f_xy = model(mov_img, fix_img)
+                    if diffeo:
+                        Df_xy = diff_transform(f_xy)
+                    else:
+                        Df_xy = f_xy
+                    grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
                     # calculate MSE and SSIM
                     MSE_Validation.append(mean_squared_error(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
                     SSIM_Validation.append(structural_similarity(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
