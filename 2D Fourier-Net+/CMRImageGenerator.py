@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 import os
-from os import listdir
-from os.path import join, isfile, isdir
+from os import scandir, mkdir
+from os.path import join, basename, isdir
 import matplotlib.pyplot as plt
 import h5py
 import fastmri
@@ -67,12 +67,12 @@ else:
     print('Wrong input for mode!! Choose either fully sampled (0), 4x accelerated (1) or 8x accelerated (2)')    
 
 # get all patient folders
-patients_folders = [f.path for f in os.scandir(data_path) if f.is_dir() and not (f.name.find('P') == -1)]
+patients_folders = [f.path for f in scandir(data_path) if f.is_dir() and not (f.name.find('P') == -1)]
 #patients_folders = [join(data_path,'P116')]
 
 # create dir if not already there 
 if not isdir(image_path):
-    os.mkdir(image_path)
+    mkdir(image_path)
 
 print('Started generating image data on ', time.ctime())
 print('  working on folder: ')
@@ -86,7 +86,7 @@ for i, patient_path in enumerate(patients_folders):
         print('Expected time remaining: ', ((end-start)*(len(patients_folders)-1))/60, ' minutes.') 
     """
     # get the name of the patient folder with the full path
-    folder = os.path.basename(patient_path)
+    folder = basename(patient_path)
     # create list for already processed patients
     if subset == 'TrainingSet':
         already_processed = ['P080'] # no .sax data for this folder in the training set
@@ -102,7 +102,7 @@ for i, patient_path in enumerate(patients_folders):
         
         # ensure that all target folders exist
         if not isdir(join(image_path, folder)):
-            os.mkdir(join(image_path, folder)+'/')
+            mkdir(join(image_path, folder)+'/')
         
         # Load k-space
         fullmulti = readfile2numpy(join(patient_path, 'cine_sax.mat'))  
@@ -137,8 +137,8 @@ for i, patient_path in enumerate(patients_folders):
         for slice in range(slices):
             # ensure that subfolder for each slice exists
             subfolder = 'Slice' + str(slice)
-            if not os.path.isdir(os.path.join(image_path, folder, subfolder)):
-                os.mkdir(os.path.join(image_path, folder, subfolder)+'/')
+            if not isdir(join(image_path, folder, subfolder)):
+                mkdir(join(image_path, folder, subfolder)+'/')
             for frame in range(frames):
                 # convert image to uint8
                 image = img_as_ubyte(images[slice,frame,:,:].numpy())
