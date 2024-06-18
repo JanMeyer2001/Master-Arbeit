@@ -178,7 +178,7 @@ while step <= iteration:
                 csv_SSIM = np.mean(SSIM_Validation)
                 print('\nmean MSE: ', csv_MSE)
                 print('mean SSIM: ', csv_SSIM)
-                modelname = 'Step_{:06d}_MSE_{:.6f}_SSIM_{:.6f}.pth'.format(step, csv_MSE, csv_SSIM)
+                modelname = 'SSIM_{:.6f}_MSE_{:.6f}_Step_{:06d}.pth'.format(csv_SSIM, csv_MSE, step)
                 f = open(csv_name, 'a')
                 with f:
                     writer = csv.writer(f)
