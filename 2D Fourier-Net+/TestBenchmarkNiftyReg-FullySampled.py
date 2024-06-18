@@ -19,7 +19,7 @@ SSIM_test = []
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 
-csv_name = './TestMetrics-NiftyReg-FullySampled.csv'
+csv_name = './TestResults-Metrics/TestMetrics-NiftyReg-FullySampled.csv'
 f = open(csv_name, 'w')
 with f:
     fnames = ['Image Pair','MSE','SSIM','Mean MSE','Mean SSIM'] #,'Mean NegJ'
