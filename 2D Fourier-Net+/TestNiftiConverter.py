@@ -35,12 +35,17 @@ for mov_img, fix_img, _, _ in test_generator:
             mov_img = mov_img[0,0,:,:].cpu().numpy()
             fix_img = fix_img[0,0,:,:].cpu().numpy()
             
+            print('MSE original images: ', mean_squared_error(mov_img,fix_img),', SSIM original images: ', structural_similarity(mov_img,fix_img, data_range=1))
+
             # load Nifti files
             mov_img_nifti = nibabel.load(join(path,'MovingImage.nii'))
             fix_img_nifti = nibabel.load(join(path,'FixedImage.nii'))
 
             mov_img_nifti_array = np.array(mov_img_nifti.get_fdata(), dtype='float32')
             fix_img_nifti_array = np.array(fix_img_nifti.get_fdata(), dtype='float32')
+            
+            print('MSE nifti images: ', mean_squared_error(mov_img_nifti_array,fix_img_nifti_array),', SSIM original images: ', structural_similarity(mov_img_nifti_array,fix_img_nifti_array, data_range=1))
+            print('MSE between both: ', mean_squared_error(mov_img_nifti_array,fix_img),', SSIM original images: ', structural_similarity(mov_img_nifti_array,fix_img, data_range=1))
 
             # plot all image to look for differences
             plt.subplots(figsize=(7, 4))
