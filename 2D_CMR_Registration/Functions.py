@@ -222,8 +222,8 @@ class TestDatasetCMRBenchmark(Data.Dataset):
                 for slice in slices_fullySampled:
                     if slice in slices_subSampled:
                         # get all frames for each slice
-                        frames_fullySampled = [f.path for f in os.scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))]
                         frames_subSampled = [f.path for f in os.scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+                        frames_fullySampled = [f.path for f in os.scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
                         # add pairs of the frames to a list 
                         self.image_pairs_fullySampled = self.image_pairs_fullySampled + list(zip(frames_fullySampled[:-1], frames_fullySampled[1:]))
                         self.image_pairs_subSampled = self.image_pairs_subSampled + list(zip(frames_subSampled[:-1], frames_subSampled[1:]))
