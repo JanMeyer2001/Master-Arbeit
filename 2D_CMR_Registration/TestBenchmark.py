@@ -81,7 +81,7 @@ SSIM_test = []
 NegJ=[]
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
-test_set = TestDatasetCMRBenchmark(data_path=datapath, mode=0)
+test_set = TestDatasetCMRBenchmark(data_path=datapath, mode=mode)
 test_generator = Data.DataLoader(dataset=test_set, batch_size=bs, shuffle=False, num_workers=2)
 times = []
 
