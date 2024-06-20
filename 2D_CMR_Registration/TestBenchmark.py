@@ -64,7 +64,7 @@ if diffeo:
 
 transform = SpatialTransform().cuda()
 
-path ='./ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
+path = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
 model_idx = -1
 from natsort import natsorted
 print('Best model: {}'.format(natsorted(os.listdir(path))[model_idx]))

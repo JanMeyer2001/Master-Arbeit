@@ -53,12 +53,16 @@ base_path = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti'
 
 if mode == 0:
     path = join(base_path, 'Nifti_FullySampled')
+    print('Start TestBenchmark for fully sampled data')
 elif mode == 1:
     path = join(base_path, 'Nifti_Acc4') 
+    print('Start TestBenchmark for Acc4 data')
 elif mode == 2:
     path = join(base_path, 'Nifti_Acc8') 
+    print('Start TestBenchmark for Acc8 data')
 elif mode == 3:
     path = join(base_path, 'Nifti_Acc10')   
+    print('Start TestBenchmark for Acc10 data')
 else:
     path = None
     print('Wrong mode argument!! Must choose from either fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3).')     
@@ -102,14 +106,15 @@ for image_pair in image_pairs:
             Dices.append(dice_bs)
         """ 
     else:   
-        # read in displacements from folder 
-        disp = nibabel.load(join(path, image_pair, 'Displacement.nii'))
-        disp = np.array(disp.get_fdata(), dtype='float32')
+        # read in resampled warped image from the subsampled folder
+        warped_fully_sampled = nibabel.load(join(path, image_pair, 'WarpedImage_FullySampled.nii'))
+        warped_img = np.array(warped_fully_sampled.get_fdata(), dtype='float32')
 
         # get fully sampled image pairs from test dataset
-        mov_img, fix_img,_ ,_ = test_set.__getitem__(image_pair[-1]-1)
-        grid, warped_img = transform(mov_img, disp.permute(0, 2, 3, 1))
-
+        mov_img, fix_img,_ ,_ = test_set.__getitem__(int(image_pair.replace('ImagePair', ''))-1)
+        # convert to numpy
+        fix_img = fix_img.squeeze().cpu().numpy()
+        
         # calculate metrics on fully sampled images
         MSE = mean_squared_error(warped_img, fix_img)
         SSIM = structural_similarity(warped_img, fix_img, data_range=1)
@@ -138,21 +143,21 @@ for image_pair in image_pairs:
             Dices.append(dice_bs)
         """  
 
-    mean_MSE = np.mean(MSE_test)
-    std_MSE = np.std(MSE_test)
+mean_MSE = np.mean(MSE_test)
+std_MSE = np.std(MSE_test)
 
-    mean_SSIM = np.mean(SSIM_test)
-    std_SSIM = np.std(SSIM_test)
+mean_SSIM = np.mean(SSIM_test)
+std_SSIM = np.std(SSIM_test)
 
-    #mean_NegJ = np.mean(NegJ)
-    #std_NegJ = np.std(NegJ)
+#mean_NegJ = np.mean(NegJ)
+#std_NegJ = np.std(NegJ)
 
-    f = open(csv_name, 'a')
-    with f:
-        writer = csv.writer(f)
-        writer.writerow(['-', '-', '-', mean_MSE, mean_SSIM])  #, mean_NegJ
+f = open(csv_name, 'a')
+with f:
+    writer = csv.writer(f)
+    writer.writerow(['-', '-', '-', mean_MSE, mean_SSIM])  #, mean_NegJ
 
-    print('Mean MSE: ', mean_MSE, 'Std MSE: ', std_MSE)
-    print('Mean SSIM: ', mean_SSIM, 'Std SSIM: ', std_SSIM)
-    #print('Mean DetJ<0 %:', mean_NegJ, 'Std DetJ<0 %:', std_NegJ)
-    #print('Mean Dice Score: ', np.mean(Dices), 'Std Dice Score: ', np.std(Dices))
+print('Mean MSE: ', mean_MSE, 'Std MSE: ', std_MSE)
+print('Mean SSIM: ', mean_SSIM, 'Std SSIM: ', std_SSIM)
+#print('Mean DetJ<0 %:', mean_NegJ, 'Std DetJ<0 %:', std_NegJ)
+#print('Mean Dice Score: ', np.mean(Dices), 'Std Dice Score: ', np.std(Dices))
