@@ -555,3 +555,37 @@ def extract_differences(images, frames, slices, H, W):
     diffs_slices = torch.sum(mean_diff_frames, dim=0) # sum over all differences between slices
 
     return diffs_slices
+
+
+##############################################
+### Helper Functions for creating boxplots ###
+##############################################
+
+def set_box_color(bp, color):
+    plt.setp(bp['boxes'], color=color)
+    plt.setp(bp['whiskers'], color=color)
+    plt.setp(bp['caps'], color=color)
+    #plt.setp(bp['medians'], color=color)
+
+def create_AB_boxplot(savename, title, data_A, data_B, labels, figure_size):
+    ''' Create boxplots of A and B with legend and labels on the x-axis  '''
+    plt.figure(figsize=figure_size)
+    bpl = plt.boxplot(data_A, positions=np.array(range(len(data_A)))*2.0-0.4, sym='', widths=0.6, patch_artist=True)
+    bpr = plt.boxplot(data_B, positions=np.array(range(len(data_B)))*2.0+0.4, sym='', widths=0.6, patch_artist=True)
+
+    #set_box_color(bpl, '#D7191C') 
+    #set_box_color(bpr, '#2C7BB6')
+
+    plt.setp(bpl["boxes"], facecolor='#D7191C')
+    plt.setp(bpr["boxes"], facecolor='#2C7BB6')
+
+    # draw temporary red and blue lines and use them to create a legend
+    plt.plot([], c='#D7191C', label='Fourier-Net+')
+    plt.plot([], c='#2C7BB6', label='NiftyReg')
+    plt.legend()
+
+    plt.xticks(range(0, len(labels) * 2, 2), labels)
+    plt.xlim(-2, len(labels)*2)
+    plt.tight_layout()
+    plt.title(title, y=1.0, pad=-14)
+    plt.savefig(savename)    
