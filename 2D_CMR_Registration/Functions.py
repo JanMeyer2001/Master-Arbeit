@@ -567,7 +567,7 @@ def set_box_color(bp, color):
     plt.setp(bp['caps'], color=color)
     #plt.setp(bp['medians'], color=color)
 
-def create_AB_boxplot(savename, title, data_A, data_B, labels, figure_size):
+def create_AB_boxplot(savename=None, title=None, data_A=None, data_B=None, labels=None, legend=['A','B'], figure_size=(10,4)):
     ''' Create boxplots of A and B with legend and labels on the x-axis  '''
     plt.figure(figsize=figure_size)
     bpl = plt.boxplot(data_A, positions=np.array(range(len(data_A)))*2.0-0.4, sym='', widths=0.6, patch_artist=True)
@@ -580,12 +580,16 @@ def create_AB_boxplot(savename, title, data_A, data_B, labels, figure_size):
     plt.setp(bpr["boxes"], facecolor='#2C7BB6')
 
     # draw temporary red and blue lines and use them to create a legend
-    plt.plot([], c='#D7191C', label='Fourier-Net+')
-    plt.plot([], c='#2C7BB6', label='NiftyReg')
+    plt.plot([], c='#D7191C', label=legend[0])
+    plt.plot([], c='#2C7BB6', label=legend[1])
     plt.legend()
 
     plt.xticks(range(0, len(labels) * 2, 2), labels)
     plt.xlim(-2, len(labels)*2)
     plt.tight_layout()
-    plt.title(title, y=1.0, pad=-14)
-    plt.savefig(savename)    
+    if title != None:
+        plt.title(title, y=1.0, pad=-14)
+    if savename == None:
+        plt.savefig('boxplot.png')   
+    else:
+        plt.savefig(savename)    
