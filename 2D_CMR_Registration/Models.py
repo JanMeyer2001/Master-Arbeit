@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 from  Functions import *
 
 class Cascade(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel):
+    def __init__(self, in_channel, n_classes, start_channel, offset):
         self.in_channel = in_channel
         self.n_classes = n_classes
         self.start_channel = start_channel
+        self.offset = offset
 
         bias_opt = True
 
@@ -30,8 +31,9 @@ class Cascade(nn.Module):
         # compressing the images
         centerx = int((M_temp_fourier_all.shape[0])/2)
         centery = int((M_temp_fourier_all.shape[1])/2)
-        offsetx = 24 #80
-        offsety = 24 #96
+        [offsetx, offsety] = self.offset
+        #offsetx = 24 #80
+        #offsety = 24 #96
         M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
         F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
         
