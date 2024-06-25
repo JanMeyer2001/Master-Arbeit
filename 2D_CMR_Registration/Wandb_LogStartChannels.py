@@ -22,6 +22,7 @@ results_test = np.zeros((total_runs,7))
 
 for run in range(total_runs):
     if run == 0:  
+        print('Starting Channels: 8')
         wandb.init(
             # Set the project where this run will be logged
             project = "StartChannels_Fourier-Net+",
@@ -39,12 +40,12 @@ for run in range(total_runs):
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "iterations": 100,
-                "checkpoint": 100,
+                "epochs": 100,
                 "diffeo": False,
             }
         )
     elif run == 1:
+        print('Starting Channels: 16')
         wandb.init(
             # Set the project where this run will be logged
             project = "StartChannels_Fourier-Net+",
@@ -62,12 +63,12 @@ for run in range(total_runs):
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "iterations": 100,
-                "checkpoint": 100,
+                "epochs": 100,
                 "diffeo": False,
             }
         )
     elif run == 2:
+        print('Starting Channels: 32')
         wandb.init(
             # Set the project where this run will be logged
             project = "StartChannels_Fourier-Net+",
@@ -85,8 +86,7 @@ for run in range(total_runs):
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "iterations": 100,
-                "checkpoint": 100,
+                "epochs": 100,
                 "diffeo": False,
             }
         )   
@@ -119,8 +119,6 @@ for run in range(total_runs):
         loss_similarity = SAD().loss
     loss_smooth = smoothloss
 
-    lossall = np.zeros((3, config.iterations))
-
     # choose whether to use a diffeomorphic transform or not
     diffeo_name = 0
     if config.diffeo:
@@ -135,8 +133,6 @@ for run in range(total_runs):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
-    lossall = np.zeros((3, config.iterations))
-
     # load CMR training, validation and test data
     assert config.mode >= 0 and config.mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {config.mode}"
     if run == 0:
@@ -149,6 +145,8 @@ for run in range(total_runs):
         test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
         print('Finished Loading!')
 
+    lossall = np.zeros((config.epochs, training_generator.__len__(), 3))
+    
     # path to save model parameters to
     model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.smth_lambda, config.learning_rate, config.mode)
     model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.smth_lambda, config.learning_rate, config.mode)
@@ -163,14 +161,12 @@ for run in range(total_runs):
     ## Training ##
     ##############
 
-    step = 1
     print('\nStarted training on ', time.ctime())
 
-    while step <= config.iterations:
-        for mov_img, fix_img in training_generator:
-
-            fix_img = fix_img.cuda().float()
-            mov_img = mov_img.cuda().float()
+    for epoch in range(config.epochs):
+        for i, image_pair in enumerate(training_generator):
+            mov_img = image_pair[0].cuda().float()
+            fix_img = image_pair[1].cuda().float()
             
             f_xy = model(mov_img, fix_img)
             if config.diffeo:
@@ -183,57 +179,58 @@ for run in range(total_runs):
             loss5 = loss_smooth(Df_xy)
             
             loss = loss1 + config.smth_lambda * loss5
+            # log losses
+            wandb.log({"loss": loss, "loss sim": loss1, " loss smooth": loss5})
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
-            sys.stdout.write("\r" + 'step {0}/'.format(step) + str(config.iterations) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
+            lossall[epoch,i,:] = np.array([loss.item(),loss1.item(),loss5.item()])
+            sys.stdout.write("\r" + 'training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
             sys.stdout.flush()
             
-            #"""
-            if (step % config.checkpoint == 0):
-                with torch.no_grad():
-                    model.eval()
-                    MSE_Validation = []
-                    SSIM_Validation = []
-                    
-                    for mov_img, fix_img in validation_generator: 
-                        fix_img = fix_img.cuda().float()
-                        mov_img = mov_img.cuda().float()
-                        
-                        f_xy = model(mov_img, fix_img)
-                        if config.diffeo:
-                            Df_xy = diff_transform(f_xy)
-                        else:
-                            Df_xy = f_xy
-                        grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-                        
-                        # calculate MSE and SSIM
-                        MSE_Validation.append(mean_squared_error(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
-                        SSIM_Validation.append(structural_similarity(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
-                
-                # calculate mean of validation metrics
-                Mean_MSE = np.mean(MSE_Validation)
-                Mean_SSIM = np.mean(SSIM_Validation)
-                
-                # log loss and validation metrics to wandb
-                wandb.log({"MSE": Mean_MSE, "SSIM": Mean_SSIM, " train loss": loss})
-                
-                # save and log model     
-                modelname = 'SSIM_{:.6f}_MSE_{:.6f}_Step_{:06d}.pth'.format(Mean_SSIM, Mean_MSE, step)
-                save_checkpoint(model.state_dict(), model_dir, modelname)
-                wandb.log_model(path=model_dir, name=modelname)
+        ################
+        ## Validation ##
+        ################
 
-                # save image
-                sample_path = os.path.join(model_dir_png, 'Step_{:06d}-images.jpg'.format(step))
-                save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
-                print("one epoch pass with MSE_val: {0:.6f} and SSIM_val: {1:.5f}".format(Mean_MSE, Mean_SSIM))
-            step += 1
+        with torch.no_grad():
+            model.eval()
+            MSE_Validation = []
+            SSIM_Validation = []
+            
+            for mov_img, fix_img in validation_generator: 
+                fix_img = fix_img.cuda().float()
+                mov_img = mov_img.cuda().float()
+                
+                f_xy = model(mov_img, fix_img)
+                if config.diffeo:
+                    Df_xy = diff_transform(f_xy)
+                else:
+                    Df_xy = f_xy
+                grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+                
+                # calculate MSE and SSIM
+                MSE_Validation.append(mean_squared_error(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
+                SSIM_Validation.append(structural_similarity(warped_mov[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
+        
+            # calculate mean of validation metrics
+            Mean_MSE = np.mean(MSE_Validation)
+            Mean_SSIM = np.mean(SSIM_Validation)
+            
+            # log loss and validation metrics to wandb
+            wandb.log({"MSE": Mean_MSE, "SSIM": Mean_SSIM, " train loss all": lossall})
+            
+            # save and log model     
+            modelname = 'SSIM_{:.6f}_MSE_{:.6f}_Step_{:06d}.pth'.format(Mean_SSIM, Mean_MSE, epoch)
+            save_checkpoint(model.state_dict(), model_dir, modelname)
+            wandb.log_model(path=model_dir, name=modelname)
 
-            if step > config.iterations:
-                break
-
+            # save image
+            sample_path = os.path.join(model_dir_png, 'Step_{:06d}-images.jpg'.format(epoch))
+            save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+            print("epoch {0:f}/{1:f} - MSE_val: {2:.6f}, SSIM_val: {3:.5f}".format(epoch, config.epochs, Mean_MSE, Mean_SSIM))
+            
     print('Training ended on ', time.ctime())
 
     #############
@@ -249,7 +246,6 @@ for run in range(total_runs):
     NegJ=[]
     times = []
 
-    image_num = 1 
     for mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled in test_generator: 
         with torch.no_grad():
             start = time.time()
@@ -300,7 +296,6 @@ for run in range(total_runs):
     print('Testing ended on ', time.ctime())
     
     # Mark the run as finished
-    print('Run finished!!')
     wandb.finish()
 
 # sync files back online
