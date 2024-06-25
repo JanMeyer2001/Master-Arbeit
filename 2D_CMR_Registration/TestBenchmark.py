@@ -112,11 +112,8 @@ for mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subS
         fix_img_fullySampled = fix_img_fullySampled[0,0,:,:].cpu().numpy()
         
         # calculate metrics on fully sampled images
-        MSE = mean_squared_error(warped_mov_img_fullySampled, fix_img_fullySampled)
-        SSIM = structural_similarity(warped_mov_img_fullySampled, fix_img_fullySampled, data_range=1)
-
-        MSE_test.append(MSE)
-        SSIM_test.append(SSIM)
+        MSE_test.append(mean_squared_error(warped_mov_img_fullySampled, fix_img_fullySampled))
+        SSIM_test.append(structural_similarity(warped_mov_img_fullySampled, fix_img_fullySampled, data_range=1))
 
         hh, ww = V_xy.shape[-2:]
         V_xy = V_xy.detach().cpu().numpy()
@@ -131,7 +128,7 @@ for mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subS
         f = open(csv_name, 'a')
         with f:
             writer = csv.writer(f)
-            writer.writerow([image_num, MSE, SSIM, inference_time, '-', '-', '-', '-']) 
+            writer.writerow([image_num, mean_squared_error(warped_mov_img_fullySampled, fix_img_fullySampled), structural_similarity(warped_mov_img_fullySampled, fix_img_fullySampled, data_range=1), inference_time, '-', '-', '-', '-']) 
         image_num += 1
 
         """

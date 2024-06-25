@@ -21,10 +21,10 @@ parser.add_argument("--lr", type=float,
                     dest="lr", default=1e-4, help="learning rate")
 parser.add_argument("--bs", type=int,
                     dest="bs", default=1, help="batch_size")
-parser.add_argument("--iteration", type=int,
-                    dest="iteration", default=320001,
+parser.add_argument("--iterations", type=int,
+                    dest="iterations", default=320001,
                     help="number of total iterations")
-parser.add_argument("--smth_lambda", type=float,
+parser.add_argument("--lambda", type=float,
                     dest="smth_lambda", default=0.01,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--checkpoint", type=int,
@@ -57,10 +57,10 @@ opt = parser.parse_args()
 
 lr = opt.lr
 bs = opt.bs
-iteration = opt.iteration
+iterations = opt.iterations
 start_channel = opt.start_channel
 n_checkpoint = opt.checkpoint
-smooth = opt.smth_lambda
+smth_lambda = opt.smth_lambda
 datapath = opt.datapath
 choose_loss = opt.choose_loss
 mode = opt.mode
@@ -107,7 +107,7 @@ for param in transform.parameters():
 
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-lossall = np.zeros((3, iteration))
+lossall = np.zeros((3, iterations))
 
 # load CMR data
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
@@ -125,8 +125,8 @@ training_generator = Data.DataLoader(dataset=train_set, batch_size=bs, shuffle=T
 #valid_generator = Data.DataLoader(dataset=valid_set, batch_size=bs, shuffle=False, num_workers=2)
 """
 
-model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
-model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
+model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,smth_lambda, lr, mode)
+model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,smth_lambda, lr, mode)
 
 if not os.path.isdir(model_dir_png):
     os.mkdir(model_dir_png)
@@ -134,7 +134,7 @@ if not os.path.isdir(model_dir_png):
 if not os.path.isdir(model_dir):
     os.mkdir(model_dir)
 
-csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,smooth, lr, mode)
+csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,smth_lambda, lr, mode)
 f = open(csv_name, 'w')
 with f:
     fnames = ['Index','MSE','SSIM'] #,'Dice'
@@ -144,12 +144,12 @@ with f:
 step = 1
 print('\nStarted training on ', time.ctime())
 
-while step <= iteration:
+while step <= iterations:
     if step == 1:
         start = time.time()
     elif step == 2:
         end = time.time()
-        print('Expected time for training: ', ((end-start)*(iteration-1))/60, ' minutes.')    
+        print('Expected time for training: ', ((end-start)*(iterations-1))/60, ' minutes.')    
     
     for mov_img, fix_img in training_generator:
 
@@ -166,13 +166,13 @@ while step <= iteration:
         loss1 = loss_similarity(fix_img, warped_mov) 
         loss5 = loss_smooth(Df_xy)
         
-        loss = loss1 + smooth * loss5
+        loss = loss1 + smth_lambda * loss5
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         lossall[:,step-2] = np.array([loss.item(),loss1.item(),loss5.item()])
-        sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iteration) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
+        sys.stdout.write("\r" + 'step {0}/'.format(step) + str(iterations) + ' -> training loss "{0:.4f}" - sim "{1:.4f}" -smo "{2:.4f}" '.format(loss.item(),loss1.item(),loss5.item()))
         sys.stdout.flush()
         
         #"""
@@ -230,7 +230,7 @@ while step <= iteration:
             print("one epoch pass")
         step += 1
 
-        if step > iteration:
+        if step > iterations:
             break
 np.save(model_dir + '/Loss.npy', lossall)
 print('\nTraining ended on ', time.ctime())
