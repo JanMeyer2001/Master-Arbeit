@@ -112,6 +112,10 @@ for run in range(total_runs):
     config = wandb.config
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
+    
+    # counter and best SSIM for early stopping
+    counter_earlyStopping = 0
+    best_SSIM = 0
 
     # choose the model
     model_name = 0
@@ -228,6 +232,13 @@ for run in range(total_runs):
             Mean_MSE = np.mean(MSE_Validation)
             Mean_SSIM = np.mean(SSIM_Validation)
             
+            # save best metrics and reset counter if SSIM got better, else increase counter for early stopping
+            if Mean_SSIM>best_SSIM:
+                best_SSIM = Mean_SSIM
+                counter_earlyStopping = 0
+            else:
+                counter_earlyStopping += 1    
+            
             # log loss and validation metrics to wandb
             wandb.log({"Loss": np.mean(losses), "MSE": Mean_MSE, "SSIM": Mean_SSIM})
             
@@ -240,6 +251,10 @@ for run in range(total_runs):
             sample_path = os.path.join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch+1))
             save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
             print("epoch {0:d}/{1:d} - MSE_val: {2:.6f}, SSIM_val: {3:.5f}".format(epoch+1, config.epochs, Mean_MSE, Mean_SSIM))
+            
+            # stop training if metrics stop improving for three epochs
+            if counter_earlyStopping == 3:
+                break
             
     print('Training ended on ', time.ctime())
 
