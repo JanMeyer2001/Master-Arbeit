@@ -1,7 +1,6 @@
 import wandb
 import numpy as np
 import torch
-import sys
 import wandb.sync
 from Models import *
 from Functions import *
@@ -12,12 +11,11 @@ import warnings
 warnings.filterwarnings("ignore")
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 import os
-#os.environ["WANDB_MODE"]="offline"  # run wandb offline
 
-# Compare size of starting channels
-total_runs = 3
-project_name = "StartChannels_Fourier-Net+"
-names = ["StartChannel_8", "StartChannel_16", "StartChannel_32"]
+# compare Fourier-Net with Fourier-Net+
+total_runs = 2
+project_name = "Compare_Models"
+names = ["Diff-Fourier-Net", "Diff-Fourier-Net+"]
 
 # init array for test results
 results_test = np.zeros((total_runs,7))
@@ -39,11 +37,11 @@ for run in range(total_runs):
                 "FT_size": [24,24],
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": True,
+                "F_Net_plus": False,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
                 "epochs": 100,
-                "diffeo": False,
+                "diffeo": True,
             }
         )
     elif run == 1:
@@ -57,7 +55,7 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 16,
+                "start_channel": 8,
                 "smth_lambda": 0.01,
                 "FT_size": [24,24],
                 "choose_loss": 1,
@@ -66,32 +64,9 @@ for run in range(total_runs):
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
                 "epochs": 100,
-                "diffeo": False,
+                "diffeo": True,
             }
         )
-    elif run == 2:
-        print(names[run])
-        wandb.init(
-            # Set the project where this run will be logged
-            project = project_name,
-            # pass the run name
-            name = names[run],
-            # track hyperparameters and run metadata
-            config={
-                "bs": 1,
-                "learning_rate": 1e-4,
-                "start_channel": 32,
-                "smth_lambda": 0.01,
-                "FT_size": [24,24],
-                "choose_loss": 1,
-                "mode": 0,
-                "F_Net_plus": True,
-                "dataset": "CMRxRecon",
-                "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "epochs": 100,
-                "diffeo": False,
-            }
-        )   
         
     # Copy your config 
     config = wandb.config
@@ -286,13 +261,10 @@ for run in range(total_runs):
     # print results
     print('     Mean inference time: {0:.4f} seconds\n     MSE: {1:.6f} +- {2:.6f}\n     SSIM: {3:.5f} +- {4:.5f}\n     DetJ<0 %: {5:.4f} +- {6:.4f}'.format(results_test[run,6], results_test[run,0], results_test[run,1], results_test[run,2], results_test[run,3], results_test[run,4], results_test[run,5]))
     # save results to wandb table
-    TestResults = wandb.Table(columns=["Run", "Mean MSE", "Std MSE", "Mean SSIM", " Std SSIM", "Mean NegJ", " Std NegJ", "Mean Inference Time"], data=[["StartChannel_8", results_test[0,0], results_test[0,1], results_test[0,2], results_test[0,3], results_test[0,4], results_test[0,5], results_test[0,6]], ["StartChannel_16", results_test[1,0], results_test[1,1], results_test[1,2], results_test[1,3], results_test[1,4], results_test[1,5], results_test[1,6]], ["StartChannel_32", results_test[2,0], results_test[2,1], results_test[2,2], results_test[2,3], results_test[2,4], results_test[2,5], results_test[2,6]]])
+    TestResults = wandb.Table(columns=["Run", "Mean MSE", "Std MSE", "Mean SSIM", " Std SSIM", "Mean NegJ", " Std NegJ", "Mean Inference Time"], data=[["Diff-Fourier-Net", results_test[0,0], results_test[0,1], results_test[0,2], results_test[0,3], results_test[0,4], results_test[0,5], results_test[0,6]], ["Diff-Fourier-Net+", results_test[1,0], results_test[1,1], results_test[1,2], results_test[1,3], results_test[1,4], results_test[1,5], results_test[1,6]]])
     wandb.log({"Test Results": TestResults})
     
     print('Testing ended on ', time.ctime())
     
     # Mark the run as finished
     wandb.finish()
-
-# sync files back online
-#os.environ["WANDB_MODE"]="online" 

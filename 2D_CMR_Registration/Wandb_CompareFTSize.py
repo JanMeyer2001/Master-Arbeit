@@ -1,7 +1,6 @@
 import wandb
 import numpy as np
 import torch
-import sys
 import wandb.sync
 from Models import *
 from Functions import *
@@ -12,12 +11,11 @@ import warnings
 warnings.filterwarnings("ignore")
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 import os
-#os.environ["WANDB_MODE"]="offline"  # run wandb offline
 
-# Compare size of starting channels
-total_runs = 3
-project_name = "StartChannels_Fourier-Net+"
-names = ["StartChannel_8", "StartChannel_16", "StartChannel_32"]
+# compare different FT crop sizes
+total_runs = 4
+project_name = "FTSize_Fourier-Net+"
+names = ["FTCropSize_40-84", "FTCropSize_20-42", "FTCropSize_24-24", "FTCropSize_12-12"]
 
 # init array for test results
 results_test = np.zeros((total_runs,7))
@@ -36,22 +34,20 @@ for run in range(total_runs):
                 "learning_rate": 1e-4,
                 "start_channel": 8,
                 "smth_lambda": 0.01,
-                "FT_size": [24,24],
+                "FT_size": [40,84],
                 "choose_loss": 1,
                 "mode": 0,
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "epochs": 100,
+                "epochs": 50,
                 "diffeo": False,
             }
         )
     elif run == 1:
         print(names[run])
         wandb.init(
-            # Set the project where this run will be logged
             project = project_name,
-            # pass the run name
             name = names[run],
             # track hyperparameters and run metadata
             config={
@@ -59,22 +55,20 @@ for run in range(total_runs):
                 "learning_rate": 1e-4,
                 "start_channel": 16,
                 "smth_lambda": 0.01,
-                "FT_size": [24,24],
+                "FT_size": [20,42],
                 "choose_loss": 1,
                 "mode": 0,
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "epochs": 100,
+                "epochs": 50,
                 "diffeo": False,
             }
         )
     elif run == 2:
         print(names[run])
         wandb.init(
-            # Set the project where this run will be logged
             project = project_name,
-            # pass the run name
             name = names[run],
             # track hyperparameters and run metadata
             config={
@@ -88,14 +82,34 @@ for run in range(total_runs):
                 "F_Net_plus": True,
                 "dataset": "CMRxRecon",
                 "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                "epochs": 100,
+                "epochs": 50,
                 "diffeo": False,
             }
         )   
+    elif run == 3:
+        print(names[run])
+        wandb.init(
+            project = project_name,
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 32,
+                "smth_lambda": 0.01,
+                "FT_size": [12,12],
+                "choose_loss": 1,
+                "mode": 0,
+                "F_Net_plus": True,
+                "dataset": "CMRxRecon",
+                "datapath": '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
+                "epochs": 50,
+                "diffeo": False,
+            }
+        )       
         
-    # Copy your config 
+    # Copy config 
     config = wandb.config
-
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -148,8 +162,8 @@ for run in range(total_runs):
         print('Finished Loading!')
 
     # path to save model parameters to
-    model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.smth_lambda, config.learning_rate, config.mode)
-    model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.smth_lambda, config.learning_rate, config.mode)
+    model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.FT_size[0],config.FT_size[1],config.smth_lambda, config.learning_rate, config.mode)
+    model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,config.choose_loss,config.start_channel,config.FT_size[0],config.FT_size[1],config.smth_lambda, config.learning_rate, config.mode)
 
     if not os.path.isdir(model_dir_png):
         os.mkdir(model_dir_png)
@@ -218,14 +232,14 @@ for run in range(total_runs):
             wandb.log({"Loss": np.mean(losses), "MSE": Mean_MSE, "SSIM": Mean_SSIM})
             
             # save and log model     
-            modelname = 'SSIM_{:.6f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch)
+            modelname = 'SSIM_{:.6f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch+1)
             save_checkpoint(model.state_dict(), model_dir, modelname)
             wandb.log_model(path=model_dir, name=modelname)
 
             # save image
-            sample_path = os.path.join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
+            sample_path = os.path.join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch+1))
             save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
-            print("epoch {0:d}/{1:d} - MSE_val: {2:.6f}, SSIM_val: {3:.5f}".format(epoch, config.epochs, Mean_MSE, Mean_SSIM))
+            print("epoch {0:d}/{1:d} - MSE_val: {2:.6f}, SSIM_val: {3:.5f}".format(epoch+1, config.epochs, Mean_MSE, Mean_SSIM))
             
     print('Training ended on ', time.ctime())
 
