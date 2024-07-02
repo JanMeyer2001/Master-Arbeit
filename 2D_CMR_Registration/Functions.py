@@ -8,9 +8,8 @@ import numpy as np
 import torch.utils.data as Data
 import nibabel as nib
 import torch
-import os
-from os import listdir
-from os.path import join, isfile
+from os import listdir, scandir, remove
+from os.path import join, isfile, basename
 import matplotlib.pyplot as plt
 import itertools
 from natsort import natsorted
@@ -21,6 +20,13 @@ from fastmri.data import transforms as T
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import torch.nn.functional as F
 from skimage.io import imread
+import time
+from skimage.metrics import structural_similarity, mean_squared_error
+import csv
+from os import mkdir
+from os.path import isdir
+from Models import *
+from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -54,18 +60,18 @@ def normalize(image):
     """ expects an image as tensor and normalizes the values between [0,1] """
     return (image - torch.min(image)) / (torch.max(image) - torch.min(image))
 
-def get_image_pairs(subset, data_path, subfolder):
-    """ get the corresponding paths of image pairs for the dataset """
+def get_image_pairs_ACDC(subset, data_path, subfolder):
+    """ get the corresponding paths of image pairs for the ACDC dataset """
     image_pairs = []  
     # get folder names for patients
-    patients = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+    patients = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('patient') == -1)]
     for patient in patients:
         # get subfolder names for image slices
-        slices = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+        slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
         for slice in slices:
             # get all frames for each slice
-            frames = [f.path for f in os.scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
-            if subset == 'TestSet':
+            frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and f.name.startswith('frame')]
+            if subset == 'Test':
                 # add pairs of the frames to a list 
                 image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
             else:    
@@ -73,34 +79,31 @@ def get_image_pairs(subset, data_path, subfolder):
                 image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
     return image_pairs
 
-def load_image_pair_CMR(pathname1, pathname2):
-    """ expects paths for files and loads the corresponding images """
+def load_image_pair_ACDC(pathname1, pathname2):
+    """ expects paths for files and loads the corresponding images and segmentations """
     # read in images 
     image1 = imread(pathname1, as_gray=True)/255
     image2 = imread(pathname2, as_gray=True)/255
-    
-    # convert to tensor
-    image1 = torch.from_numpy(image1).unsqueeze(0)
-    image2 = torch.from_numpy(image2).unsqueeze(0)
-    """
-    # crop images
-    image1 = crop_image(image1)
-    image2 = crop_image(image2)
-    # convert to tensor
-    image1 = torch.from_numpy(image1)
-    image2 = torch.from_numpy(image2)
-    # interpolate to size [246, 512]
-    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
-    """
-    return image1, image2
 
-class TrainDatasetCMR(Data.Dataset):
-  'Training dataset for CMR data'
+    # read in segmentations (only have value 0 for background and 1,2,3 for structures)
+    seg1 = imread(pathname1.replace('Image','Segmentation'), as_gray=True)/255
+    seg2 = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/255
+    
+    # convert to tensors and add singleton dimension for the correct size
+    image1 = torch.from_numpy(image1).unsqueeze(0).unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0).unsqueeze(0)
+    seg1 = torch.from_numpy(seg1).unsqueeze(0).unsqueeze(0)
+    seg2 = torch.from_numpy(seg2).unsqueeze(0).unsqueeze(0)
+    
+    return image1, image2, seg1, seg2
+
+class TrainDatasetACDC(Data.Dataset):
+  'Training dataset for ACDC data'
   def __init__(self, data_path, mode):
         'Initialization'
-        super(TrainDatasetCMR, self).__init__()
+        super(TrainDatasetACDC, self).__init__()
         # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC training dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
         if mode == 0:
             subfolder = 'FullySampled'
         elif mode == 1:
@@ -109,11 +112,9 @@ class TrainDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor08'
         elif mode == 3:
             subfolder = 'AccFactor10'  
-        else:
-            print('Invalid mode for CMR training dataset!!')
         # get paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(subset='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs_ACDC(subset='Training', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -121,14 +122,15 @@ class TrainDatasetCMR(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
-        return  mov_img, fix_img
+        mov_img, fix_img, mov_seg, fix_seg = load_image_pair_ACDC(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img, mov_seg, fix_seg
 
-class ValidationDatasetCMR(Data.Dataset):
-  'Validation dataset for CMR data'
+class ValidationDatasetACDC(Data.Dataset):
+  'Validation dataset for ACDC data'
   def __init__(self, data_path, mode):
         'Initialization'
         # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC validation dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
         if mode == 0:
             subfolder = 'FullySampled'
         elif mode == 1:
@@ -137,11 +139,9 @@ class ValidationDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor08' 
         elif mode == 3:
             subfolder = 'AccFactor10' 
-        else:
-            print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(subset='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs_ACDC(subset='Validation', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -149,15 +149,16 @@ class ValidationDatasetCMR(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
-        return  mov_img, fix_img
+        mov_img, fix_img, mov_seg, fix_seg = load_image_pair_ACDC(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img, mov_seg, fix_seg
   
-class TestDatasetCMR(Data.Dataset):
-  'Test dataset for CMR data'
+class TestDatasetACDC(Data.Dataset):
+  'Test dataset for ACDC data'
   def __init__(self, data_path, mode):
         'Initialization'
         self.data_path = data_path
         # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC test dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
         if mode == 0:
             subfolder = 'FullySampled'
         elif mode == 1:
@@ -166,36 +167,25 @@ class TestDatasetCMR(Data.Dataset):
             subfolder = 'AccFactor08' 
         elif mode == 3:
             subfolder = 'AccFactor10' 
-        else:
-            print('Invalid mode for CMR training dataset!!')
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs(subset='TestSet/Croped', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs_ACDC(subset='Test', data_path=data_path, subfolder=subfolder)
 
-        """
-        self.names = []  
-        self.foldernames = [os.path.basename(f.path) for f in os.scandir(join(data_path, 'ValidationSet', subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
-        for folder in self.foldernames:
-            names = [f.path for f in os.scandir(join(data_path, 'ValidationSet', subfolder, folder)) if isfile(join(data_path, 'ValdiationSet', subfolder, folder, f))]
-            self.names = self.names+names
-        self.zip_pathname_1 = list(zip(self.names[:-1], self.names[1:]))
-        self.zip_pathname_2 = list(zip(self.names[1:], self.names[:-1]))
-        self.paths = self.zip_pathname_1 + self.zip_pathname_2
-        """  
   def __len__(self):
         'Denotes the total number of samples'
         return len(self.paths)
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img = load_image_pair_CMR(self.paths[index][0], self.paths[index][1])
-        return  mov_img, fix_img
+        mov_img, fix_img, mov_seg, fix_seg = load_image_pair_ACDC(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img, mov_seg, fix_seg
 
-class TestDatasetCMRBenchmark(Data.Dataset):
-  'Test dataset for benchmark of subsampled CMR data'
+class TestDatasetACDCBenchmark(Data.Dataset):
+  'Test dataset for benchmark of subsampled ACDC data'
   def __init__(self, data_path, mode):
         'Initialization'
         # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC test benchmark to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
         if mode == 0:
             subfolder = 'FullySampled'
         elif mode == 1:
@@ -204,26 +194,25 @@ class TestDatasetCMRBenchmark(Data.Dataset):
             subfolder = 'AccFactor08' 
         elif mode == 3:
             subfolder = 'AccFactor10' 
-        else:
-            print('Invalid mode for CMR training dataset!!')
+        
         # get names and paths of training data
-        subset = 'TestSet/Croped'
+        subset = 'Test'
         self.image_pairs_fullySampled = []  
         self.image_pairs_subSampled = []  
         # get folder names for patients
-        patients_fullySampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
-        patients_subSampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_subSampled = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
         
         for patient in patients_fullySampled:
             if patient in patients_subSampled:
                 # get subfolder names for image slices
-                slices_fullySampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
-                slices_subSampled = [os.path.basename(f.path) for f in os.scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_subSampled = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
                 for slice in slices_fullySampled:
                     if slice in slices_subSampled:
                         # get all frames for each slice
-                        frames_subSampled = [f.path for f in os.scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
-                        frames_fullySampled = [f.path for f in os.scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
+                        frames_subSampled = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+                        frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
                         # add pairs of the frames to a list 
                         self.image_pairs_fullySampled = self.image_pairs_fullySampled + list(zip(frames_fullySampled[:-1], frames_fullySampled[1:]))
                         self.image_pairs_subSampled = self.image_pairs_subSampled + list(zip(frames_subSampled[:-1], frames_subSampled[1:]))
@@ -249,11 +238,182 @@ class TestDatasetCMRBenchmark(Data.Dataset):
         return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
 
 
-class TrainDataset(Data.Dataset):
-  'Characterizes a dataset for PyTorch'
+def get_image_pairs_CMRxRecon(subset, data_path, subfolder):
+    """ get the corresponding paths of image pairs for the CMRxRecon dataset """
+    image_pairs = []  
+    # get folder names for patients
+    patients = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+    for patient in patients:
+        # get subfolder names for image slices
+        slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+        for slice in slices:
+            # get all frames for each slice
+            frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+            if subset == 'TestSet':
+                # add pairs of the frames to a list 
+                image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
+            else:    
+                # add all combinations of the frames to a list 
+                image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
+    return image_pairs
+
+def load_image_pair_CMRxRecon(pathname1, pathname2):
+    """ expects paths for files and loads the corresponding images """
+    # read in images 
+    image1 = imread(pathname1, as_gray=True)/255
+    image2 = imread(pathname2, as_gray=True)/255
+    
+    # convert to tensor
+    image1 = torch.from_numpy(image1).unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0)
+    
+    return image1, image2
+
+class TrainDatasetCMRxRecon(Data.Dataset):
+  'Training dataset for CMR data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        super(TrainDatasetCMRxRecon, self).__init__()
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon training dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08'
+        elif mode == 3:
+            subfolder = 'AccFactor10'  
+        # get paths of training data
+        self.data_path = data_path
+        self.paths = get_image_pairs_CMRxRecon(subset='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_image_pair_CMRxRecon(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
+
+class ValidationDatasetCMRxRecon(Data.Dataset):
+  'Validation dataset for CMRxRecon data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon validation dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        self.data_path = data_path
+        self.paths = get_image_pairs_CMRxRecon(subset='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_image_pair_CMRxRecon(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
+  
+class TestDatasetCMRxRecon(Data.Dataset):
+  'Test dataset for CMRxRecon data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        self.data_path = data_path
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon test dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        self.data_path = data_path
+        self.paths = get_image_pairs_CMRxRecon(subset='TestSet/Croped', data_path=data_path, subfolder=subfolder)
+
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img = load_image_pair_CMRxRecon(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
+
+class TestDatasetCMRxReconBenchmark(Data.Dataset):
+  'Test dataset for benchmark of subsampled CMRxRecon data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        subset = 'TestSet/Croped'
+        self.image_pairs_fullySampled = []  
+        self.image_pairs_subSampled = []  
+        # get folder names for patients
+        patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_subSampled = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        
+        for patient in patients_fullySampled:
+            if patient in patients_subSampled:
+                # get subfolder names for image slices
+                slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_subSampled = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                for slice in slices_fullySampled:
+                    if slice in slices_subSampled:
+                        # get all frames for each slice
+                        frames_subSampled = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+                        frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
+                        # add pairs of the frames to a list 
+                        self.image_pairs_fullySampled = self.image_pairs_fullySampled + list(zip(frames_fullySampled[:-1], frames_fullySampled[1:]))
+                        self.image_pairs_subSampled = self.image_pairs_subSampled + list(zip(frames_subSampled[:-1], frames_subSampled[1:]))
+        
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.image_pairs_fullySampled)
+
+  def __getitem__(self, index):
+        'Generates two image pairs (1x fully sampled, 1x subsampled)'
+        # read in image data
+        mov_img_fullySampled = imread(self.image_pairs_fullySampled[index][0], as_gray=True)/255
+        fix_img_fullySampled = imread(self.image_pairs_fullySampled[index][1], as_gray=True)/255
+        mov_img_subSampled = imread(self.image_pairs_subSampled[index][0], as_gray=True)/255
+        fix_img_subSampled = imread(self.image_pairs_subSampled[index][1], as_gray=True)/255
+        
+        # convert to tensor
+        mov_img_fullySampled = torch.from_numpy(mov_img_fullySampled).unsqueeze(0)
+        fix_img_fullySampled = torch.from_numpy(fix_img_fullySampled).unsqueeze(0)
+        mov_img_subSampled = torch.from_numpy(mov_img_subSampled).unsqueeze(0)
+        fix_img_subSampled = torch.from_numpy(fix_img_subSampled).unsqueeze(0)
+
+        return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
+
+
+class TrainDatasetOASIS(Data.Dataset):
+  'OASIS dataset'
   def __init__(self, data_path, trainingset = 1):
         'Initialization'
-        super(TrainDataset, self).__init__()
+        super(TrainDatasetOASIS, self).__init__()
         self.data_path = data_path
         self.names = [f for f in listdir(join(data_path, 'imagesTr')) if isfile(join(data_path, 'imagesTr', f))][0:201]
         if trainingset == 1:
@@ -281,62 +441,13 @@ class TrainDataset(Data.Dataset):
         mov_img, fix_img = load_train_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         return  mov_img, fix_img
 
-def save_flow(X, Y, X_Y, f_xy, sample_path):
-    x = X.data.cpu().numpy()[0, 0, ...]
-    y = Y.data.cpu().numpy()[0, 0, ...]
-    x_pred = X_Y.data.cpu().numpy()[0, 0, ...] #normalize()
-    op_flow = f_xy.data.cpu().numpy()[0,:,:,:]
-    
-    plt.subplots(figsize=(7, 4))
-    plt.axis('off')
-
-    plt.subplot(2,3,1)
-    plt.imshow(x, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Moving Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,2)
-    plt.imshow(y, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Fixed Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,3)
-    plt.imshow(x_pred, cmap='gray', vmin=0, vmax = 1)
-    plt.title('Warped Image')
-    plt.axis('off')
-
-    plt.subplot(2,3,4)
-    interval = 5
-    for i in range(0,op_flow.shape[1]-1,interval):
-        plt.plot(op_flow[0,i,:], op_flow[1,i,:],c='g',lw=1)
-    #plot the vertical lines
-    for i in range(0,op_flow.shape[2]-1,interval):
-        plt.plot(op_flow[0,:,i], op_flow[1,:,i],c='g',lw=1)
-
-    plt.xlim(-1, 1)
-    plt.ylim(-1, 1)
-    plt.title('Displacement Field')
-    plt.axis('off')
-
-    plt.subplot(2,3,5)
-    plt.imshow(abs(x-y), cmap='gray', vmin=0, vmax = 1)
-    plt.title('Difference before')
-    plt.axis('off')
-    
-    plt.subplot(2,3,6)
-    plt.imshow(abs(x_pred-y), cmap='gray', vmin=0, vmax = 1)
-    plt.title('Difference after')
-    plt.axis('off')
-    plt.savefig(sample_path,bbox_inches='tight')
-    plt.close()
-
 def load_train_pair_OASIS(data_path, filename1, filename2):
     # Load images and labels
-    nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1)) 
+    nim1 = nib.load(join(data_path, 'imagesTr', filename1)) 
     image1 = nim1.get_fdata()[:,96,:]
     image1 = np.array(image1, dtype='float32')
 
-    nim2 = nib.load(os.path.join(data_path, 'imagesTr', filename2)) 
+    nim2 = nib.load(join(data_path, 'imagesTr', filename2)) 
     image2 = nim2.get_fdata()[:,96,:]
     image2 = np.array(image2, dtype='float32')
     
@@ -346,11 +457,11 @@ def load_train_pair_OASIS(data_path, filename1, filename2):
     #"""
     return image1, image2
 
-class ValidationDataset(Data.Dataset):
+class ValidationDatasetOASIS(Data.Dataset):
   'Validation Dataset'
   def __init__(self, data_path):
         'Initialization'
-        super(ValidationDataset, self).__init__()
+        super(ValidationDatasetOASIS, self).__init__()
         self.data_path = data_path
         self.names = [f for f in listdir(join(data_path, 'imagesTr')) if isfile(join(data_path, 'imagesTr', f))][202:213]
         self.zip_filename_1 = list(zip(self.names[:-1], self.names[1:]))
@@ -363,26 +474,26 @@ class ValidationDataset(Data.Dataset):
   def __getitem__(self, index):
         'Generates one sample of data'
         # Select sample
-        img_A, img_B, label_A, label_B = load_validation_pair(self.data_path, self.filename[index][0], self.filename[index][1])
+        img_A, img_B, label_A, label_B = load_validation_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         
         #return self.filename[index][0],self.filename[index][1], img_A, img_B, label_A, label_B
         return img_A, img_B, label_A, label_B
   
-def load_validation_pair(data_path, filename1, filename2):
+def load_validation_pair_OASIS(data_path, filename1, filename2):
     # Load images and labels
-    nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1)) 
+    nim1 = nib.load(join(data_path, 'imagesTr', filename1)) 
     image1 = nim1.get_fdata()[:,96,:]
     image1 = np.array(image1, dtype='float32')
 
-    nim2 = nib.load(os.path.join(data_path, 'imagesTr', filename2)) 
+    nim2 = nib.load(join(data_path, 'imagesTr', filename2)) 
     image2 = nim2.get_fdata()[:,96,:] 
     image2 = np.array(image2, dtype='float32')
     
-    nim5 = nib.load(os.path.join(data_path, 'labelsTr', filename1)) 
+    nim5 = nib.load(join(data_path, 'labelsTr', filename1)) 
     image5 = nim5.get_fdata()[:,96,:]
     image5 = np.array(image5, dtype='float32')
     # image5 = image5 / 35.0
-    nim6 = nib.load(os.path.join(data_path, 'labelsTr', filename2)) 
+    nim6 = nib.load(join(data_path, 'labelsTr', filename2)) 
     image6 = nim6.get_fdata()[:,96,:]
     image6 = np.array(image6, dtype='float32') 
     
@@ -394,10 +505,10 @@ def load_validation_pair(data_path, filename1, filename2):
     #"""
     return image1, image2, image5, image6
 
-class TestDataset(Data.Dataset):
+class TestDatasetOASIS(Data.Dataset):
   'Test Dataset'
   def __init__(self, data_path):
-        super(TestDataset, self).__init__()
+        super(TestDatasetOASIS, self).__init__()
         self.data_path = data_path
         self.names = [f for f in listdir(join(data_path, 'imagesTr')) if isfile(join(data_path, 'imagesTr', f))][214:414]
         self.zip_filename_1 = list(zip(self.names[:-1], self.names[1:]))
@@ -410,24 +521,24 @@ class TestDataset(Data.Dataset):
   def __getitem__(self, index):
         'Generates one sample of data'
         # Select sample
-        img_A, img_B, label_A, label_B = load_validation_pair(self.data_path, self.filename[index][0], self.filename[index][1])
+        img_A, img_B, label_A, label_B = load_validation_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         return img_A, img_B, label_A, label_B
   
-def load_test_pair(data_path, filename1, filename2):
+def load_test_pair_OASIS(data_path, filename1, filename2):
     # Load images and labels
-    nim1 = nib.load(os.path.join(data_path, 'imagesTr', filename1))
+    nim1 = nib.load(join(data_path, 'imagesTr', filename1))
     image1 = nim1.get_fdata()[:,96,:]
     image1 = np.array(image1, dtype='float32')
 
-    nim2 = nib.load(os.path.join(data_path, 'imagesTr', filename2)) 
+    nim2 = nib.load(join(data_path, 'imagesTr', filename2)) 
     image2 = nim2.get_fdata()[:,96,:] 
     image2 = np.array(image2, dtype='float32')
     
-    nim5 = nib.load(os.path.join(data_path, 'labelsTr', filename1)) 
+    nim5 = nib.load(join(data_path, 'labelsTr', filename1)) 
     image5 = nim5.get_fdata()[:,96,:]
     image5 = np.array(image5, dtype='float32')
     # image5 = image5 / 35.0
-    nim6 = nib.load(os.path.join(data_path, 'labelsTr', filename2)) 
+    nim6 = nib.load(join(data_path, 'labelsTr', filename2)) 
     image6 = nim6.get_fdata()[:,96,:]
     image6 = np.array(image6, dtype='float32') 
     
@@ -438,6 +549,56 @@ def load_test_pair(data_path, filename1, filename2):
     image6 = np.reshape(image6, (1,) + image6.shape)
     #"""
     return image1, image2, image5, image6
+
+def save_flow(mov, fix, warp, grid, save_path):
+    mov = mov.data.cpu().numpy()[0, 0, ...]
+    fix = fix.data.cpu().numpy()[0, 0, ...]
+    warp = warp.data.cpu().numpy()[0, 0, ...] 
+    grid = grid.data.cpu().numpy()[0,:,:,:]
+    
+    plt.subplots(figsize=(7, 4))
+    plt.axis('off')
+
+    plt.subplot(2,3,1)
+    plt.imshow(mov, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Moving Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,2)
+    plt.imshow(fix, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Fixed Image')
+    plt.axis('off')
+
+    plt.subplot(2,3,3)
+    plt.imshow(warp, cmap='gray', vmin=0, vmax = 1)
+    plt.title('Warped Image')
+    plt.axis('off')
+
+    if grid.all() != None:
+        plt.subplot(2,3,4)
+        interval = 5
+        for i in range(0,grid.shape[1]-1,interval):
+            plt.plot(grid[0,i,:], grid[1,i,:],c='g',lw=1)
+        #plot the vertical lines
+        for i in range(0,grid.shape[2]-1,interval):
+            plt.plot(grid[0,:,i], grid[1,:,i],c='g',lw=1)
+
+        plt.xlim(-1, 1)
+        plt.ylim(-1, 1)
+        plt.title('Displacement Field')
+        plt.axis('off')
+
+    plt.subplot(2,3,5)
+    plt.imshow(abs(mov-fix), cmap='gray', vmin=0, vmax = 1)
+    plt.title('Difference before')
+    plt.axis('off')
+    
+    plt.subplot(2,3,6)
+    plt.imshow(abs(warp-fix), cmap='gray', vmin=0, vmax = 1)
+    plt.title('Difference after')
+    plt.axis('off')
+    plt.savefig(save_path,bbox_inches='tight')
+    plt.close()
 
     
 def jacobian_determinant_vxm(disp):
@@ -504,8 +665,249 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     torch.save(state, save_dir + save_filename)
     model_lists = natsorted(glob.glob(save_dir + '*'))
     while len(model_lists) > max_model_num:
-        os.remove(model_lists[0])
+        remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
+
+def log_TrainTest(wandb, F_Net_plus, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, training_generator, validation_generator, test_generator, earlyStop):
+    # choose the model
+    model_name = 0
+    if F_Net_plus:
+        assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{ FT_size[0]}, { FT_size[1]}]"
+        model = Cascade(2, 2,  start_channel,  FT_size).cuda() 
+        model_name = 1
+    else:
+        model = Fourier_Net(2, 2,  start_channel).cuda()  
+
+    # choose the loss function for similarity
+    assert choose_loss >= 0 and  choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: { choose_loss}"
+    if  choose_loss == 1:
+        loss_similarity = MSE().loss
+    elif  choose_loss == 0:
+        loss_similarity = SAD().loss
+    elif  choose_loss == 2:
+        loss_similarity = NCC(win=9)
+    elif  choose_loss == 3:
+        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
+        loss_similarity = SAD().loss
+    loss_smooth = smoothloss
+
+    # choose whether to use a diffeomorphic transform or not
+    diffeo_name = 0
+    if diffeo:
+        diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        diffeo_name = 1
+
+    transform = SpatialTransform().cuda()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    for param in transform.parameters():
+        param.requires_grad = False
+        param.volatile = True
+
+    # path to save model parameters to
+    model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+
+    if not isdir(model_dir_png):
+        mkdir(model_dir_png)
+
+    if not isdir(model_dir):
+        mkdir(model_dir)
+
+    ##############
+    ## Training ##
+    ##############
+
+    if earlyStop:
+        # counter and best SSIM for early stopping
+        counter_earlyStopping = 0
+        best_Dice = 0
+
+
+    print('\nStarted training on ', time.ctime())
+
+    for epoch in range(epochs):
+        losses = np.zeros(training_generator.__len__())
+        for i, image_pair in enumerate(training_generator):
+            mov_img = image_pair[0].cuda().float()
+            fix_img = image_pair[1].cuda().float()
+            
+            f_xy = model(mov_img, fix_img)
+            if diffeo:
+                Df_xy = diff_transform(f_xy)
+            else:
+                Df_xy = f_xy
+            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            
+            loss1 = loss_similarity(fix_img, warped_mov) 
+            loss5 = loss_smooth(Df_xy)
+            
+            loss = loss1 + smth_lambda * loss5
+            losses[i] = loss
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        ################
+        ## Validation ##
+        ################
+
+        with torch.no_grad():
+            model.eval()
+            MSE_Validation = []
+            SSIM_Validation = []
+            Dice_Validation = []
+            
+            for mov_img, fix_img, mov_seg, fix_seg in validation_generator: 
+                fix_img = fix_img.cuda().float()
+                mov_img = mov_img.cuda().float()
+                mov_seg = mov_seg.cuda().float()
+                fix_seg = fix_seg.cuda().float()
+                
+                f_xy = model(mov_img, fix_img)
+                if diffeo:
+                    Df_xy = diff_transform(f_xy)
+                else:
+                    Df_xy = f_xy
+                # get warped image and segmentation
+                grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+                
+                # calculate MSE, SSIM and Dice 
+                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
+                SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
+                Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
+        
+            # calculate mean of validation metrics
+            Mean_MSE = np.mean(MSE_Validation)
+            Mean_SSIM = np.mean(SSIM_Validation)
+            Mean_Dice = np.mean(Dice_Validation)
+
+            if earlyStop:
+                # save best metrics and reset counter if Dice got better, else increase counter for early stopping
+                if Mean_Dice>best_Dice:
+                    best_Dice = Mean_Dice
+                    counter_earlyStopping = 0
+                else:
+                    counter_earlyStopping += 1    
+            
+            # log loss and validation metrics to wandb
+            wandb.log({"Loss": np.mean(losses), "Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM})
+            
+            # save and log model     
+            modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice,Mean_SSIM, Mean_MSE, epoch)
+            save_checkpoint(model.state_dict(), model_dir, modelname)
+            wandb.log_model(path=model_dir, name=modelname)
+
+            # save image
+            sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
+            save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+            print("epoch {:d}/{:d} - DICE_val: {:.5f} MSE_val: {:.6f}, SSIM_val: {:.5f}".format(epoch, epochs, Mean_Dice, Mean_MSE, Mean_SSIM))
+
+            if earlyStop:    
+                # stop training if metrics stop improving for three epochs (only on the first run)
+                if counter_earlyStopping == 3:
+                    epochs = epoch      # save number of epochs for other runs
+                    break
+                
+        print('Training ended on ', time.ctime())
+
+    #############
+    ## Testing ##
+    #############
+    
+    print('\nTesting started on ', time.ctime())
+
+    csv_name = './TestResults-Metrics/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    f = open(csv_name, 'w')
+    with f:
+        fnames = ['Image Pair','Dice','MSE','SSIM','Time','Mean Dice','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
+        writer = csv.DictWriter(f, fieldnames=fnames)
+        writer.writeheader()
+
+    model.eval()
+    transform.eval()
+    MSE_test = []
+    SSIM_test = []
+    Dice_test = []
+    NegJ_test=[]
+    times = []
+
+    for i, imagePairs in test_generator: 
+        with torch.no_grad():
+            start = time.time()
+            
+            fix_img = imagePairs[0].cuda().float()
+            mov_img = imagePairs[1].cuda().float()
+            mov_seg = imagePairs[2].cuda().float()
+            fix_seg = imagePairs[3].cuda().float()
+            
+            f_xy = model(mov_img, fix_img)
+            if diffeo:
+                Df_xy = diff_transform(f_xy)
+            else:
+                Df_xy = f_xy
+            
+            # get warped image and segmentation
+            grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+            
+            # get inference time
+            inference_time = time.time()-start
+            times.append(inference_time)
+
+            # calculate MSE, SSIM and Dice 
+            csv_Dice = dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
+            csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy())
+            csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1)
+            Dice_Validation.append(csv_Dice)
+            MSE_Validation.append(csv_MSE)
+            SSIM_Validation.append(csv_SSIM)
+        
+            hh, ww = V_xy.shape[-2:]
+            V_xy = V_xy.detach().cpu().numpy()
+            V_xy[:,0,:,:] = V_xy[:,0,:,:] * hh / 2
+            V_xy[:,1,:,:] = V_xy[:,1,:,:] * ww / 2
+
+            jac_det = jacobian_determinant_vxm(V_xy[0, :, :, :])
+            negJ = np.sum(jac_det <= 0) / 160 / 192 * 100
+            NegJ_test.append(negJ)
+            
+            # save test results to csv file
+            f = open(csv_name, 'a')
+            with f:
+                writer = csv.writer(f)
+                writer.writerow([i, csv_Dice, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-', '-']) 
+
+    # calculate mean and stdof test metrics
+    Mean_time = np.mean(times)
+    Mean_MSE  = np.mean(MSE_test)
+    Mean_SSIM = np.mean(SSIM_test)
+    Mean_Dice = np.mean(Dice_test)
+    Mean_NegJ = np.mean(NegJ_test)
+
+    Std_MSE  = np.std(MSE_test)
+    Std_SSIM = np.std(SSIM_test)
+    Std_Dice = np.std(Dice_test)
+    Std_NegJ = np.std(NegJ_test)
+    
+    # save test results to csv file
+    f = open(csv_name, 'a')
+    with f:
+        writer = csv.writer(f)
+        writer.writerow(['-', '-', '-', '-', '-', Mean_Dice, Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
+
+    # print results
+    print('     Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_Dice, Std_Dice, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
+    wandb.log({"Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
+    
+    print('Testing ended on ', time.ctime())
+    
+    # Mark the run as finished
+    wandb.finish()   
+
+    return epochs    
 
 ##############################################
 ### Helper Functions for CMRImageGenerator ###
