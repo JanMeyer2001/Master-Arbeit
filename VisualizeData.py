@@ -50,25 +50,43 @@ def rotate_image(image):
     return image_new        
 
 # data from ACDC dataset
-path = '/home/jmeyer/storage/students/janmeyer_711878/data/ACDC/FullySampled/Test/patient081/Slice0'
+path = '/home/jmeyer/storage/students/janmeyer_711878/data/ACDC/FullySampled/Test/patient100/Slice0'
 # read in images 
-image = imread(path+'/Image_Frame01.png', as_gray=True)/255
-seg = imread(path+'/Segmentation_Frame01.png', as_gray=True)/255
+image1 = imread(path+'/Image_Frame01.png', as_gray=True)/255
+image2 = imread(path+'/Image_Frame13.png', as_gray=True)/255
+seg1 = imread(path+'/Segmentation_Frame01.png', as_gray=True)/255
+seg2 = imread(path+'/Segmentation_Frame13.png', as_gray=True)/255
 
 # save image
 plt.subplot(1, 1, 1)
-plt.imshow(image, cmap='gray') 
+plt.imshow(image1, cmap='gray') 
 plt.axis('off')
 plt.tight_layout()
-plt.savefig('./Thesis/Images/Image_ACDC.png') 
+plt.savefig('./Thesis/Images/Image_ACDC_diastolic.png') #
+plt.close
+
+# save image
+plt.subplot(1, 1, 1)
+plt.imshow(image2, cmap='gray') 
+plt.axis('off')
+plt.tight_layout()
+plt.savefig('./Thesis/Images/Image_ACDC_systolic.png') #
 plt.close
 
 # save segmentation
 plt.subplot(1, 1, 1)
-plt.imshow(seg) #, cmap='gray'
+plt.imshow(seg1) #, cmap='gray'
 plt.axis('off')
 plt.tight_layout()
-plt.savefig('./Thesis/Images/Segmentation_ACDC.png') 
+plt.savefig('./Thesis/Images/Segmentation_ACDC_diastolic.png') #
+plt.close
+
+# save image
+plt.subplot(1, 1, 1)
+plt.imshow(seg2) #, cmap='gray'
+plt.axis('off')
+plt.tight_layout()
+plt.savefig('./Thesis/Images/Segmentation_ACDC_systolic.png') #
 plt.close
 
 """
