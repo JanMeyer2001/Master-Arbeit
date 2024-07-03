@@ -85,52 +85,63 @@ for i, patient_path in enumerate(patients_folders):
         if not isdir(join(image_path, folder)):
             mkdir(join(image_path, folder)+'/')
         
-        # get all frame files
-        all_files = [f.path for f in scandir(join(path_origin, folder)) if f.is_file() and not (f.name.find('frame') == -1)]
-        # get ground truth frames
-        gt_files = [f.path for f in scandir(join(path_origin, folder)) if f.is_file() and not (f.name.find('frame') == -1) and not (f.name.find('gt') == -1)]
-        # get image frames
-        frame_files = [f for f in all_files if f not in gt_files]
+        if 0 <= i < 70:
+            file_name = folder+'_4d.nii.gz'
+            file_path = join(patient_path, file_name)
+            # Load 4D image data
+            nim1 = nib.load(file_path) 
+            volume = nim1.get_fdata() 
 
-        for frame_path in frame_files:
-            frame = str(basename(frame_path)[-9:-7])
-            
-            # Load image data
-            nim1 = nib.load(frame_path) 
-            volume = nim1.get_fdata()
-            
-            # Load ground truth segmentation
-            seg_path = [f for f in gt_files if not (f.find(frame) == -1) ]
-            nim2 = nib.load(seg_path[0]) 
-            segmentation = nim2.get_fdata()
-            
-            # save images to the corresponding folders
-            for slice in range(volume.shape[2]):
-                # ensure that subfolder for each slice exists
-                subfolder = 'Slice' + str(slice)
-                if not isdir(join(image_path, folder, subfolder)):
-                    mkdir(join(image_path, folder, subfolder)+'/')
+            for frame in range(volume.shape[3]):
+                # save images to the corresponding folders
+                for slice in range(volume.shape[2]):
+                    # ensure that subfolder for each slice exists
+                    subfolder = 'Slice' + str(slice)
+                    if not isdir(join(image_path, folder, subfolder)):
+                        mkdir(join(image_path, folder, subfolder)+'/')
+                    
+                    image = volume[:,:,slice,frame]
+                    image = np.array(255*image/image.max(), dtype='uint8')
+                    
+                    # manually subsample image for accelerated data
+                    if mode != 0:
+                        k_space = torch.fft.fftn(image)                             # apply fft to get k-space
+                        subsampled_k_space = mask*k_space                           # apply mask for subsampling
+                        image = torch.real(torch.fft.ifftn(subsampled_k_space))     # convert subsampled k-space back to image space
+
+                    # save image to target dir as png and gt as nifti file
+                    imsave(join(image_path, folder, subfolder) + '/Image_Frame{0:02d}.png'.format(frame), image, check_contrast=False) 
                 
-                image = volume[:,:,slice]
-                image = np.array(255*image/image.max(), dtype='uint8')
-                gt = np.array(segmentation[:,:,slice], dtype='uint8')
+        else:
+            # get all frame files
+            all_files = [f.path for f in scandir(patient_path) if f.is_file() and not (f.name.find('frame') == -1)]
+            # get ground truth frames
+            gt_files = [f.path for f in scandir(patient_path) if f.is_file() and not (f.name.find('frame') == -1) and not (f.name.find('gt') == -1)]
+            # get image frames
+            frame_files = [f for f in all_files if f not in gt_files]
 
-                """
-                plt.subplots(figsize=(7, 4))
-                plt.axis('off')
-
-                plt.subplot(1,2,1)
-                plt.imshow(image, cmap='gray') #, vmax=1, vmin=0
-                plt.title('Image')
-                plt.axis('off')
-
-                plt.subplot(1,2,2)
-                plt.imshow(gt, cmap='gray')
-                plt.title('Segmentation')
-                plt.axis('off')
-                plt.savefig('ACDC-Images')
-                plt.close()
-                """
+            for frame_path in frame_files:
+                frame = str(basename(frame_path)[-9:-7])
+                
+                # Load image data
+                nim1 = nib.load(frame_path) 
+                volume = nim1.get_fdata()
+                
+                # Load ground truth segmentation
+                seg_path = [f for f in gt_files if not (f.find(frame) == -1) ]
+                nim2 = nib.load(seg_path[0]) 
+                segmentation = nim2.get_fdata()
+                
+                # save images to the corresponding folders
+                for slice in range(volume.shape[2]):
+                    # ensure that subfolder for each slice exists
+                    subfolder = 'Slice' + str(slice)
+                    if not isdir(join(image_path, folder, subfolder)):
+                        mkdir(join(image_path, folder, subfolder)+'/')
+                    
+                    image = volume[:,:,slice]
+                    image = np.array(255*image/image.max(), dtype='uint8')
+                    gt = np.array(segmentation[:,:,slice], dtype='uint8')
 
                 # manually subsample image for accelerated data
                 if mode != 0:

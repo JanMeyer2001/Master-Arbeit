@@ -64,20 +64,31 @@ def get_image_pairs_ACDC(subset, data_path, subfolder):
     """ get the corresponding paths of image pairs for the ACDC dataset """
     image_pairs = []  
     # get folder names for patients
-    patients = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('patient') == -1)]
+    patients = [basename(f.path) for f in scandir(join(data_path, subfolder, subset)) if f.is_dir() and not (f.name.find('patient') == -1)]
     for patient in patients:
         # get subfolder names for image slices
-        slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+        slices = [basename(f.path) for f in scandir(join(data_path, subfolder, subset, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
         for slice in slices:
             # get all frames for each slice
-            frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and f.name.startswith('frame')]
-            if subset == 'Test':
+            frames = [f.path for f in scandir(join(data_path, subfolder, subset, patient, slice)) if isfile(join(data_path, subfolder, subset, patient, slice, f)) and f.name.startswith('Image_Frame')]
+            if subset == 'Training':
+                # add all combinations of the frames to a list 
+                image_pairs = image_pairs + list(itertools.combinations(frames, 2)) 
+            else:    
                 # add pairs of the frames to a list 
                 image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
-            else:    
-                # add all combinations of the frames to a list 
-                image_pairs = image_pairs + list(itertools.combinations(frames, 2)) #list(zip(frames[:-1], frames[1:]))#list(itertools.permutations(frames, 2))
     return image_pairs
+
+def load_image_pair_ACDC_train(pathname1, pathname2):
+    """ expects paths for files and loads the corresponding image pair"""
+    # read in images 
+    image1 = imread(pathname1, as_gray=True)/255
+    image2 = imread(pathname2, as_gray=True)/255
+    # convert to tensors and add singleton dimension for the correct size
+    image1 = torch.from_numpy(image1).unsqueeze(0)#.unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0)#.unsqueeze(0)
+    
+    return image1, image2
 
 def load_image_pair_ACDC(pathname1, pathname2):
     """ expects paths for files and loads the corresponding images and segmentations """
@@ -90,10 +101,10 @@ def load_image_pair_ACDC(pathname1, pathname2):
     seg2 = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/255
     
     # convert to tensors and add singleton dimension for the correct size
-    image1 = torch.from_numpy(image1).unsqueeze(0).unsqueeze(0)
-    image2 = torch.from_numpy(image2).unsqueeze(0).unsqueeze(0)
-    seg1 = torch.from_numpy(seg1).unsqueeze(0).unsqueeze(0)
-    seg2 = torch.from_numpy(seg2).unsqueeze(0).unsqueeze(0)
+    image1 = torch.from_numpy(image1).unsqueeze(0)#.unsqueeze(0)
+    image2 = torch.from_numpy(image2).unsqueeze(0)#.unsqueeze(0)
+    seg1 = torch.from_numpy(seg1).unsqueeze(0)#.unsqueeze(0)
+    seg2 = torch.from_numpy(seg2).unsqueeze(0)#.unsqueeze(0)
     
     return image1, image2, seg1, seg2
 
@@ -122,8 +133,8 @@ class TrainDatasetACDC(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        mov_img, fix_img, mov_seg, fix_seg = load_image_pair_ACDC(self.paths[index][0], self.paths[index][1])
-        return  mov_img, fix_img, mov_seg, fix_seg
+        mov_img, fix_img = load_image_pair_ACDC_train(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img
 
 class ValidationDatasetACDC(Data.Dataset):
   'Validation dataset for ACDC data'
@@ -668,52 +679,19 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
         remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
 
-def log_TrainTest(wandb, F_Net_plus, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, training_generator, validation_generator, test_generator, earlyStop):
-    # choose the model
-    model_name = 0
-    if F_Net_plus:
-        assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{ FT_size[0]}, { FT_size[1]}]"
-        model = Cascade(2, 2,  start_channel,  FT_size).cuda() 
-        model_name = 1
-    else:
-        model = Fourier_Net(2, 2,  start_channel).cuda()  
-
-    # choose the loss function for similarity
-    assert choose_loss >= 0 and  choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: { choose_loss}"
-    if  choose_loss == 1:
-        loss_similarity = MSE().loss
-    elif  choose_loss == 0:
-        loss_similarity = SAD().loss
-    elif  choose_loss == 2:
-        loss_similarity = NCC(win=9)
-    elif  choose_loss == 3:
-        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
-        loss_similarity = SAD().loss
-    loss_smooth = smoothloss
-
-    # choose whether to use a diffeomorphic transform or not
-    diffeo_name = 0
-    if diffeo:
-        diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-        diffeo_name = 1
-
-    transform = SpatialTransform().cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-    for param in transform.parameters():
-        param.requires_grad = False
-        param.volatile = True
-
+def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, optimizer, loss_similarity, loss_smooth, diff_transform, transform, training_generator, validation_generator, test_generator, earlyStop):
+    
     # path to save model parameters to
     model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
     model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
 
+    """
     if not isdir(model_dir_png):
         mkdir(model_dir_png)
 
     if not isdir(model_dir):
         mkdir(model_dir)
-
+    """
     ##############
     ## Training ##
     ##############
@@ -722,7 +700,6 @@ def log_TrainTest(wandb, F_Net_plus, FT_size, learning_rate, start_channel, smth
         # counter and best SSIM for early stopping
         counter_earlyStopping = 0
         best_Dice = 0
-
 
     print('\nStarted training on ', time.ctime())
 
