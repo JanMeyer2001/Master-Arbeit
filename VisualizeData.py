@@ -11,6 +11,7 @@ import scipy
 import h5py
 import fastmri
 from fastmri.data import transforms as T
+from skimage.io import imread
 
 def readfile2numpy(file_name):
     '''
@@ -48,7 +49,29 @@ def rotate_image(image):
 
     return image_new        
 
+# data from ACDC dataset
+path = '/home/jmeyer/storage/students/janmeyer_711878/data/ACDC/FullySampled/Test/patient081/Slice0'
+# read in images 
+image = imread(path+'/Image_Frame01.png', as_gray=True)/255
+seg = imread(path+'/Segmentation_Frame01.png', as_gray=True)/255
 
+# save image
+plt.subplot(1, 1, 1)
+plt.imshow(image, cmap='gray') 
+plt.axis('off')
+plt.tight_layout()
+plt.savefig('./Thesis/Images/Image_ACDC.png') 
+plt.close
+
+# save segmentation
+plt.subplot(1, 1, 1)
+plt.imshow(seg) #, cmap='gray'
+plt.axis('off')
+plt.tight_layout()
+plt.savefig('./Thesis/Images/Segmentation_ACDC.png') 
+plt.close
+
+"""
 # Data from CMRxRecon
 data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample'
 names = [f.path for f in os.scandir(data_path) if f.is_dir()]
@@ -89,6 +112,8 @@ for i in range(nframe):
     plt.savefig('Frame' + str(i) + '.png') #'./Thesis/Images/image' + str(i) +'.png'
     plt.title('Frame' + str(i))
     plt.close
+
+"""    
 
 """ 
 # Data from OASIS
