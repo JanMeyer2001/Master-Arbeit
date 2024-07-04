@@ -25,7 +25,6 @@ from skimage.metrics import structural_similarity, mean_squared_error
 import csv
 from os import mkdir
 from os.path import isdir
-from Models import *
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 def rotate_image(image):
@@ -85,9 +84,12 @@ def load_image_pair_ACDC_train(pathname1, pathname2):
     image1 = imread(pathname1, as_gray=True)/255
     image2 = imread(pathname2, as_gray=True)/255
     # convert to tensors and add singleton dimension for the correct size
-    image1 = torch.from_numpy(image1).unsqueeze(0)#.unsqueeze(0)
-    image2 = torch.from_numpy(image2).unsqueeze(0)#.unsqueeze(0)
-    
+    image1 = torch.from_numpy(image1)#.unsqueeze(0).unsqueeze(0)
+    image2 = torch.from_numpy(image2)#.unsqueeze(0).unsqueeze(0)
+    # interpolate all images to the same size
+    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+
     return image1, image2
 
 def load_image_pair_ACDC(pathname1, pathname2):
@@ -97,14 +99,20 @@ def load_image_pair_ACDC(pathname1, pathname2):
     image2 = imread(pathname2, as_gray=True)/255
 
     # read in segmentations (only have value 0 for background and 1,2,3 for structures)
-    seg1 = imread(pathname1.replace('Image','Segmentation'), as_gray=True)/255
-    seg2 = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/255
+    seg1 = imread(pathname1.replace('Image','Segmentation'), as_gray=True)/3
+    seg2 = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/3
     
     # convert to tensors and add singleton dimension for the correct size
-    image1 = torch.from_numpy(image1).unsqueeze(0)#.unsqueeze(0)
-    image2 = torch.from_numpy(image2).unsqueeze(0)#.unsqueeze(0)
-    seg1 = torch.from_numpy(seg1).unsqueeze(0)#.unsqueeze(0)
-    seg2 = torch.from_numpy(seg2).unsqueeze(0)#.unsqueeze(0)
+    image1 = torch.from_numpy(image1)#.unsqueeze(0).unsqueeze(0)
+    image2 = torch.from_numpy(image2)#.unsqueeze(0).unsqueeze(0)
+    seg1 = torch.from_numpy(seg1)#.unsqueeze(0).unsqueeze(0)
+    seg2 = torch.from_numpy(seg2)#.unsqueeze(0).unsqueeze(0)
+
+    # interpolate all images and segmentations to the same size
+    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    seg1 = F.interpolate(seg1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    seg2 = F.interpolate(seg2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
     
     return image1, image2, seg1, seg2
 
@@ -534,32 +542,6 @@ class TestDatasetOASIS(Data.Dataset):
         # Select sample
         img_A, img_B, label_A, label_B = load_validation_pair_OASIS(self.data_path, self.filename[index][0], self.filename[index][1])
         return img_A, img_B, label_A, label_B
-  
-def load_test_pair_OASIS(data_path, filename1, filename2):
-    # Load images and labels
-    nim1 = nib.load(join(data_path, 'imagesTr', filename1))
-    image1 = nim1.get_fdata()[:,96,:]
-    image1 = np.array(image1, dtype='float32')
-
-    nim2 = nib.load(join(data_path, 'imagesTr', filename2)) 
-    image2 = nim2.get_fdata()[:,96,:] 
-    image2 = np.array(image2, dtype='float32')
-    
-    nim5 = nib.load(join(data_path, 'labelsTr', filename1)) 
-    image5 = nim5.get_fdata()[:,96,:]
-    image5 = np.array(image5, dtype='float32')
-    # image5 = image5 / 35.0
-    nim6 = nib.load(join(data_path, 'labelsTr', filename2)) 
-    image6 = nim6.get_fdata()[:,96,:]
-    image6 = np.array(image6, dtype='float32') 
-    
-    #"""
-    image1 = np.reshape(image1, (1,) + image1.shape)
-    image2 = np.reshape(image2, (1,) + image2.shape)
-    image5 = np.reshape(image5, (1,) + image5.shape)
-    image6 = np.reshape(image6, (1,) + image6.shape)
-    #"""
-    return image1, image2, image5, image6
 
 def save_flow(mov, fix, warp, grid, save_path):
     mov = mov.data.cpu().numpy()[0, 0, ...]
@@ -672,6 +654,16 @@ def dice(pred1, truth1):
         dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
     return np.mean(dice_list)
 
+def dice_ACDC(pred1, truth1):
+    mask_values = [0.0, 0.33333334, 0.6666667, 1.0]
+    dice_list=[]
+    for k in mask_values:
+        truth = truth1 == k
+        pred = pred1 == k
+        intersection = np.sum(pred * truth) * 2.0
+        dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
+    return np.mean(dice_list)
+
 def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     torch.save(state, save_dir + save_filename)
     model_lists = natsorted(glob.glob(save_dir + '*'))
@@ -679,19 +671,18 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
         remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
 
-def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, optimizer, loss_similarity, loss_smooth, diff_transform, transform, training_generator, validation_generator, test_generator, earlyStop):
+def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, optimizer, loss_similarity, loss_smooth, diff_transform, transform, training_generator, validation_generator, test_generator, earlyStop):
     
     # path to save model parameters to
-    model_dir = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
-    model_dir_png = './ModelParameters/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
 
-    """
     if not isdir(model_dir_png):
         mkdir(model_dir_png)
 
     if not isdir(model_dir):
         mkdir(model_dir)
-    """
+
     ##############
     ## Training ##
     ##############
@@ -699,7 +690,10 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
     if earlyStop:
         # counter and best SSIM for early stopping
         counter_earlyStopping = 0
-        best_Dice = 0
+        if dataset == 'CMRxRecon':
+            best_SSIM = 0
+        else:
+            best_Dice = 0
 
     print('\nStarted training on ', time.ctime())
 
@@ -734,13 +728,16 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
             model.eval()
             MSE_Validation = []
             SSIM_Validation = []
-            Dice_Validation = []
+            if dataset != 'CMRxRecon':
+                Dice_Validation = []
             
-            for mov_img, fix_img, mov_seg, fix_seg in validation_generator: 
-                fix_img = fix_img.cuda().float()
-                mov_img = mov_img.cuda().float()
-                mov_seg = mov_seg.cuda().float()
-                fix_seg = fix_seg.cuda().float()
+            for i, image_pair in enumerate(validation_generator): 
+                fix_img = image_pair[0].cuda().float()
+                mov_img = image_pair[1].cuda().float()
+                
+                if dataset != 'CMRxRecon':
+                    mov_seg = image_pair[2].cuda().float()
+                    fix_seg = image_pair[3].cuda().float()
                 
                 f_xy = model(mov_img, fix_img)
                 if diffeo:
@@ -749,38 +746,57 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
                     Df_xy = f_xy
                 # get warped image and segmentation
                 grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
-                
-                # calculate MSE, SSIM and Dice 
-                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
-                SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
-                Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
+                if dataset != 'CMRxRecon':
+                    grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+
+                # calculate Dice, MSE and SSIM 
+                Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy()))
+                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
+                if dataset != 'CMRxRecon':
+                    Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
         
             # calculate mean of validation metrics
             Mean_MSE = np.mean(MSE_Validation)
             Mean_SSIM = np.mean(SSIM_Validation)
-            Mean_Dice = np.mean(Dice_Validation)
+            if dataset != 'CMRxRecon':
+                Mean_Dice = np.mean(Dice_Validation)
 
             if earlyStop:
-                # save best metrics and reset counter if Dice got better, else increase counter for early stopping
-                if Mean_Dice>best_Dice:
-                    best_Dice = Mean_Dice
-                    counter_earlyStopping = 0
+                # save best metrics and reset counter if Dice/SSIM got better, else increase counter for early stopping
+                if dataset == 'CMRxRecon':
+                    if Mean_SSIM>best_SSIM:
+                        best_SSIM = Mean_SSIM
+                        counter_earlyStopping = 0
+                    else:
+                        counter_earlyStopping += 1   
                 else:
-                    counter_earlyStopping += 1    
+                    if Mean_Dice>best_Dice:
+                        best_Dice = Mean_Dice
+                        counter_earlyStopping = 0
+                    else:
+                        counter_earlyStopping += 1    
             
             # log loss and validation metrics to wandb
-            wandb.log({"Loss": np.mean(losses), "Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM})
+            if dataset == 'CMRxRecon':
+                wandb.log({"Loss": np.mean(losses), "MSE": Mean_MSE, "SSIM": Mean_SSIM})
+            else:
+                wandb.log({"Loss": np.mean(losses), "Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM})
             
             # save and log model     
-            modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice,Mean_SSIM, Mean_MSE, epoch)
+            if dataset == 'CMRxRecon':
+                modelname = 'SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch)
+            else:
+                modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice, Mean_SSIM, Mean_MSE, epoch)
             save_checkpoint(model.state_dict(), model_dir, modelname)
-            wandb.log_model(path=model_dir, name=modelname)
+            #wandb.log_model(path=model_dir, name=modelname)
 
             # save image
             sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
             save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
-            print("epoch {:d}/{:d} - DICE_val: {:.5f} MSE_val: {:.6f}, SSIM_val: {:.5f}".format(epoch, epochs, Mean_Dice, Mean_MSE, Mean_SSIM))
+            if dataset == 'CMRxRecon':
+                print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_SSIM, Mean_MSE))
+            else:
+                print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
 
             if earlyStop:    
                 # stop training if metrics stop improving for three epochs (only on the first run)
@@ -796,10 +812,13 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
     
     print('\nTesting started on ', time.ctime())
 
-    csv_name = './TestResults-Metrics/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    csv_name = './TestResults-Metrics-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
     f = open(csv_name, 'w')
     with f:
-        fnames = ['Image Pair','Dice','MSE','SSIM','Time','Mean Dice','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
+        if dataset == 'CMRxRecon':
+            fnames = ['Image Pair','MSE','SSIM','Time','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
+        else:
+            fnames = ['Image Pair','Dice','MSE','SSIM','Time','Mean Dice','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
 
@@ -807,20 +826,28 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
     transform.eval()
     MSE_test = []
     SSIM_test = []
-    Dice_test = []
     NegJ_test=[]
     times = []
+    if dataset != 'CMRxRecon':
+        Dice_test = []
 
     for i, imagePairs in test_generator: 
         with torch.no_grad():
-            start = time.time()
-            
             fix_img = imagePairs[0].cuda().float()
             mov_img = imagePairs[1].cuda().float()
-            mov_seg = imagePairs[2].cuda().float()
-            fix_seg = imagePairs[3].cuda().float()
+            
+            if dataset != 'CMRxRecon':
+                mov_seg = imagePairs[2].cuda().float()
+                fix_seg = imagePairs[3].cuda().float()
+            
+            start = time.time()
             
             f_xy = model(mov_img, fix_img)
+            
+            # get inference time
+            inference_time = time.time()-start
+            times.append(inference_time)
+
             if diffeo:
                 Df_xy = diff_transform(f_xy)
             else:
@@ -828,16 +855,14 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
             
             # get warped image and segmentation
             grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-            grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+            if dataset != 'CMRxRecon':
+                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
             
-            # get inference time
-            inference_time = time.time()-start
-            times.append(inference_time)
-
             # calculate MSE, SSIM and Dice 
-            csv_Dice = dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
-            csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy())
-            csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1)
+            if dataset != 'CMRxRecon':
+                csv_Dice = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())
+            csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy())
+            csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1)
             Dice_Validation.append(csv_Dice)
             MSE_Validation.append(csv_MSE)
             SSIM_Validation.append(csv_SSIM)
@@ -855,29 +880,41 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, FT_size, learning_rate,
             f = open(csv_name, 'a')
             with f:
                 writer = csv.writer(f)
-                writer.writerow([i, csv_Dice, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-', '-']) 
+                if dataset == 'CMRxRecon':
+                    writer.writerow([i, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-']) 
+                else:
+                    writer.writerow([i, csv_Dice, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-', '-']) 
 
     # calculate mean and stdof test metrics
     Mean_time = np.mean(times)
     Mean_MSE  = np.mean(MSE_test)
     Mean_SSIM = np.mean(SSIM_test)
-    Mean_Dice = np.mean(Dice_test)
+    if dataset != 'CMRxRecon':
+        Mean_Dice = np.mean(Dice_test)
     Mean_NegJ = np.mean(NegJ_test)
 
     Std_MSE  = np.std(MSE_test)
     Std_SSIM = np.std(SSIM_test)
-    Std_Dice = np.std(Dice_test)
+    if dataset != 'CMRxRecon':
+        Std_Dice = np.std(Dice_test)
     Std_NegJ = np.std(NegJ_test)
     
     # save test results to csv file
     f = open(csv_name, 'a')
     with f:
         writer = csv.writer(f)
-        writer.writerow(['-', '-', '-', '-', '-', Mean_Dice, Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
+        if dataset == 'CMRxRecon':
+            writer.writerow(['-', '-', '-', '-', Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
+        else:
+            writer.writerow(['-', '-', '-', '-', '-', Mean_Dice, Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
 
     # print results
-    print('     Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_Dice, Std_Dice, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
-    wandb.log({"Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
+    if dataset == 'CMRxRecon':
+        print('     Mean inference time: {:.4f} seconds\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
+        wandb.log({"MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
+    else:
+        print('     Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_Dice, Std_Dice, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
+        wandb.log({"Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
     
     print('Testing ended on ', time.ctime())
     

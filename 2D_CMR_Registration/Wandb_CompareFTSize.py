@@ -168,6 +168,6 @@ for run in range(total_runs):
         
         print('Finished Loading!')
 
-        epochs = log_TrainTest(wandb,model,model_name,diffeo_name,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,True)
+        epochs = log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,True)
     else:
-        log_TrainTest(wandb,model,model_name,diffeo_name,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,False)
+        log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,False)
