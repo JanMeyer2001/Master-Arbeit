@@ -157,7 +157,6 @@ for run in range(total_runs):
             validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
             test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
-
         elif config.dataset == "ACDC":
             train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', config.mode) 
             training_generator = Data.DataLoader(dataset=train_set, batch_size=config.bs, shuffle=True, num_workers=4)
@@ -165,6 +164,8 @@ for run in range(total_runs):
             validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
             test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
+        else:
+            raise ValueError('Dataset should be "ACDC" or "CMRxRecon", but found "%s"!' % config.dataset)
         
         print('Finished Loading!')
 
