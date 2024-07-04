@@ -44,9 +44,9 @@ parser.add_argument("--diffeo", type=bool,
 parser.add_argument("--FT_size", type=tuple,
                     dest="FT_size", default=[24,24],
                     help="choose size of FT crop: Should be smaller than [40,84].")
-parser.add_argument("--earlyStop", type=bool,
-                    dest="earlyStop", default=True, action=BooleanOptionalAction, 
-                    help="choose whether to use early stopping to prevent overfitting (True) or not (False)")
+parser.add_argument("--earlyStop", type=int,
+                    dest="earlyStop", default=3,
+                    help="choose after how many epochs early stopping is applied")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -146,13 +146,12 @@ with f:
 ## Training ##
 ##############
 
-if earlyStop:
-    # counter and best SSIM for early stopping
-    counter_earlyStopping = 0
-    if dataset == 'CMRxRecon':
-        best_SSIM = 0
-    else:
-        best_Dice = 0
+# counter and best SSIM for early stopping
+counter_earlyStopping = 0
+if dataset == 'CMRxRecon':
+    best_SSIM = 0
+else:
+    best_Dice = 0
 
 print('\nStarted training on ', time.ctime())
 
@@ -231,20 +230,19 @@ for epoch in range(epochs):
             else:
                 writer.writerow([epoch, Mean_Dice, Mean_MSE, Mean_SSIM]) 
 
-        if earlyStop:
-            # save best metrics and reset counter if Dice/SSIM got better, else increase counter for early stopping
-            if dataset == 'CMRxRecon':
-                if Mean_SSIM>best_SSIM:
-                    best_SSIM = Mean_SSIM
-                    counter_earlyStopping = 0
-                else:
-                    counter_earlyStopping += 1   
+        # save best metrics and reset counter if Dice/SSIM got better, else increase counter for early stopping
+        if dataset == 'CMRxRecon':
+            if Mean_SSIM>best_SSIM:
+                best_SSIM = Mean_SSIM
+                counter_earlyStopping = 0
             else:
-                if Mean_Dice>best_Dice:
-                    best_Dice = Mean_Dice
-                    counter_earlyStopping = 0
-                else:
-                    counter_earlyStopping += 1    
+                counter_earlyStopping += 1   
+        else:
+            if Mean_Dice>best_Dice:
+                best_Dice = Mean_Dice
+                counter_earlyStopping = 0
+            else:
+                counter_earlyStopping += 1    
         
         # save model     
         if dataset == 'CMRxRecon':
@@ -257,12 +255,12 @@ for epoch in range(epochs):
         sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
         save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
         if dataset == 'CMRxRecon':
-            print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_SSIM, Mean_MSE))
+            print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
         else:
-            print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
+            print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
 
         # stop training if metrics stop improving for three epochs (only on the first run)
-        if counter_earlyStopping == 3:
+        if counter_earlyStopping >= earlyStop:  
             break
             
-    print('Training ended on ', time.ctime())
+print('Training ended on ', time.ctime())

@@ -1160,11 +1160,14 @@ class VxmDense(LoadableModel):
         y_source = self.transformer(source, pos_flow)
         y_target = self.transformer(target, neg_flow) if self.bidir else None
 
+        """
         # return non-integrated flow field if training
         if not registration:
             return (y_source, y_target, preint_flow) if self.bidir else (y_source, preint_flow)
         else:
             return y_source, pos_flow
+        """
+        return y_source, pos_flow #flow_field
 
 
 class ConvBlock(nn.Module):

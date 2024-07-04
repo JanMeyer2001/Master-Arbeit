@@ -29,9 +29,9 @@ parser.add_argument("--mode", type=int, dest="mode", default=0,
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,
                     help="choose similarity loss: MSE (0) or NCC (1)")
-parser.add_argument("--earlyStop", type=bool,
-                    dest="earlyStop", default=True, action=BooleanOptionalAction, 
-                    help="choose whether to use early stopping to prevent overfitting (True) or not (False)")
+parser.add_argument("--earlyStop", type=int,
+                    dest="earlyStop", default=3,
+                    help="choose after how many epochs early stopping is applied")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -94,7 +94,7 @@ model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_
 model.train()  
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-transform = SpatialTransform().cuda()
+transform = SpatialTransformer(input_shape).cuda() #SpatialTransform().cuda()
 
 # prepare image loss
 if choose_loss == 1:
@@ -109,13 +109,12 @@ loss_smooth = smoothloss
 ## Training ##
 ##############
 
-if earlyStop:
-    # counter and best SSIM for early stopping
-    counter_earlyStopping = 0
-    if dataset == 'CMRxRecon':
-        best_SSIM = 0
-    else:
-        best_Dice = 0
+# counter and best SSIM for early stopping
+counter_earlyStopping = 0
+if dataset == 'CMRxRecon':
+    best_SSIM = 0
+else:
+    best_Dice = 0
 
 print('\nStarted training on ', time.ctime())
 
@@ -159,7 +158,7 @@ for epoch in range(epochs):
             warped_mov_img, Df_xy = model(mov_img, fix_img)
             
             if dataset != 'CMRxRecon':
-                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+                warped_mov_seg = transform(mov_seg, Df_xy) #.permute(0, 2, 3, 1)
             
             # calculate MSE, SSIM and Dice 
             MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
@@ -183,20 +182,19 @@ for epoch in range(epochs):
             else:
                 writer.writerow([epoch, Mean_Dice, Mean_MSE, Mean_SSIM]) 
 
-        if earlyStop:
-            # save best metrics and reset counter if Dice got better, else increase counter for early stopping
-            if dataset == 'CMRxRecon':
-                if Mean_SSIM>best_SSIM:
-                    best_SSIM = Mean_SSIM
-                    counter_earlyStopping = 0
-                else:
-                    counter_earlyStopping += 1   
+        # save best metrics and reset counter if Dice got better, else increase counter for early stopping
+        if dataset == 'CMRxRecon':
+            if Mean_SSIM>best_SSIM:
+                best_SSIM = Mean_SSIM
+                counter_earlyStopping = 0
             else:
-                if Mean_Dice>best_Dice:
-                    best_Dice = Mean_Dice
-                    counter_earlyStopping = 0
-                else:
-                    counter_earlyStopping += 1    
+                counter_earlyStopping += 1   
+        else:
+            if Mean_Dice>best_Dice:
+                best_Dice = Mean_Dice
+                counter_earlyStopping = 0
+            else:
+                counter_earlyStopping += 1    
         
         # save and log model     
         if dataset == 'CMRxRecon':
@@ -207,14 +205,14 @@ for epoch in range(epochs):
         
         # save image
         sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
-        save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+        save_flow(mov_img, fix_img, warped_mov_img, None, sample_path)
         if dataset == 'CMRxRecon':
-            print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_SSIM, Mean_MSE))
+            print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
         else:
-            print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
+            print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
 
         # stop training if metrics stop improving for three epochs 
-        if counter_earlyStopping == 3:
+        if counter_earlyStopping >= earlyStop:
             break
             
     print('Training ended on ', time.ctime())

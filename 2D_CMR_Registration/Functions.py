@@ -547,7 +547,6 @@ def save_flow(mov, fix, warp, grid, save_path):
     mov = mov.data.cpu().numpy()[0, 0, ...]
     fix = fix.data.cpu().numpy()[0, 0, ...]
     warp = warp.data.cpu().numpy()[0, 0, ...] 
-    grid = grid.data.cpu().numpy()[0,:,:,:]
     
     plt.subplots(figsize=(7, 4))
     plt.axis('off')
@@ -567,7 +566,8 @@ def save_flow(mov, fix, warp, grid, save_path):
     plt.title('Warped Image')
     plt.axis('off')
 
-    if grid.all() != None:
+    if type(grid) != type(None):
+        grid = grid.data.cpu().numpy()[0,:,:,:]
         plt.subplot(2,3,4)
         interval = 5
         for i in range(0,grid.shape[1]-1,interval):
@@ -794,9 +794,9 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
             save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
             if dataset == 'CMRxRecon':
-                print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_SSIM, Mean_MSE))
+                print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
             else:
-                print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
+                print("epoch {:d}/{:d} - DICE_val: {:.5f}, SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_Dice, Mean_SSIM, Mean_MSE))
 
             if earlyStop:    
                 # stop training if metrics stop improving for three epochs (only on the first run)
