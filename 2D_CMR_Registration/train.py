@@ -16,8 +16,8 @@ from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
                     dest="learning_rate", default=1e-4, help="learning rate")
-parser.add_argument("--iterations", type=int,
-                    dest="epochs", default=100,
+parser.add_argument("--epochs", type=int,
+                    dest="epochs", default=50,
                     help="number of epochs")
 parser.add_argument("--lambda", type=float,
                     dest="smth_lambda", default=0.01,
@@ -27,7 +27,7 @@ parser.add_argument("--start_channel", type=int,
                     help="number of start channels")
 parser.add_argument("--dataset", type=str,
                     dest="dataset",
-                    default='ACDC',
+                    default="ACDC",
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,
@@ -118,10 +118,10 @@ elif dataset == 'OASIS':
     # path for OASIS dataset
     train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
-    valid_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
-    valid_generator = Data.DataLoader(dataset=valid_set, batch_size=1, shuffle=False, num_workers=2)
+    validation_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=2)
 else:
-    print('Incorrect dataset selected!! Must be either ACDC, CMRxRecon or OASIS...')
+    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
 model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
 model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
@@ -212,8 +212,10 @@ for epoch in range(epochs):
             # calculate MSE, SSIM and Dice 
             MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
             SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
-            if dataset != 'CMRxRecon':
+            if dataset == 'OASIS':
                 Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
+            elif dataset == 'ACDC':
+                Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
     
         # calculate mean of validation metrics
         Mean_MSE = np.mean(MSE_Validation)
