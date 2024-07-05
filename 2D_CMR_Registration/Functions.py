@@ -660,8 +660,10 @@ def dice_ACDC(pred1, truth1):
     for k in mask_values:
         truth = truth1 == k
         pred = pred1 == k
-        intersection = np.sum(pred * truth) * 2.0
-        dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
+        # only calculate dice if label is in one of the segmentations 
+        if np.sum(pred)!= 0 or np.sum(truth)!= 0:
+            intersection = np.sum(pred * truth) * 2.0
+            dice_list.append(intersection / (np.sum(pred) + np.sum(truth))) 
     return np.mean(dice_list)
 
 def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
