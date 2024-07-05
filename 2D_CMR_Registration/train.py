@@ -253,7 +253,7 @@ for epoch in range(epochs):
         
         # save image
         sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
-        save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+        save_flow(mov_img, fix_img, warped_mov_img, grid.permute(0, 3, 1, 2), sample_path)
         if dataset == 'CMRxRecon':
             print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
         else:
