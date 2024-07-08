@@ -25,9 +25,8 @@ parser.add_argument("--lambda", type=float,
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
                     help="number of start channels")
-parser.add_argument("--dataset", type=str,
-                    dest="dataset",
-                    default="ACDC",
+parser.add_argument("--dataset", type=str, 
+                    dest="dataset", default="ACDC",
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,

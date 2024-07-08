@@ -752,11 +752,11 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                     grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
 
                 # calculate Dice, MSE and SSIM 
-                Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy()))
-                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
                 if dataset != 'CMRxRecon':
-                    Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
-        
+                    Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy()))
+                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
+                SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1))
+            
             # calculate mean of validation metrics
             Mean_MSE = np.mean(MSE_Validation)
             Mean_SSIM = np.mean(SSIM_Validation)
@@ -794,7 +794,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 
             # save image
             sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
-            save_flow(mov_img, fix_img, warped_mov, grid.permute(0, 3, 1, 2), sample_path)
+            save_flow(mov_img, fix_img, warped_mov_img, grid.permute(0, 3, 1, 2), sample_path)
             if dataset == 'CMRxRecon':
                 print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
             else:
@@ -814,7 +814,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
     
     print('\nTesting started on ', time.ctime())
 
-    csv_name = './TestResults-Metrics-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+    csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
     f = open(csv_name, 'w')
     with f:
         if dataset == 'CMRxRecon':
@@ -865,6 +865,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                 csv_Dice = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())
             csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy())
             csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1)
+            
             Dice_Validation.append(csv_Dice)
             MSE_Validation.append(csv_MSE)
             SSIM_Validation.append(csv_SSIM)
