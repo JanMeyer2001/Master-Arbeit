@@ -8,60 +8,109 @@ import csv
 from skimage.metrics import structural_similarity, mean_squared_error
 
 parser = ArgumentParser()
-parser.add_argument("--datapath", type=str,
-                    dest="datapath",
-                    default='/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon',
-                    #default='/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample', #AccFactor04
-                    help="data path for training images")
-parser.add_argument("--mode", type=int,
-                    dest="mode",
-                    default='0',
+parser.add_argument("--dataset", type=str, dest="dataset", default="ACDC",
+                    help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
+parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
 
-datapath = opt.datapath
+dataset = opt.dataset
 mode = opt.mode
 
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 
-# load CMR validation data
 bs = 1
-test_set = TestDatasetCMRBenchmark(datapath, mode) 
-test_generator = Data.DataLoader(dataset=test_set, batch_size=bs, shuffle=True, num_workers=4)
+if dataset == 'ACDC':
+    # load ACDC test data
+    test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+elif dataset == 'CMRxRecon':
+    # load CMRxRecon test data
+    test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+elif dataset == 'OASIS':
+    # path for OASIS test dataset
+    test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+else:
+    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-csv_name = './Test-Results-Metrics/TestMetrics-Baseline_Mode' + str(mode) + '.csv'
+
+csv_name = './TestResults-{}/TestMetrics-Baseline_Mode{}.csv'.format(dataset,mode)
 f = open(csv_name, 'w')
 with f:
-    fnames = ['Index','MSE','SSIM','Mean MSE','Mean SSIM']
+    if dataset == 'CMRxRecon':
+        fnames = ['Image Pair','SSIM','MSE','Mean SSIM','Mean MSE']
+    else:
+        fnames = ['Image Pair','Dice','SSIM','MSE','Mean_Dice','Mean SSIM','Mean MSE']
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
-image_num = 1 
+DICE_Test = []
 MSE_Test = []
 SSIM_Test = []
-for mov_img, fix_img,_ ,_ in test_generator: 
-    # convert to numpy array
-    mov_img = mov_img[0,0,:,:].cpu().numpy()
-    fix_img = fix_img[0,0,:,:].cpu().numpy()
-    
-    MSE = mean_squared_error(mov_img, fix_img)
-    MSE_Test.append(MSE)
-    
-    SSIM = structural_similarity(mov_img, fix_img, data_range=1)
-    SSIM_Test.append(SSIM)
-    
-    f = open(csv_name, 'a')
-    with f:
-        writer = csv.writer(f)
-        writer.writerow([image_num, MSE, SSIM, '-', '-']) 
-    image_num += 1
 
-csv_MSE = np.mean(MSE_Test)
-csv_SSIM = np.mean(SSIM_Test)
+for i, image_pairs in enumerate(test_generator): 
+    with torch.no_grad():
+        mov_img_fullySampled = image_pairs[0]
+        fix_img_fullySampled = image_pairs[1]
+        if dataset == 'CMRxRecon':
+            mov_img_subSampled = image_pairs[2]
+            fix_img_subSampled = image_pairs[3]
+        else:
+            mov_seg = image_pairs[2]
+            fix_seg = image_pairs[3]
+
+        # calculate MSE, SSIM and Dice 
+        if dataset == 'OASIS':
+            csv_DICE = dice(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
+            csv_SSIM = structural_similarity(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy(), data_range=1)
+            csv_MSE = mean_squared_error(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy())
+        elif dataset == 'ACDC':
+            csv_DICE = dice_ACDC(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
+            csv_SSIM = structural_similarity(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy(), data_range=1)
+            csv_MSE = mean_squared_error(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy())
+        elif dataset == 'CMRxRecon':
+            csv_SSIM = structural_similarity(mov_img_subSampled[0,0,:,:].cpu().numpy(), fix_img_subSampled[0,0,:,:].cpu().numpy(), data_range=1)
+            csv_MSE = mean_squared_error(mov_img_subSampled[0,0,:,:].cpu().numpy(), fix_img_subSampled[0,0,:,:].cpu().numpy())    
+                  
+        SSIM_Test.append(csv_SSIM)
+        MSE_Test.append(csv_MSE)
+        if dataset == 'OASIS':
+            DICE_Test.append(csv_DICE)
+        elif dataset == 'ACDC':
+            DICE_Test.append(csv_DICE)
+
+        # save to csv file
+        f = open(csv_name, 'a')
+        with f:
+            writer = csv.writer(f)
+            if dataset == 'CMRxRecon':
+                writer.writerow([i+1, csv_SSIM, csv_MSE, '-', '-'])  
+            else:
+                writer.writerow([i+1, csv_DICE, csv_SSIM, csv_MSE, '-', '-', '-'])  
+
+mean_MSE = np.mean(MSE_Test)
+std_MSE = np.std(MSE_Test)
+
+mean_SSIM = np.mean(SSIM_Test)
+std_SSIM = np.std(SSIM_Test)
+
+if dataset != 'CMRxRecon':
+    mean_DICE = np.mean(DICE_Test)
+    std_DICE = np.std(DICE_Test)
+
 f = open(csv_name, 'a')
 with f:
     writer = csv.writer(f)
-    writer.writerow(['-', '-', '-', csv_MSE, csv_SSIM])    
+    if dataset == 'CMRxRecon':
+        writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE])  
+    else:
+        writer.writerow(['-', '-', '-', '-', mean_DICE, mean_SSIM, mean_MSE])    
 
-print('\n mean MSE: ', csv_MSE,'\n mean SSIM: ', csv_SSIM)
+if dataset == 'CMRxRecon':
+    print('MSE: {:.6f} +- {:.6f}\nSSIM: {:.5f} +- {:.5f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+else:
+    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_DICE,std_DICE,mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+    
