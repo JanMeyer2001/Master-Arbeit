@@ -1,4 +1,3 @@
-import wandb
 import numpy as np
 import torch
 import wandb.sync
@@ -9,9 +8,14 @@ import time
 from skimage.metrics import structural_similarity, mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
-from argparse import ArgumentParser, BooleanOptionalAction
+from argparse import ArgumentParser
 from os import mkdir
 from os.path import isdir, join
+import os
+
+# import voxelmorph with pytorch backend
+os.environ['NEURITE_BACKEND'] = 'pytorch'
+os.environ['VXM_BACKEND'] = 'pytorch'
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
@@ -50,23 +54,25 @@ if dataset == 'ACDC':
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
-    input_shape = [216,256]
+    #input_shape = [216,256]
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
     train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
-    input_shape = [82,170]
+    #input_shape = [82,170]
 elif dataset == 'OASIS':
     # path for OASIS dataset
     train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=2)
-    input_shape = [160,224]
+    #input_shape = [160,224]
 else:
     print('Incorrect dataset selected!! Must be either ACDC, CMRxRecon or OASIS...')
+
+input_shape = train_set.__getitem__(0)[0].shape[1:3]
 
 # path to save model parameters to
 model_dir = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smth_lambda,learning_rate,mode)
@@ -88,6 +94,9 @@ with f:
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
+# enabling cudnn determinism appears to speed up training by a lot
+torch.backends.cudnn.deterministic = True
+
 # use dense voxelmorph
 model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda()  #, int_steps=7, int_downsize=2
 model.train()  
@@ -97,12 +106,12 @@ transform = SpatialTransformer(input_shape).cuda() #SpatialTransform().cuda()
 
 # prepare image loss
 if choose_loss == 1:
-    loss_similarity = NCC(win=9)
+    loss_similarity = vxm_NCC().loss #NCC(win=9)
 elif choose_loss == 0:
-    loss_similarity = MSE().loss
+    loss_similarity = vxm_MSE().loss #MSE().loss
 else:
     raise ValueError('Image loss should be 0 for MSE or 1 for NCC, but found %d' % choose_loss)
-loss_smooth = smoothloss
+loss_smooth = vxm_Grad('l2').loss #smoothloss
 
 ##############
 ## Training ##
@@ -126,7 +135,7 @@ for epoch in range(epochs):
         warped_mov, Df_xy = model(mov_img, fix_img)
         
         loss1 = loss_similarity(fix_img, warped_mov) 
-        loss5 = loss_smooth(Df_xy)
+        loss5 = loss_smooth(fix_img, warped_mov) #Df_xy
         
         loss = loss1 + smth_lambda * loss5
         losses[i] = loss
