@@ -59,15 +59,24 @@ if not isdir(save_path):
 
 for i, image_pair in enumerate(test_generator): 
     if dataset == 'CMRxRecon':
+        # get subsampled images
         mov_img = image_pair[2][0,0,:,:].cpu().numpy()
         fix_img = image_pair[3][0,0,:,:].cpu().numpy()
     else:
+        # get images
         mov_img = image_pair[0][0,0,:,:].cpu().numpy()
-        fix_img = image_pair[1][0,0,:,:].cpu().numpy()    
+        fix_img = image_pair[1][0,0,:,:].cpu().numpy()  
+        # and segmentations
+        mov_seg = image_pair[2][0,0,:,:].cpu().numpy()
+        fix_seg = image_pair[3][0,0,:,:].cpu().numpy()  
     
     # convert to Nifit format
     mov_img_nifti = nibabel.Nifti1Image(mov_img, np.eye(4))
     fix_img_nifti = nibabel.Nifti1Image(fix_img, np.eye(4))
+    
+    if dataset != 'CMRxRecon':
+        mov_seg_nifti = nibabel.Nifti1Image(mov_seg, np.eye(4))
+        fix_seg_nifti = nibabel.Nifti1Image(fix_seg, np.eye(4))
     
     # create folder if it does not exist 
     path = join(save_path,'ImagePair{:04d}'.format(i+1))
@@ -77,3 +86,7 @@ for i, image_pair in enumerate(test_generator):
     # save Nifti images
     nibabel.save(mov_img_nifti, join(path,'MovingImage'))
     nibabel.save(fix_img_nifti, join(path,'FixedImage'))
+    
+    if dataset != 'CMRxRecon':
+        nibabel.save(mov_seg_nifti, join(path,'MovingSegmentation'))
+        nibabel.save(fix_seg_nifti, join(path,'FixedSegmentation'))

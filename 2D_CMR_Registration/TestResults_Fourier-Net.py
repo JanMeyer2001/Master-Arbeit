@@ -34,9 +34,12 @@ parser.add_argument("--F_Net_plus", type=bool,
 parser.add_argument("--diffeo", type=bool,
                     dest="diffeo", default=True, action=argparse.BooleanOptionalAction, 
                     help="choose whether to use a diffeomorphic transform (True) or not (False)")
-parser.add_argument("--FT_size", type=tuple,
-                    dest="FT_size", default=[24,24],
-                    help="choose size of FT crop: Should be smaller than [40,84].")
+parser.add_argument("--FT_size_x", type=int,
+                    dest="FT_size_x", default=24,
+                    help="choose size x of FT crop: Should be smaller than 40.")
+parser.add_argument("--FT_size_y", type=int,
+                    dest="FT_size_y", default=24,
+                    help="choose size y of FT crop: Should be smaller than 84.")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -47,7 +50,7 @@ choose_loss = opt.choose_loss
 mode = opt.mode
 F_Net_plus = opt.F_Net_plus
 diffeo = opt.diffeo
-FT_size = opt.FT_size
+FT_size = [opt.FT_size_x,opt.FT_size_y]
 
 # choose the model
 model_name = 0
@@ -100,7 +103,7 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -194,7 +197,7 @@ with f:
         writer.writerow(['-', '-', '-', '-', mean_Dice, mean_MSE, mean_SSIM, mean_time, mean_NegJ])
 
 if dataset == 'CMRxRecon':
-    print('Mean inference time: {:.4f} seconds\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_MSE, std_MSE, mean_SSIM, std_SSIM, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
 else:
-    print('Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice, std_Dice, mean_MSE, std_MSE, mean_SSIM, std_SSIM, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice, std_Dice, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
     
