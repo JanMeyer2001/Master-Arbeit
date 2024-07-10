@@ -42,14 +42,18 @@ f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
         fnames = ['Image Pair','SSIM','MSE','Mean SSIM','Mean MSE']
-    else:
-        fnames = ['Image Pair','Dice','SSIM','MSE','Mean_Dice','Mean SSIM','Mean MSE']
+    elif dataset == 'OASIS':
+        fnames = ['Image Pair','Dice','SSIM','MSE','Mean Dice','Mean SSIM','Mean MSE']
+    elif dataset == 'ACDC':
+        fnames = ['Image Pair','Dice full','Dice no background','SSIM','MSE','Mean Dice full',' Mean Dice no background','Mean SSIM','Mean MSE']    
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
-DICE_Test = []
 MSE_Test = []
 SSIM_Test = []
+if dataset != 'CMRxRecon':
+    Dice_test_full = []
+    Dice_test_noBackground = []
 
 for i, image_pairs in enumerate(test_generator): 
     with torch.no_grad():
@@ -64,32 +68,36 @@ for i, image_pairs in enumerate(test_generator):
 
         # calculate MSE, SSIM and Dice 
         if dataset == 'OASIS':
-            csv_DICE = dice(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
-            csv_SSIM = structural_similarity(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy(), data_range=1)
-            csv_MSE = mean_squared_error(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy())
+            csv_Dice_full = dice(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
         elif dataset == 'ACDC':
-            csv_DICE = dice_ACDC(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
-            csv_SSIM = structural_similarity(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy(), data_range=1)
-            csv_MSE = mean_squared_error(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy())
-        elif dataset == 'CMRxRecon':
+            dices_temp = dice_ACDC(mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
+            csv_Dice_full = np.mean(dices_temp)
+            csv_Dice_noBackground = np.mean(dices_temp[1:3])
+        if dataset == 'CMRxRecon':
             csv_SSIM = structural_similarity(mov_img_subSampled[0,0,:,:].cpu().numpy(), fix_img_subSampled[0,0,:,:].cpu().numpy(), data_range=1)
-            csv_MSE = mean_squared_error(mov_img_subSampled[0,0,:,:].cpu().numpy(), fix_img_subSampled[0,0,:,:].cpu().numpy())    
+            csv_MSE = mean_squared_error(mov_img_subSampled[0,0,:,:].cpu().numpy(), fix_img_subSampled[0,0,:,:].cpu().numpy()) 
+        else:        
+            csv_MSE = mean_squared_error(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy())
+            csv_SSIM = structural_similarity(mov_img_fullySampled[0,0,:,:].cpu().numpy(), fix_img_fullySampled[0,0,:,:].cpu().numpy(), data_range=1)
                   
         SSIM_Test.append(csv_SSIM)
         MSE_Test.append(csv_MSE)
         if dataset == 'OASIS':
-            DICE_Test.append(csv_DICE)
+            Dice_test_full.append(csv_Dice_full)
         elif dataset == 'ACDC':
-            DICE_Test.append(csv_DICE)
+            Dice_test_full.append(csv_Dice_full)
+            Dice_test_noBackground.append(csv_Dice_noBackground)
 
         # save to csv file
         f = open(csv_name, 'a')
         with f:
             writer = csv.writer(f)
             if dataset == 'CMRxRecon':
-                writer.writerow([i+1, csv_SSIM, csv_MSE, '-', '-'])  
-            else:
-                writer.writerow([i+1, csv_DICE, csv_SSIM, csv_MSE, '-', '-', '-'])  
+                writer.writerow([i, csv_SSIM, csv_MSE, '-', '-']) 
+            elif dataset == 'OASIS':
+                writer.writerow([i, csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-']) 
+            elif dataset == 'ACDC':    
+                writer.writerow([i, csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-'])  
 
 mean_MSE = np.mean(MSE_Test)
 std_MSE = np.std(MSE_Test)
@@ -97,20 +105,28 @@ std_MSE = np.std(MSE_Test)
 mean_SSIM = np.mean(SSIM_Test)
 std_SSIM = np.std(SSIM_Test)
 
-if dataset != 'CMRxRecon':
-    mean_DICE = np.mean(DICE_Test)
-    std_DICE = np.std(DICE_Test)
+if dataset == 'OASIS':
+    mean_Dice_full = np.mean(Dice_test_full)
+    std_Dice_full = np.std(Dice_test_full)
+elif dataset == 'ACDC':
+    mean_Dice_full = np.mean(Dice_test_full)
+    std_Dice_full = np.std(Dice_test_full)
+    mean_Dice_noBackground = np.mean(Dice_test_noBackground)
+    std_Dice_noBackground = np.std(Dice_test_noBackground)
 
 f = open(csv_name, 'a')
 with f:
     writer = csv.writer(f)
     if dataset == 'CMRxRecon':
-        writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE])  
-    else:
-        writer.writerow(['-', '-', '-', '-', mean_DICE, mean_SSIM, mean_MSE])    
+        writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE])
+    elif dataset == 'OASIS':
+        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_SSIM, mean_MSE])
+    elif dataset == 'ACDC':
+        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE])  
 
 if dataset == 'CMRxRecon':
-    print('MSE: {:.6f} +- {:.6f}\nSSIM: {:.5f} +- {:.5f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
-else:
-    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_DICE,std_DICE,mean_SSIM,std_SSIM,mean_MSE,std_MSE))
-    
+    print('SSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+elif dataset == 'OASIS':
+    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}\n'.format(mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+elif dataset == 'ACDC':
+    print('DICE full: {:.5f} +- {:.5f}\nDICE no background: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE))

@@ -47,32 +47,32 @@ else:
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
 if mode == 0:
     path = join(base_path, 'Nifti_FullySampled')
-    print('Start TestBenchmark for fully sampled data')
 elif mode == 1:
     path = join(base_path, 'Nifti_Acc4') 
-    print('Start TestBenchmark for Acc4 data')
 elif mode == 2:
     path = join(base_path, 'Nifti_Acc8')
-    print('Start TestBenchmark for Acc8 data') 
 elif mode == 3:
     path = join(base_path, 'Nifti_Acc10') 
-    print('Start TestBenchmark for Acc10 data')
 
 transform = SpatialTransform().cuda()
 
-Dices=[]
 MSE_test = []
 SSIM_test = []
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
+if dataset != 'CMRxRecon':
+    Dice_test_full = []
+    Dice_test_noBackground = []
 
 csv_name = './TestResults-{}/TestMetrics-NiftyReg_Mode{}.csv'.format(dataset,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
         fnames = ['Image Pair','SSIM','MSE','Mean SSIM','Mean MSE']
-    else:
-        fnames = ['Image Pair','Dice','SSIM','MSE','Mean_Dice','Mean SSIM','Mean MSE']
+    elif dataset == 'OASIS':
+        fnames = ['Image Pair','Dice','SSIM','MSE','Mean Dice','Mean SSIM','Mean MSE']
+    elif dataset == 'ACDC':
+        fnames = ['Image Pair','Dice full','Dice no background','SSIM','MSE','Mean Dice full',' Mean Dice no background','Mean SSIM','Mean MSE']    
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
@@ -106,15 +106,20 @@ for image_pair in image_pairs:
     # calculate metrics 
     csv_MSE = mean_squared_error(warped_img, fix_img)
     csv_SSIM = structural_similarity(warped_img, fix_img, data_range=1)
-    if dataset == 'ACDC':
-        csv_DICE = dice_ACDC(warped_seg,fix_seg)
-    elif dataset == 'OASIS':
-        csv_DICE = dice(warped_seg,fix_seg)    
+    if dataset == 'OASIS':
+        csv_Dice_full = dice(warped_seg,fix_seg)
+    elif dataset == 'ACDC':
+        dices_temp = dice_ACDC(warped_seg,fix_seg)
+        csv_Dice_full = np.mean(dices_temp)
+        csv_Dice_noBackground = np.mean(dices_temp[1:3])   
 
     MSE_test.append(csv_MSE)
     SSIM_test.append(csv_SSIM)
-    if dataset != 'CMRxRecon':
-        Dices.append(csv_DICE)
+    if dataset == 'OASIS':
+        Dice_test_full.append(csv_Dice_full)
+    elif dataset == 'ACDC':
+        Dice_test_full.append(csv_Dice_full)
+        Dice_test_noBackground.append(csv_Dice_noBackground)
     
     # save to csv file
     f = open(csv_name, 'a')
@@ -122,8 +127,10 @@ for image_pair in image_pairs:
         writer = csv.writer(f)
         if dataset == 'CMRxRecon':
             writer.writerow([image_pair[-1], csv_SSIM, csv_MSE, '-', '-'])  
-        else:
-            writer.writerow([image_pair[-1], csv_DICE, csv_SSIM, csv_MSE, '-', '-', '-']) 
+        elif dataset == 'OASIS':
+            writer.writerow([image_pair[-1], csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-']) 
+        elif dataset == 'ACDC':    
+            writer.writerow([image_pair[-1], csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-']) 
 
 mean_MSE = np.mean(MSE_test)
 std_MSE = np.std(MSE_test)
@@ -131,20 +138,28 @@ std_MSE = np.std(MSE_test)
 mean_SSIM = np.mean(SSIM_test)
 std_SSIM = np.std(SSIM_test)
 
-if dataset != 'CMRxRecon':
-    mean_DICE = np.mean(Dices)
-    std_DICE = np.std(Dices)
+if dataset == 'OASIS':
+    mean_Dice_full = np.mean(Dice_test_full)
+    std_Dice_full = np.std(Dice_test_full)
+elif dataset == 'ACDC':
+    mean_Dice_full = np.mean(Dice_test_full)
+    std_Dice_full = np.std(Dice_test_full)
+    mean_Dice_noBackground = np.mean(Dice_test_noBackground)
+    std_Dice_noBackground = np.std(Dice_test_noBackground)
 
 f = open(csv_name, 'a')
 with f:
     writer = csv.writer(f)
     if dataset == 'CMRxRecon':
-        writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE])  
-    else:
-        writer.writerow(['-', '-', '-', '-', mean_DICE, mean_SSIM, mean_MSE])  
+        writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE])
+    elif dataset == 'OASIS':
+        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_SSIM, mean_MSE])
+    elif dataset == 'ACDC':
+        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE])
 
 if dataset == 'CMRxRecon':
-    print('MSE: {:.6f} +- {:.6f}\nSSIM: {:.5f} +- {:.5f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
-else:
-    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_DICE,std_DICE,mean_SSIM,std_SSIM,mean_MSE,std_MSE))
-    
+    print('SSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+elif dataset == 'OASIS':
+    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+elif dataset == 'ACDC':
+    print('DICE full: {:.5f} +- {:.5f}\nDICE no background: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}\n'.format(mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE))

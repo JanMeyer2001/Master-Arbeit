@@ -174,7 +174,7 @@ for epoch in range(epochs):
             if dataset == 'OASIS':
                 Dice_Validation.append(dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
             elif dataset == 'ACDC':
-                Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy()))
+                Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())))
     
         # calculate mean of validation metrics
         Mean_MSE = np.mean(MSE_Validation)

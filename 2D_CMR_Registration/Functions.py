@@ -111,8 +111,9 @@ def load_image_pair_ACDC(pathname1, pathname2):
     # interpolate all images and segmentations to the same size
     image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
     image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
-    seg1 = F.interpolate(seg1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
-    seg2 = F.interpolate(seg2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    # use nearest interpolation for the segmentations to preserve labels
+    seg1 = F.interpolate(seg1.unsqueeze(0).unsqueeze(0), (216,256), mode='nearest').squeeze(0)
+    seg2 = F.interpolate(seg2.unsqueeze(0).unsqueeze(0), (216,256), mode='nearest').squeeze(0)
     
     return image1, image2, seg1, seg2
 
@@ -654,17 +655,31 @@ def dice(pred1, truth1):
         dice_list.append(intersection / (np.sum(pred) + np.sum(truth)))
     return np.mean(dice_list)
 
-def dice_ACDC(pred1, truth1):
-    mask_values = [0.0, 0.33333334, 0.6666667, 1.0]
+def dice_ACDC(pred, truth):
+    '''
+    read in segmentations (numpy float arrays) and calculate the dice score for all four labels of the ACDC dataset
+    '''
+    #labels_pred = np.unique(pred)
+    #labels_truth = np.unique(truth)
+    pred = pred*3
+    pred = pred.astype(np.int64)
+    truth = truth*3
+    truth = truth.astype(np.int64)
+    label_values = [0,1,2,3] #[0.0, 0.33333334, 0.6666667, 1.0]
+    #labels_pred_int = np.unique(pred)
+    #labels_truth_int = np.unique(truth)
     dice_list=[]
-    for k in mask_values:
-        truth = truth1 == k
-        pred = pred1 == k
-        # only calculate dice if label is in one of the segmentations 
-        if np.sum(pred)!= 0 or np.sum(truth)!= 0:
-            intersection = np.sum(pred * truth) * 2.0
-            dice_list.append(intersection / (np.sum(pred) + np.sum(truth))) 
-    return np.mean(dice_list)
+    for k in label_values:
+        truth_bool = truth == k
+        pred_bool = pred == k
+        sum_pred = np.sum(pred_bool)
+        sum_truth = np.sum(truth_bool)
+        sum_total = np.sum(pred_bool * truth_bool)
+        # only calculate dice if label is in one of the segmentations (get NaN values otherwise)
+        if (sum_pred != 0) or (sum_truth != 0):
+            intersection = sum_total * 2.0
+            dice_list.append(intersection / (sum_pred + sum_truth)) 
+    return dice_list
 
 def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
     torch.save(state, save_dir + save_filename)
@@ -753,7 +768,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 
                 # calculate Dice, MSE and SSIM 
                 if dataset != 'CMRxRecon':
-                    Dice_Validation.append(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy()))
+                    Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())))
                 MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
                 SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1))
             
@@ -806,7 +821,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                     epochs = epoch      # save number of epochs for other runs
                     break
                 
-        print('Training ended on ', time.ctime())
+    print('Training ended on ', time.ctime())
 
     #############
     ## Testing ##
@@ -820,7 +835,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
         if dataset == 'CMRxRecon':
             fnames = ['Image Pair','MSE','SSIM','Time','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
         else:
-            fnames = ['Image Pair','Dice','MSE','SSIM','Time','Mean Dice','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
+            fnames = ['Image Pair','Dice full','Dice no background','MSE','SSIM','Time','Mean Dice full',' Mean Dice no background','Mean MSE','Mean SSIM','Mean Time','Mean NegJ']
         writer = csv.DictWriter(f, fieldnames=fnames)
         writer.writeheader()
 
@@ -831,9 +846,10 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
     NegJ_test=[]
     times = []
     if dataset != 'CMRxRecon':
-        Dice_test = []
+        Dice_test_full = []
+        Dice_test_noBackground = []
 
-    for i, imagePairs in test_generator: 
+    for i, imagePairs in enumerate(test_generator): 
         with torch.no_grad():
             fix_img = imagePairs[0].cuda().float()
             mov_img = imagePairs[1].cuda().float()
@@ -862,11 +878,15 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             
             # calculate MSE, SSIM and Dice 
             if dataset != 'CMRxRecon':
-                csv_Dice = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())
+                dices_temp = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())
+                csv_Dice_full = np.mean(dices_temp)
+                csv_Dice_noBackground = np.mean(dices_temp[1:3])
             csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy())
             csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1)
             
-            Dice_Validation.append(csv_Dice)
+            if dataset != 'CMRxRecon':
+                Dice_test_full.append(csv_Dice_full)
+                Dice_test_noBackground.append(csv_Dice_noBackground)
             MSE_Validation.append(csv_MSE)
             SSIM_Validation.append(csv_SSIM)
         
@@ -886,20 +906,22 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                 if dataset == 'CMRxRecon':
                     writer.writerow([i, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-']) 
                 else:
-                    writer.writerow([i, csv_Dice, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-', '-']) 
+                    writer.writerow([i, csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, inference_time, '-', '-', '-', '-', '-', '-']) 
 
     # calculate mean and stdof test metrics
     Mean_time = np.mean(times)
     Mean_MSE  = np.mean(MSE_test)
     Mean_SSIM = np.mean(SSIM_test)
     if dataset != 'CMRxRecon':
-        Mean_Dice = np.mean(Dice_test)
+        Mean_Dice_full = np.mean(Dice_test_full)
+        Mean_Dice_noBackground = np.mean(Dice_test_noBackground)
     Mean_NegJ = np.mean(NegJ_test)
 
     Std_MSE  = np.std(MSE_test)
     Std_SSIM = np.std(SSIM_test)
     if dataset != 'CMRxRecon':
-        Std_Dice = np.std(Dice_test)
+        Std_Dice_full = np.std(Dice_test_full)
+        Std_Dice_noBackground = np.std(Dice_test_noBackground)
     Std_NegJ = np.std(NegJ_test)
     
     # save test results to csv file
@@ -909,15 +931,15 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
         if dataset == 'CMRxRecon':
             writer.writerow(['-', '-', '-', '-', Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
         else:
-            writer.writerow(['-', '-', '-', '-', '-', Mean_Dice, Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
+            writer.writerow(['-', '-', '-', '-', '-', '-', Mean_Dice_full, Mean_Dice_noBackground, Mean_MSE, Mean_SSIM, Mean_time, Mean_NegJ]) 
 
     # print results
     if dataset == 'CMRxRecon':
         print('     Mean inference time: {:.4f} seconds\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
         wandb.log({"MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
     else:
-        print('     Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_Dice, Std_Dice, Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
-        wandb.log({"Dice": Mean_Dice, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
+        print('     Mean inference time: {:.4f} seconds\n     DICE full: {:.5f} +- {:.5f}\n     DICE no background: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     SSIM: {:.5f} +- {:.5f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(Mean_time, Mean_Dice_full, Std_Dice_full, Mean_Dice_noBackground, Std_Dice_noBackground,  Mean_MSE, Std_MSE, Mean_SSIM, Std_SSIM, Mean_NegJ, Std_NegJ))
+        wandb.log({"Dice full": Mean_Dice_full, "Dice no background": Mean_Dice_noBackground, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
     
     print('Testing ended on ', time.ctime())
     

@@ -17,12 +17,10 @@ names = ["FTCropSize_40-84", "FTCropSize_20-42", "FTCropSize_24-24", "FTCropSize
 results_test = np.zeros((total_runs,7))
 
 for run in range(total_runs):
-    if run == 0:  
+    if run == 0:
         print(names[run])
         wandb.init(
-            # Set the project where this run will be logged
             project = project_name,
-            # pass the run name
             name = names[run],
             # track hyperparameters and run metadata
             config={
@@ -49,7 +47,7 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 16,
+                "start_channel": 8,
                 "smth_lambda": 0.01,
                 "FT_size": [20,42],
                 "choose_loss": 1,
@@ -70,7 +68,7 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 32,
+                "start_channel": 8,
                 "smth_lambda": 0.01,
                 "FT_size": [24,24],
                 "choose_loss": 1,
@@ -91,7 +89,7 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 32,
+                "start_channel": 8,
                 "smth_lambda": 0.01,
                 "FT_size": [12,12],
                 "choose_loss": 1,
@@ -171,4 +169,4 @@ for run in range(total_runs):
 
         epochs = log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,True)
     else:
-        log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,False)
+        epochs = log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,False)
