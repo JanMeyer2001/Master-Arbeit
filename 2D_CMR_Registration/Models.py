@@ -9,14 +9,72 @@ import functools
 import math
 from  Functions import *
 
-class Cascade(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel, offset):
+class Fourier_Net_plus(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
         self.in_channel = in_channel
         self.n_classes = n_classes
         self.start_channel = start_channel
         self.offset = offset
+        self.diffeo = diffeo
 
-        bias_opt = True
+        super(Fourier_Net_plus, self).__init__()
+        self.model = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
+        
+        # compressing the images
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        #offsetx = 24 #80
+        #offsety = 24 #96
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        F_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(F_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+            
+        # normalize images have data range [0,1]
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        F_temp_low_spatial_low = normalize(F_temp_low_spatial_low)
+
+        out_1, out_2 = self.model(M_temp_low_spatial_low, F_temp_low_spatial_low)
+
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        
+        padx = int((Moving.shape[2]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((Moving.shape[3]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
+        return Df_xy
+
+class Cascade(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
 
         super(Cascade, self).__init__()
         self.net1 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
@@ -24,6 +82,8 @@ class Cascade(nn.Module):
         self.net3 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
         self.net4 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
         self.warp = SpatialTransform()
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
     def forward(self, Moving, Fixed):
         M_temp = Moving.squeeze().squeeze()
@@ -191,8 +251,13 @@ class Cascade(nn.Module):
            
         __, fxy_4_ = self.warp(fxy_3_, fxy_4.permute(0, 2, 3, 1))
         fxy_4_ = fxy_4_ + fxy_4
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(fxy_4_)
+        else:
+            Df_xy = fxy_4_
         
-        return fxy_4_ #fxy_1
+        return Df_xy
 
 class UNet(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):
@@ -397,16 +462,16 @@ class Net_1_4(nn.Module):
         return f_xy[:,0:1,:,:], f_xy[:,1:2,:,:]
 
 class Fourier_Net(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo):
         self.in_channel = in_channel
         self.n_classes = n_classes
         self.start_channel = start_channel
-
-        bias_opt = True
+        self.diffeo = diffeo
 
         super(Fourier_Net, self).__init__()
         self.model = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
-        #self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel)
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
     def forward(self, Moving, Fixed):
         out_1, out_2 = self.model(Moving, Fixed)#.squeeze().squeeze()
@@ -424,7 +489,12 @@ class Fourier_Net(nn.Module):
         
         disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
         disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
-        Df_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
          
         return Df_xy
 

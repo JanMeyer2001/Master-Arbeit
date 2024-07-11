@@ -10,9 +10,9 @@ warnings.filterwarnings("ignore")
 
 
 # compare Fourier-Net with Fourier-Net+
-total_runs = 2
+total_runs = 3
 project_name = "Compare_Models"
-names = ["Fourier-Net", "Fourier-Net+"]
+names = ["Fourier-Net", "Fourier-Net+", "Fourier-Net+Cascade"]
 
 # init array for test results
 results_test = np.zeros((total_runs,7))
@@ -33,12 +33,12 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": False,
+                "F_Net_plus": 0,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 100,
-                "diffeo": False,
+                "diffeo": 0,
             }
         )
     elif run == 1:
@@ -56,12 +56,35 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": True,
+                "F_Net_plus": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 100,
-                "diffeo": False,
+                "diffeo": 0,
+            }
+        )
+    elif run == 1:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 8,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 0,
+                "F_Net_plus": 2,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 100,
+                "diffeo": 0,
             }
         )
         
@@ -72,13 +95,16 @@ for run in range(total_runs):
     epochs = config.epochs
 
     # choose the model
-    model_name = 0
-    if config.F_Net_plus:
+    assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"
+    assert config.diffeo == 0 or config.diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {config.diffeo}"
+    if config.F_Net_plus == 0:
+        model = Fourier_Net(2, 2, config.start_channel, config.diffeo).cuda() 
+    elif config.F_Net_plus == 1:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
-        model = Cascade(2, 2,  config.start_channel,  config.FT_size).cuda() 
-        model_name = 1
-    else:
-        model = Fourier_Net(2, 2,  config.start_channel).cuda()  
+        model = Fourier_Net_plus(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
+    elif config.F_Net_plus == 2:
+        assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
+        model = Cascade(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
 
     # choose the loss function for similarity
     assert config.choose_loss >= 0 and config.choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: {config.choose_loss}"
@@ -92,12 +118,6 @@ for run in range(total_runs):
         ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
         loss_similarity = SAD().loss
     loss_smooth = smoothloss
-
-    # choose whether to use a diffeomorphic transform or not
-    diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-    diffeo_name = 0
-    if config.diffeo:
-        diffeo_name = 1
 
     transform = SpatialTransform().cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
@@ -131,6 +151,6 @@ for run in range(total_runs):
         
         print('Finished Loading!')
 
-        epochs = log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,True)
+        epochs = log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,True)
     else:
-        log_TrainTest(wandb,model,model_name,diffeo_name,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.diffeo,config.mode,epochs,optimizer,loss_similarity,loss_smooth,diff_transform,transform,training_generator,validation_generator,test_generator,False)
+        log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)

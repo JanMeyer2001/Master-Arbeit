@@ -688,7 +688,7 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
         remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
 
-def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, diffeo, mode, epochs, optimizer, loss_similarity, loss_smooth, diff_transform, transform, training_generator, validation_generator, test_generator, earlyStop):
+def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, mode, epochs, optimizer, loss_similarity, loss_smooth, transform, training_generator, validation_generator, test_generator, earlyStop):
     
     # path to save model parameters to
     model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
@@ -720,11 +720,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             mov_img = image_pair[0].cuda().float()
             fix_img = image_pair[1].cuda().float()
             
-            f_xy = model(mov_img, fix_img)
-            if diffeo:
-                Df_xy = diff_transform(f_xy)
-            else:
-                Df_xy = f_xy
+            Df_xy = model(mov_img, fix_img)
             grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
             
             loss1 = loss_similarity(fix_img, warped_mov) 
@@ -756,11 +752,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                     mov_seg = image_pair[2].cuda().float()
                     fix_seg = image_pair[3].cuda().float()
                 
-                f_xy = model(mov_img, fix_img)
-                if diffeo:
-                    Df_xy = diff_transform(f_xy)
-                else:
-                    Df_xy = f_xy
+                Df_xy = model(mov_img, fix_img)
                 # get warped image and segmentation
                 grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
                 if dataset != 'CMRxRecon':
@@ -768,7 +760,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 
                 # calculate Dice, MSE and SSIM 
                 if dataset != 'CMRxRecon':
-                    Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())))
+                    Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())[1:3]))
                 MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
                 SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1))
             
@@ -776,7 +768,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             Mean_MSE = np.mean(MSE_Validation)
             Mean_SSIM = np.mean(SSIM_Validation)
             if dataset != 'CMRxRecon':
-                Mean_Dice = np.mean(Dice_Validation)
+                Mean_Dice = np.mean([x for x in Dice_Validation if str(x) != 'nan']) 
 
             if earlyStop:
                 # save best metrics and reset counter if Dice/SSIM got better, else increase counter for early stopping
@@ -801,9 +793,9 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             
             # save and log model     
             if dataset == 'CMRxRecon':
-                modelname = 'SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch)
+                modelname = 'SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch+1)
             else:
-                modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice, Mean_SSIM, Mean_MSE, epoch)
+                modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice, Mean_SSIM, Mean_MSE, epoch+1)
             save_checkpoint(model.state_dict(), model_dir, modelname)
             #wandb.log_model(path=model_dir, name=modelname)
 
@@ -860,16 +852,11 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             
             start = time.time()
             
-            f_xy = model(mov_img, fix_img)
+            Df_xy = model(mov_img, fix_img)
             
             # get inference time
             inference_time = time.time()-start
             times.append(inference_time)
-
-            if diffeo:
-                Df_xy = diff_transform(f_xy)
-            else:
-                Df_xy = f_xy
             
             # get warped image and segmentation
             grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
@@ -890,12 +877,12 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             MSE_Validation.append(csv_MSE)
             SSIM_Validation.append(csv_SSIM)
         
-            hh, ww = V_xy.shape[-2:]
-            V_xy = V_xy.detach().cpu().numpy()
-            V_xy[:,0,:,:] = V_xy[:,0,:,:] * hh / 2
-            V_xy[:,1,:,:] = V_xy[:,1,:,:] * ww / 2
+            hh, ww = Df_xy.shape[-2:]
+            Df_xy = Df_xy.detach().cpu().numpy()
+            Df_xy[:,0,:,:] = Df_xy[:,0,:,:] * hh / 2
+            Df_xy[:,1,:,:] = Df_xy[:,1,:,:] * ww / 2
 
-            jac_det = jacobian_determinant_vxm(V_xy[0, :, :, :])
+            jac_det = jacobian_determinant_vxm(Df_xy[0, :, :, :])
             negJ = np.sum(jac_det <= 0) / 160 / 192 * 100
             NegJ_test.append(negJ)
             

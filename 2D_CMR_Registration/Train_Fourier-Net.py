@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, BooleanOptionalAction
+from argparse import ArgumentParser
 import numpy as np
 import torch
 import torch.nn as nn
@@ -34,15 +34,18 @@ parser.add_argument("--choose_loss", type=int,
 parser.add_argument("--mode", type=int,
                     dest="mode", default=0,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
-parser.add_argument("--F_Net_plus", type=bool,
-                    dest="F_Net_plus", default=True, action=BooleanOptionalAction, 
-                    help="choose whether to use Fourier-Net (False) or Fourier-Net+ (True) as the model")
-parser.add_argument("--diffeo", type=bool,
-                    dest="diffeo", default=True, action=BooleanOptionalAction, 
-                    help="choose whether to use a diffeomorphic transform (True) or not (False)")
-parser.add_argument("--FT_size", type=tuple,
-                    dest="FT_size", default=[24,24],
-                    help="choose size of FT crop: Should be smaller than [40,84].")
+parser.add_argument("--F_Net_plus", type=int,
+                    dest="F_Net_plus", default=1, 
+                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1) or cascaded Fourier-Net (2) as the model")
+parser.add_argument("--diffeo", type=int,
+                    dest="diffeo", default=0, 
+                    help="choose whether to use a diffeomorphic transform (1) or not (0)")
+parser.add_argument("--FT_size_x", type=int,
+                    dest="FT_size_x", default=24,
+                    help="choose size x of FT crop: Should be smaller than 40.")
+parser.add_argument("--FT_size_y", type=int,
+                    dest="FT_size_y", default=24,
+                    help="choose size y of FT crop: Should be smaller than 84.")
 parser.add_argument("--earlyStop", type=int,
                     dest="earlyStop", default=3,
                     help="choose after how many epochs early stopping is applied")
@@ -57,20 +60,23 @@ choose_loss = opt.choose_loss
 mode = opt.mode
 F_Net_plus = opt.F_Net_plus
 diffeo = opt.diffeo
-FT_size = opt.FT_size
+FT_size = [opt.FT_size_x,opt.FT_size_y]
 earlyStop = opt.earlyStop
 
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 
 # choose the model
-model_name = 0
-if F_Net_plus:
-    assert  FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade(2, 2, start_channel, FT_size).cuda() 
-    model_name = 1
-else:
-    model = Fourier_Net(2, 2, start_channel).cuda()  
+assert F_Net_plus == 0 or F_Net_plus == 1 or F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {F_Net_plus}"
+assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
+if F_Net_plus == 0:
+    model = Fourier_Net(2, 2, start_channel, diffeo).cuda() 
+elif F_Net_plus == 1:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif F_Net_plus == 2:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade(2, 2, start_channel, diffeo, FT_size).cuda() 
 
 # choose the loss function for similarity
 assert choose_loss >= 0 and choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: {choose_loss}"
@@ -84,12 +90,6 @@ elif choose_loss == 3:
     ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
     loss_similarity = SAD().loss
 loss_smooth = smoothloss
-
-# choose whether to use a diffeomorphic transform or not
-diffeo_name = 0
-if diffeo:
-    diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-    diffeo_name = 1
 
 transform = SpatialTransform().cuda()
 
@@ -122,8 +122,8 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
-model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
+model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
+model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
 
 if not isdir(model_dir_png):
     mkdir(model_dir_png)
@@ -131,7 +131,7 @@ if not isdir(model_dir_png):
 if not isdir(model_dir):
     mkdir(model_dir)
 
-csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -160,11 +160,7 @@ for epoch in range(epochs):
         mov_img = image_pair[0].cuda().float()
         fix_img = image_pair[1].cuda().float()
         
-        f_xy = model(mov_img, fix_img)
-        if diffeo:
-            Df_xy = diff_transform(f_xy)
-        else:
-            Df_xy = f_xy
+        Df_xy = model(mov_img, fix_img)
         grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
         
         loss1 = loss_similarity(fix_img, warped_mov) 
@@ -196,11 +192,7 @@ for epoch in range(epochs):
                 mov_seg = image_pair[2].cuda().float()
                 fix_seg = image_pair[3].cuda().float()
             
-            f_xy = model(mov_img, fix_img)
-            if diffeo:
-                Df_xy = diff_transform(f_xy)
-            else:
-                Df_xy = f_xy
+            Df_xy = model(mov_img, fix_img)
 
             # get warped image and segmentation
             grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
