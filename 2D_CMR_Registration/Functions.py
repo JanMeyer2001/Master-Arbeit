@@ -699,7 +699,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 
     if not isdir(model_dir):
         mkdir(model_dir)
-
+    
     ##############
     ## Training ##
     ##############
@@ -754,15 +754,15 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                 
                 Df_xy = model(mov_img, fix_img)
                 # get warped image and segmentation
-                grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+                grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1), mod = 'nearest')
                 if dataset != 'CMRxRecon':
-                    grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+                    grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1), mod = 'nearest')
 
                 # calculate Dice, MSE and SSIM 
                 if dataset != 'CMRxRecon':
-                    Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())[1:3]))
-                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy()))
-                SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1))
+                    Dice_Validation.append(np.mean(dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())[1:3]))
+                MSE_Validation.append(mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy()))
+                SSIM_Validation.append(structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1))
             
             # calculate mean of validation metrics
             Mean_MSE = np.mean(MSE_Validation)
@@ -810,7 +810,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             if earlyStop:    
                 # stop training if metrics stop improving for three epochs (only on the first run)
                 if counter_earlyStopping == 3:
-                    epochs = epoch      # save number of epochs for other runs
+                    epochs = epoch+1      # save number of epochs for other runs
                     break
                 
     print('Training ended on ', time.ctime())
@@ -859,23 +859,23 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             times.append(inference_time)
             
             # get warped image and segmentation
-            grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1), mod = 'nearest')
             if dataset != 'CMRxRecon':
-                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1))
+                grid, warped_mov_seg = transform(mov_seg, Df_xy.permute(0, 2, 3, 1), mod = 'nearest')
             
             # calculate MSE, SSIM and Dice 
             if dataset != 'CMRxRecon':
-                dices_temp = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().detach().numpy(),fix_seg[0,0,:,:].cpu().detach().numpy())
+                dices_temp = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
                 csv_Dice_full = np.mean(dices_temp)
                 csv_Dice_noBackground = np.mean(dices_temp[1:3])
-            csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy())
-            csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().detach().numpy(), fix_img[0,0,:,:].cpu().detach().numpy(), data_range=1)
+            csv_MSE = mean_squared_error(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy())
+            csv_SSIM = structural_similarity(warped_mov_img[0,0,:,:].cpu().numpy(), fix_img[0,0,:,:].cpu().numpy(), data_range=1)
             
             if dataset != 'CMRxRecon':
                 Dice_test_full.append(csv_Dice_full)
                 Dice_test_noBackground.append(csv_Dice_noBackground)
-            MSE_Validation.append(csv_MSE)
-            SSIM_Validation.append(csv_SSIM)
+            MSE_test.append(csv_MSE)
+            SSIM_test.append(csv_SSIM)
         
             hh, ww = Df_xy.shape[-2:]
             Df_xy = Df_xy.detach().cpu().numpy()

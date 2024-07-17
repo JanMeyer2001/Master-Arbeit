@@ -9,7 +9,7 @@ parser.add_argument("--start_channel", type=int, dest="start_channel", default=8
 parser.add_argument("--dataset", type=str, dest="dataset", default="ACDC",
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--model", type=int,
-                    dest="model", default=2, 
+                    dest="model", default=0, #2
                     help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net (2) or VoxelMorph (3) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 

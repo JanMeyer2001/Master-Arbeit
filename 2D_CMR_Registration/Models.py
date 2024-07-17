@@ -469,7 +469,7 @@ class Fourier_Net(nn.Module):
         self.diffeo = diffeo
 
         super(Fourier_Net, self).__init__()
-        self.model = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
         if self.diffeo == 1:
             self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
@@ -531,7 +531,11 @@ class SYMNet(nn.Module):
                                   stride=1, bias=bias_opt)
         self.r_dc8 = self.encoder(self.start_channel * 2, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
         self.rr_dc9 = self.outputs(self.start_channel * 2, self.n_classes, kernel_size=3, stride=1, padding=1, bias=False)
-            
+
+        # needed for removed layer for ACDC dataset    
+        self.r_new = self.encoder(self.start_channel * 12, self.start_channel * 8, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+
         self.r_up1 = self.decoder(self.start_channel * 8, self.start_channel * 8)
         self.r_up2 = self.decoder(self.start_channel * 4, self.start_channel * 4)
         self.r_up3 = self.decoder(self.start_channel * 2, self.start_channel * 2)
@@ -584,18 +588,25 @@ class SYMNet(nn.Module):
 
         e3 = self.ec6(e2)
         e3 = self.ec7(e3)
-
+        """
+        # remove layer as it leads to problems
         e4 = self.ec8(e3)
         e4 = self.ec9(e4)
-
         r_d0 = torch.cat((self.r_up1(e4), e3), 1)
+        """
+        r_d0 = torch.cat((self.r_up1(e3), e2), 1)
 
-        r_d0 = self.r_dc1(r_d0)
+        #r_d0 = self.r_dc1(r_d0)
+        #r_d0 = self.r_dc2(r_d0)
+        
+        r_d0 = self.r_new(r_d0)
         r_d0 = self.r_dc2(r_d0)
+        r_d0 = self.r_dc4(r_d0)
 
-        r_d1 = torch.cat((self.r_up2(r_d0), e2), 1)
+        #r_d1 = torch.cat((self.r_up2(r_d0), e2), 1)
+        r_d1 = torch.cat((self.r_up3(r_d0), e1), 1)
 
-        r_d1 = self.r_dc3(r_d1)
+        #r_d1 = self.r_dc3(r_d1)
         r_d1 = self.r_dc4(r_d1)
 
         f_r = self.rr_dc9(r_d1) * 64   

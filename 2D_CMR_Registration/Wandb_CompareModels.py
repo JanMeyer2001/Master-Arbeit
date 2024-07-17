@@ -10,9 +10,9 @@ warnings.filterwarnings("ignore")
 
 
 # compare Fourier-Net with Fourier-Net+
-total_runs = 3
-project_name = "Compare_Models"
-names = ["Fourier-Net", "Fourier-Net+", "Fourier-Net+Cascade"]
+total_runs = 6
+project_name = "Compare_Models-ACDC"
+names = ["Fourier-Net", "Fourier-Net+", "Fourier-Net+Cascade","Diff-Fourier-Net", "Diff-Fourier-Net+", "Diff-Fourier-Net+Cascade"]
 
 # init array for test results
 results_test = np.zeros((total_runs,7))
@@ -64,7 +64,7 @@ for run in range(total_runs):
                 "diffeo": 0,
             }
         )
-    elif run == 1:
+    elif run == 2:
         print(names[run])
         wandb.init(
             # Set the project where this run will be logged
@@ -87,12 +87,82 @@ for run in range(total_runs):
                 "diffeo": 0,
             }
         )
+    elif run == 3:  
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 8,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 0,
+                "F_Net_plus": 0,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 100,
+                "diffeo": 1,
+            }
+        )
+    elif run == 4:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 8,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 0,
+                "F_Net_plus": 1,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 100,
+                "diffeo": 1,
+            }
+        )
+    elif run == 5:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 8,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 0,
+                "F_Net_plus": 2,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 100,
+                "diffeo": 1,
+            }
+        )    
         
     # Copy your config 
     config = wandb.config
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
-    epochs = config.epochs
+    if run == 0:
+        epochs = config.epochs
 
     # choose the model
     assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"

@@ -106,7 +106,8 @@ for run in range(total_runs):
     config = wandb.config
     use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
-    epochs = config.epochs
+    if run == 0:
+        epochs = config.epochs
 
     # choose the model
     assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"
