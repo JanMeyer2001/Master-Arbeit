@@ -2223,6 +2223,347 @@
     \field{year}{1999}
   \endentry
 
+  \entry{ACDC}{article}{}
+    \name{author}{37}{}{%
+      {{hash=BO}{%
+         family={Bernard},
+         familyi={B\bibinitperiod},
+         given={Olivier},
+         giveni={O\bibinitperiod},
+      }}%
+      {{hash=LA}{%
+         family={Lalande},
+         familyi={L\bibinitperiod},
+         given={Alain},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=ZC}{%
+         family={Zotti},
+         familyi={Z\bibinitperiod},
+         given={Clement},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=CF}{%
+         family={Cervenansky},
+         familyi={C\bibinitperiod},
+         given={Frederick},
+         giveni={F\bibinitperiod},
+      }}%
+      {{hash=YX}{%
+         family={Yang},
+         familyi={Y\bibinitperiod},
+         given={Xin},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=HPA}{%
+         family={Heng},
+         familyi={H\bibinitperiod},
+         given={Pheng-Ann},
+         giveni={P\bibinithyphendelim A\bibinitperiod},
+      }}%
+      {{hash=CI}{%
+         family={Cetin},
+         familyi={C\bibinitperiod},
+         given={Irem},
+         giveni={I\bibinitperiod},
+      }}%
+      {{hash=LK}{%
+         family={Lekadir},
+         familyi={L\bibinitperiod},
+         given={Karim},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=CO}{%
+         family={Camara},
+         familyi={C\bibinitperiod},
+         given={Oscar},
+         giveni={O\bibinitperiod},
+      }}%
+      {{hash=GBMA}{%
+         family={Gonzalez\bibnamedelima Ballester},
+         familyi={G\bibinitperiod\bibinitdelim B\bibinitperiod},
+         given={Miguel\bibnamedelima Angel},
+         giveni={M\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=SG}{%
+         family={Sanroma},
+         familyi={S\bibinitperiod},
+         given={Gerard},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=NS}{%
+         family={Napel},
+         familyi={N\bibinitperiod},
+         given={Sandy},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=PS}{%
+         family={Petersen},
+         familyi={P\bibinitperiod},
+         given={Steffen},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=TG}{%
+         family={Tziritas},
+         familyi={T\bibinitperiod},
+         given={Georgios},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=GE}{%
+         family={Grinias},
+         familyi={G\bibinitperiod},
+         given={Elias},
+         giveni={E\bibinitperiod},
+      }}%
+      {{hash=KM}{%
+         family={Khened},
+         familyi={K\bibinitperiod},
+         given={Mahendra},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=KVA}{%
+         family={Kollerathu},
+         familyi={K\bibinitperiod},
+         given={Varghese\bibnamedelima Alex},
+         giveni={V\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=KG}{%
+         family={Krishnamurthi},
+         familyi={K\bibinitperiod},
+         given={Ganapathy},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=RMM}{%
+         family={Rohe},
+         familyi={R\bibinitperiod},
+         given={Marc-Michel},
+         giveni={M\bibinithyphendelim M\bibinitperiod},
+      }}%
+      {{hash=PX}{%
+         family={Pennec},
+         familyi={P\bibinitperiod},
+         given={Xavier},
+         giveni={X\bibinitperiod},
+      }}%
+      {{hash=SM}{%
+         family={Sermesant},
+         familyi={S\bibinitperiod},
+         given={Maxime},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=IF}{%
+         family={Isensee},
+         familyi={I\bibinitperiod},
+         given={Fabian},
+         giveni={F\bibinitperiod},
+      }}%
+      {{hash=JP}{%
+         family={Jager},
+         familyi={J\bibinitperiod},
+         given={Paul},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=MHKH}{%
+         family={Maier-Hein},
+         familyi={M\bibinithyphendelim H\bibinitperiod},
+         given={Klaus\bibnamedelima H.},
+         giveni={K\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+      {{hash=FPM}{%
+         family={Full},
+         familyi={F\bibinitperiod},
+         given={Peter\bibnamedelima M.},
+         giveni={P\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=WI}{%
+         family={Wolf},
+         familyi={W\bibinitperiod},
+         given={Ivo},
+         giveni={I\bibinitperiod},
+      }}%
+      {{hash=ES}{%
+         family={Engelhardt},
+         familyi={E\bibinitperiod},
+         given={Sandy},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=BCF}{%
+         family={Baumgartner},
+         familyi={B\bibinitperiod},
+         given={Christian\bibnamedelima F.},
+         giveni={C\bibinitperiod\bibinitdelim F\bibinitperiod},
+      }}%
+      {{hash=KLM}{%
+         family={Koch},
+         familyi={K\bibinitperiod},
+         given={Lisa\bibnamedelima M.},
+         giveni={L\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=WJM}{%
+         family={Wolterink},
+         familyi={W\bibinitperiod},
+         given={Jelmer\bibnamedelima M.},
+         giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=II}{%
+         family={Isgum},
+         familyi={I\bibinitperiod},
+         given={Ivana},
+         giveni={I\bibinitperiod},
+      }}%
+      {{hash=JY}{%
+         family={Jang},
+         familyi={J\bibinitperiod},
+         given={Yeonggul},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=HY}{%
+         family={Hong},
+         familyi={H\bibinitperiod},
+         given={Yoonmi},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=PJ}{%
+         family={Patravali},
+         familyi={P\bibinitperiod},
+         given={Jay},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=JS}{%
+         family={Jain},
+         familyi={J\bibinitperiod},
+         given={Shubham},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=HO}{%
+         family={Humbert},
+         familyi={H\bibinitperiod},
+         given={Olivier},
+         giveni={O\bibinitperiod},
+      }}%
+      {{hash=JPM}{%
+         family={Jodoin},
+         familyi={J\bibinitperiod},
+         given={Pierre-Marc},
+         giveni={P\bibinithyphendelim M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{BO+1}
+  \strng{fullhash}{BOLAZCCFYXHPACILKCOGBMASGNSPSTGGEKMKVAKGRMMPXSMIFJPMHKHFPMWIESBCFKLMWJMIIJYHYPJJSHOJPM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2018.2837502
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{11}
+    \field{pages}{2514\bibrangedash 2525}
+    \field{title}{Deep Learning Techniques for Automatic MRI Cardiac
+  Multi-Structures Segmentation and Diagnosis: Is the Problem Solved?}
+    \field{volume}{37}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Deep learning techniques for automatic MRI
+    \verb  cardiac multi-structures segmentation and diagnosis.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{11}
+    \field{year}{2018}
+  \endentry
+
+  \entry{LAPNet}{article}{}
+    \name{author}{10}{}{%
+      {{hash=KT}{%
+         family={Küstner},
+         familyi={K\bibinitperiod},
+         given={Thomas},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=PJ}{%
+         family={Pan},
+         familyi={P\bibinitperiod},
+         given={Jiazhen},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=QH}{%
+         family={Qi},
+         familyi={Q\bibinitperiod},
+         given={Haikun},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=CG}{%
+         family={Cruz},
+         familyi={C\bibinitperiod},
+         given={Gastao},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=GC}{%
+         family={Gilliam},
+         familyi={G\bibinitperiod},
+         given={Christopher},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=BT}{%
+         family={Blu},
+         familyi={B\bibinitperiod},
+         given={Thierry},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=YB}{%
+         family={Yang},
+         familyi={Y\bibinitperiod},
+         given={Bin},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=GS}{%
+         family={Gatidis},
+         familyi={G\bibinitperiod},
+         given={Sergios},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=BR}{%
+         family={Botnar},
+         familyi={B\bibinitperiod},
+         given={Rene},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=PC}{%
+         family={Prieto},
+         familyi={P\bibinitperiod},
+         given={Claudia},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{KT+1}
+    \strng{fullhash}{KTPJQHCGGCBTYBGSBRPC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2021.3096131
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{12}
+    \field{pages}{3686\bibrangedash 3697}
+    \field{title}{LAPNet: Non-Rigid Registration Derived in k-Space for
+  Magnetic Resonance Imaging}
+    \field{volume}{40}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/LapNet.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{12}
+    \field{year}{2021}
+  \endentry
+
   \entry{Dalca2018}{inbook}{}
     \name{author}{4}{}{%
       {{hash=DAV}{%
@@ -2525,6 +2866,82 @@
     \endverb
     \field{journaltitle}{ArXiv}
     \field{year}{2015}
+  \endentry
+
+  \entry{NiftiReg}{article}{}
+    \name{author}{8}{}{%
+      {{hash=MM}{%
+         family={Modat},
+         familyi={M\bibinitperiod},
+         given={Marc},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=RGR}{%
+         family={Ridgway},
+         familyi={R\bibinitperiod},
+         given={Gerard\bibnamedelima R.},
+         giveni={G\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+      {{hash=TZA}{%
+         family={Taylor},
+         familyi={T\bibinitperiod},
+         given={Zeike\bibnamedelima A.},
+         giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Lehmann},
+         familyi={L\bibinitperiod},
+         given={Manja},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Barnes},
+         familyi={B\bibinitperiod},
+         given={Josephine},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=HDJ}{%
+         family={Hawkes},
+         familyi={H\bibinitperiod},
+         given={David\bibnamedelima J.},
+         giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+      {{hash=FNC}{%
+         family={Fox},
+         familyi={F\bibinitperiod},
+         given={Nick\bibnamedelima C.},
+         giveni={N\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=OS}{%
+         family={Ourselin},
+         familyi={O\bibinitperiod},
+         given={Sébastien},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{MM+1}
+    \strng{fullhash}{MMRGRTZALMBJHDJFNCOS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.cmpb.2009.09.002
+    \endverb
+    \field{issn}{0169-2607}
+    \field{number}{3}
+    \field{pages}{278\bibrangedash 284}
+    \field{title}{Fast free-form deformation using graphics processing units}
+    \field{volume}{98}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Fast Free-Form Defomation using GPUs.pdf:P
+    \verb DF
+    \endverb
+    \field{journaltitle}{Computer Methods and Programs in Biomedicine}
+    \field{month}{06}
+    \field{year}{2010}
   \endentry
 \enddatalist
 \endinput

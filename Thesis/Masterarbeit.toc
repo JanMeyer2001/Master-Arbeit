@@ -10,37 +10,57 @@
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Contributions of the Thesis}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Related Work}{1}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Structure of the Thesis}{1}{section.1.3}%
-\contentsline {chapter}{\numberline {2}Basics}{2}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Magnetic Particle Imaging}{2}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Image Registration}{2}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Deep Learning Architectures}{3}{section.2.3}%
-\contentsline {subsection}{Convolutional Neural Networks}{4}{section*.2}%
-\contentsline {subsection}{U-Net}{4}{section*.3}%
-\contentsline {subsection}{Autoencoders}{4}{section*.4}%
-\contentsline {subsection}{Generative Adversarial Networks}{5}{section*.5}%
-\contentsline {section}{\numberline {2.4}Deep Learning for Image Registration}{5}{section.2.4}%
-\contentsline {subsection}{Supervised Registration}{5}{section*.6}%
-\contentsline {subsection}{Unsupervised Registration}{6}{section*.7}%
-\contentsline {section}{\numberline {2.5}MRI Image Reconstruction}{6}{section.2.5}%
-\contentsline {chapter}{\numberline {3}Data}{8}{chapter.3}%
-\contentsline {section}{\numberline {3.1}OASIS}{8}{section.3.1}%
-\contentsline {section}{\numberline {3.2}CMRxRecon}{8}{section.3.2}%
-\contentsline {subsection}{Image Reconstruction}{9}{section*.9}%
-\contentsline {subsection}{Pre-Processing}{9}{section*.12}%
-\contentsline {chapter}{\numberline {4}Network Architectures}{13}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Fourier-Net}{13}{section.4.1}%
-\contentsline {subsection}{Encoder}{13}{section*.15}%
-\contentsline {subsection}{Decoder}{16}{section*.17}%
-\contentsline {subsection}{Diffeomorphic Transforms}{17}{section*.19}%
-\contentsline {subsection}{Spatial Transformer}{18}{section*.20}%
-\contentsline {subsection}{Loss Function}{19}{section*.22}%
-\contentsline {subsection}{Training on OASIS}{20}{section*.23}%
-\contentsline {subsection}{Training on CMRxRecon}{21}{section*.25}%
+\contentsline {section}{\numberline {1.3}Structure of the Thesis}{2}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Basics}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Magnetic Resonance Imaging}{3}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Image Registration}{3}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Deep Learning Architectures}{4}{section.2.3}%
+\contentsline {subsection}{Convolutional Neural Networks}{5}{section*.2}%
+\contentsline {subsection}{U-Net}{5}{section*.3}%
+\contentsline {subsection}{Autoencoders}{5}{section*.4}%
+\contentsline {subsection}{Generative Adversarial Networks}{6}{section*.5}%
+\contentsline {section}{\numberline {2.4}Deep Learning for Image Registration}{6}{section.2.4}%
+\contentsline {subsection}{Supervised Registration}{6}{section*.6}%
+\contentsline {subsection}{Unsupervised Registration}{7}{section*.7}%
+\contentsline {section}{\numberline {2.5}MRI Motion Reconstruction}{7}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Data}{9}{chapter.3}%
+\contentsline {section}{\numberline {3.1}OASIS}{9}{section.3.1}%
+\contentsline {section}{\numberline {3.2}CMRxRecon}{9}{section.3.2}%
+\contentsline {subsection}{Image Reconstruction}{10}{section*.9}%
+\contentsline {subsection}{Pre-Processing}{11}{section*.12}%
+\contentsline {section}{\numberline {3.3}ACDC}{12}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Network Architectures}{14}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Fourier-Net}{14}{section.4.1}%
+\contentsline {subsection}{Encoder}{14}{section*.16}%
+\contentsline {subsection}{Decoder}{17}{section*.18}%
+\contentsline {subsection}{Diffeomorphic Transforms}{18}{section*.20}%
+\contentsline {subsection}{Spatial Transformer}{19}{section*.21}%
+\contentsline {subsection}{Loss Function}{20}{section*.23}%
 \contentsline {section}{\numberline {4.2}Fourier Net+}{21}{section.4.2}%
-\contentsline {subsection}{Changes to the Encoder}{22}{section*.27}%
-\contentsline {subsection}{Effects of Cascading}{22}{section*.30}%
+\contentsline {subsection}{Changes to the Encoder}{21}{section*.25}%
+\contentsline {subsection}{Effects of Cascading}{22}{section*.28}%
 \contentsline {chapter}{\numberline {5}Experiments}{24}{chapter.5}%
-\contentsline {chapter}{\numberline {6}Results and Discussion}{25}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Conclusion}{26}{chapter.7}%
-\contentsline {chapter}{Bibliography}{27}{chapter*.32}%
+\contentsline {section}{\numberline {5.1}Frame-to-Frame Registration on CMRxRecon}{24}{section.5.1}%
+\contentsline {subsection}{Quantitative Comparison with NiftyReg}{24}{section*.30}%
+\contentsline {section}{\numberline {5.2}Parameter Studies on the CMRxRecon Dataset}{25}{section.5.2}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{25}{section*.31}%
+\contentsline {subsection}{Starting Channel Size}{25}{section*.32}%
+\contentsline {section}{\numberline {5.3}Further Tests on the ACDC Dataset}{25}{section.5.3}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{25}{section*.33}%
+\contentsline {subsection}{Fourier-Transform Crop Size}{26}{section*.34}%
+\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{26}{section.5.4}%
+\contentsline {subsection}{General Reconstruction Pipeline}{26}{section*.35}%
+\contentsline {chapter}{\numberline {6}Results and Discussion}{28}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Frame-to-Frame Registration}{28}{section.6.1}%
+\contentsline {subsection}{Quantitative Results Comparison with NiftyReg}{28}{section*.37}%
+\contentsline {section}{\numberline {6.2}Parameter Studies on the CMRxRecon Dataset}{28}{section.6.2}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{30}{section*.41}%
+\contentsline {subsection}{Starting Channel Size}{31}{section*.43}%
+\contentsline {section}{\numberline {6.3}Further Tests on the ACDC Dataset}{31}{section.6.3}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{31}{section*.45}%
+\contentsline {subsection}{Starting Channel Size}{31}{section*.47}%
+\contentsline {subsection}{Fourier-Transform Crop Size}{33}{section*.49}%
+\contentsline {subsection}{Comparison with VoxelMorph}{33}{section*.51}%
+\contentsline {subsection}{Comparison on Subsampled Data}{33}{section*.53}%
+\contentsline {chapter}{\numberline {7}Conclusion}{35}{chapter.7}%
+\contentsline {chapter}{Bibliography}{36}{chapter*.55}%

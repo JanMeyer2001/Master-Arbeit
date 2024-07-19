@@ -3,8 +3,8 @@
 \UzLThesisSetup{
   Logo-Dateiname        = {Logo_IMI_de.png},
   Verfasst              = {am}{Institut für Medizinische Informatik},
-  Titel auf Deutsch     = {MRT-Registration}, 
-  Titel auf Englisch    = {MRT-Registration},
+  Titel auf Deutsch     = {Schnelle MRT-Registrierung mittels k-Raum Eigenschaften}, 
+  Titel auf Englisch    = {Fast MRI registration leveraging k-space properties},
   Autor                 = {Jan Meyer},
   Betreuerin            = {Prof. Dr. Mattias Heinrich},
   Mit Unterstützung von = {Ziad Al-Haj Hemidi, Eytan Kats},
@@ -43,7 +43,9 @@
 %
 %%%%%%%
 \usepackage{subcaption}	% for subfigures
-\usepackage{float}
+\usepackage{float}		% for float (figures, tables) positioning 
+\usepackage{multirow}	% for multirow in tables
+\usepackage{booktabs} 	% for toprule, etc. in tables
 
 
 % add bibliography
@@ -57,32 +59,36 @@
 %%%%%  Introduction %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Introduction}
-Introduction of stuff.
+\chapter{Introduction} \label{Ch:Introduction}
+MRI is a commonly used medical imaging technique that is non-invasice, radiation-free and has great contrast for soft tissue. However, speed is its main weakness as full-body scan can take up to 30 minutes, which is a burden on patients as well as hindering efficiency. Thus, MRI acquisition is usually accelerated by subsampling the k-space in which the data is recorded. This can, however, lead to problematic image artifacts that hinder many processing algorithms. Another problem of the slow data acquisition are motion artifacts, which are especially common for organs like lung and heart. While breathing can be controlled, cardiac motion is involuntarily and should not be stopped. These challenges have been traditionally addressed with computationally intensive algorithms that usually iterativly solve an optimization problem. New approaches, however, are based around the deep neural networks, which have seen a rise in popularity in the recent years in many fields including image processing. In this thesis, the possibility of using an unsupervised deep learning approach to align subsampled MRI data as well its potential usage in a motion reconstruction pipeline will be investigated.
 
-\section{Contributions of the Thesis}
-We implemented stuff.
+\section{Contributions of the Thesis} \label{Sec:Contributions}
+We managed to implement an unsupervised approach to correct motion in subsampled MRI images and much more. 
 
-\section{Related Work}
+\section{Related Work} \label{Sec:RelatedWork}
 There are many papers on image registration in general, however in the context of medical image registration with deep learning their number is reduced due to the specialized nature of the subject at hand. Yet, there are a couple of papers that give a good overview of the topic.
 They give a brief overview of registration methods, basics of deep learning with already existing networks for image registration as well as covering potential applications and challenges~\cite{Chen2020,Haskins2020,Fu2020,Zou2022,Chen2023}.
 A lot of different approaches for medical image registration are based on \emph{VoxelMorph}~\cite{Voxelmorph}, such as both \emph{Fourier-Net}~\cite{Fourier-Net} and its successor \emph{Fourier-Net+}~\cite{Fourier-Net+}.
 
 
-\section{Structure of the Thesis}
-This Thesis contains a lot of stuff in different chapters.
+\section{Structure of the Thesis} \label{Sec:Structure}
+In chapter~\ref{Ch:Basics}, the general basis of the thesis containing descriptions of MRI in section~\ref{Sec:MRI}, Image registration in section~\ref{Sec:ImageRegistration} and deep learning architectures as well as their use in image registration in sections~\ref{Sec:DeepLearningArchitectures} and~\ref{Sec:DLImageRegistration}. A special emphasize is put on motion reconstruction in MRI as described in section~\ref{Sec:MRI_MotionReconstruction}.\\
+The data used in this thesis is described in Chapter~\ref{Ch:Data} with details concerning the \emph{OASIS} and \emph{CMRxRecon} datasets in sections~\ref{Sec:OASIS} and~\ref{Sec:CMRxRecon} respectively.\\
+In chapter~\ref{Ch:NetworkArchitecture}, the networks used in this thesis, namely \emph{Fourier-Net} and \emph{Fourier-Net+}, are described in section~\ref{Sec:Fourier-Net} and~\ref{Sec:Fourier-Net+}.\\
+The experiments conducted in the making of this thesis are explained in chapter~\ref{Ch:Experiments} with results and discussion following in chapter~\ref{Ch:ResultsDiscussion}.\\
+Lastly, the thesis is briefly summarized in chapter~\ref{Ch:Conclusion}.
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%  Basics %%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Basics}
+\chapter{Basics}	\label{Ch:Basics}
 In this chapter the basics of the thesis are explained.
 
-\section{Magnetic Particle Imaging}
+\section{Magnetic Resonance Imaging} \label{Sec:MRI}
 Here MRI is described. % TODO: define abbreviations for CT and MRI here!!
 
-\section{Image Registration}
+\section{Image Registration} \label{Sec:ImageRegistration}
 Image registration is a challenging, yet important task for image processing. It can be described as the process of transforming different image datasets into one coordinate system with matched imaging contents~\cite{Haskins2020}. In the medical field this can be used for clinical applications such as disease diagnosis and monitoring, image-guided treatment delivery, and post-operative assessment. Medical image registration is typically used to pre-process data for tasks like object detection (for e.g. tumor growth monitoring) and segmentation (for e.g. organ atlas creation) where variation in spatial resolution is common between modalities like CT and MRI and patients. Thus the performance of these methods is dependent on the quality of image registration~\cite{Chen2020}. \\
 Medical image registration was often done manually by clinicians, however, registration tasks are often challenging and the quality of manual alignments is dependent on the expertise of the user. These manual registrations are thus not only time consuming, but also hardly reproducible leading to high interobserver-variability. The need for automatic registration is very much apparent, but this task remained hard to solve for a long time, requiring a lot of computational power and time for computer algorithms to solve the problem. While neural networks also require a lot of computational power and time to train, they promise fast execution after training. With the rise of deep learning these network gained popularity and now pose a real alternative to conventional algorithms and manual registration~\cite{Haskins2020}. We will discuss these new approaches in the next section, but first we need to formally define our problem.\\
 In pair-wise image registration two images ($F$ and $M$) are to be aligned, with $F$ denoting the fixed and $M$ the moving image. T is the desired spatial transformation that aligns the two images. This can be posed as an optimization problem:
@@ -96,34 +102,34 @@ utilized for various computer-assisted interventions like biopsy~\cite{Tam2016} 
 Intuitively, deformable image registration is an ill-posed problem, making it fundamentally different from other computer vision tasks such as object localization, segmentation or classification. Given two images, deformable image registration aims to find a spatial transformation that warps the moving image to match the fixed image as closely as possible. However, there is no ground-truth available for the desired deformation field and without enforcing any constraints on the properties of the spatial transformation, the resulting cost function is ill-conditioned and highly non-convex. In order to address the latter and ensure tractability, all image registration algorithms regularize the estimated deformation field, based on some prior assumptions on the properties of the underlying unknown deformation~\cite{Chen2020}.\\
 Many methods have been proposed for medical image registration to deal with the complex challenges of this task. Popular conventional registration methods include optical flow~\cite{Yang2008}, demons~\cite{Vercauteren2009} and many more. However, most of these still lack accuracy and computation speed, which makes newer deep learning approaches all the more interesting~\cite{Fu2020}.
 
-\section{Deep Learning Architectures}
+\section{Deep Learning Architectures} \label{Sec:DeepLearningArchitectures}
 Neural networks, despite the theoretical concepts being around for decades, have seen a meteoric rise in popularity over the last few years as constraints on computational power have been alleviated. Especially deep neural networks, which are often summarized under the term deep learning (DL). Recent years have witnessed an almost exponential growth in the development and use of DL algorithms, sustained thus far by rapid improvements in computational hardware (e.g. GPUs). Consequently, clinical applications requiring image classification, segmentation, registration, or object detection/localization, have witnessed significant improvements in algorithmic performance, in terms of accuracy and/or efficiency~\cite{Chen2020}. The following network architecture are widely used for different tasks including medical image registration. \\
 Some basic stuff about network training, testing and different architectures that are relevant for the later Chapters.
 
-\subsection{Convolutional Neural Networks}
+\subsection{Convolutional Neural Networks} \label{SubSec:CNNs}
 Convolutional neural networks (CNNs) are a type of deep neural networks with regularized multilayer perceptron, which are mainly used for image processing. CNNs use convolution operations instead of general matrix multiplications in typical neural networks. These convolutional filters make CNNs very suitable for visual signal processing. Because of their excellent feature extraction ability, CNNs are some of the most successful models for image analysis. Different variants of CNN have been proposed and have achieved the-state-of-art performances in various image processing tasks. A typical CNN usually consists of multiple convolutional layers, max pooling layers, batch normalization layers, sometimes dropout layers, a sigmoid or softmax layer. In each convolutional layer, multiple channels of feature maps are extracted by sliding trainable convolutional kernels across the input feature maps. Hierarchical features with high-level abstraction are extracted using multiple convolutional layers. These feature maps usually go through multiple fully connected layer before reaching the final decision layer. Max pooling layers are often used to reduce the image sizes and to promote spatial invariance of the network. Batch normalization is used to reduce internal covariate shift among the training samples. Weight regularization and dropout layers are used to alleviate data overfitting~\cite{Fu2020}. The loss function is often defined as the difference between the predicted and the target output. CNNs are usually trained by minimizing the loss via gradient back propagation using optimization methods like Adam~\cite{Adam}. 
 % Convolutions and Deconvolutions genauer erklären?!
 
-\subsection{U-Net}
+\subsection{U-Net} \label{SubSec:U-Net}
 The U-Net~\cite{U-Net} architecture is an extension of the typical CNNs structure typically used for image segmentation, however it can also be used for image registration tasks. It adopts symmetrical contractive and expansive paths with skip connections between them. The encoding blocks on the left extract important features from the image using convolution layers and max pooling, which are then stored in the latent space in the middle. From there it is reconstructed using upsampling and convolutions in the decoding blocks on the right. Additionally, skip connections are used to improve the spatial resolution of the segmentation. This architecture allows effective feature learning from a small number of training datasets~\cite{Fu2020}. 
 
-\subsection{Autoencoders}
+\subsection{Autoencoders} \label{SubSec:Autoencoders}
 An autoencoder (AE) is a type of CNNs that learns to reconstruct an image from its input without supervision. AEs usually consists of an encoder which extracts the input features, which are stored a low-dimensional latent state space, similar to a U-Net, and a decoder which restore the original input from the latent space. To prevent an AE from learning an identity function, regularized autoencoders were invented, which can be used for e.g. denoising AEs. Variational AEs (VAEs) are generative models that learn latent representation using a variational approach, which constrains the variability of the outputs. VAEs can been used for anomaly detection and image generation~\cite{Fu2020}.
 
-\subsection{Generative Adversarial Networks}
+\subsection{Generative Adversarial Networks} \label{SubSec:GANs}
 Generative adversarial networks (GANs) consist of two competing networks, a generator and a discriminator. The generator is trained to generate artificial data that approximate a target data distribution from a low-dimensional latent space similar to an AE. The discriminator is trained to distinguish the artificial data from actual data. The discriminator encourages the generator to predict realistic data by penalizing unrealistic predictions via learning. Therefore, the discriminative loss could be considered as a dynamic network-based loss term. The generator and discriminator both are getting better during training to reach Nash equilibrium. In medical imaging, GANs have been used to perform image synthesis for inter- or intra-modality, such as MRI to synthetic CT and vise versa. In medical image registration, GANs are usually used to either provide additional regularization or translate multi-modal registration to uni-modal registration~\cite{Fu2020}.
 
-\section{Deep Learning for Image Registration}
+\section{Deep Learning for Image Registration} \label{Sec:DLImageRegistration}
 Recently, there has been a surge in the use of deep learning based approaches for medical image registration. Their success is largely due to their ability to perform fast inference, and the flexibility to leverage auxiliary information such as anatomical masks as part of the training process. The most effective methods, such as \emph{VoxelMorph}~\cite{Voxelmorph}, typically employ a U-Net style architecture to estimate dense spatial deformation fields. These methods require only one forward pass during inference, making them orders of magnitude faster than traditional iterative methods. Following the success of \emph{VoxelMorph}, numerous deep neural networks have been proposed for various registration tasks~\cite{Fourier-Net+}. Other approaches also utilize CNNs, AEs and GANs. Typical strategies are discussed in more detail in the following sections.
 
-\subsection{Supervised Registration}
+\subsection{Supervised Registration} \label{SubSec:SupervisedRegistration}
 Supervised registration describes training a network with a ground truth displacement field that is either real (created by hand) or synthetic (generated via traditional iterative registration algorithms). Thus the loss can easily be calculated as the difference in the displacement fields of the network prediction and the ground truth. These methods have achieved notable results with real displacement fields as supervision. However, this approach is very limited by the size and the diversity of the dataset. As the displacement fields are often calculated by conventional algorithms their effectiveness might be limited for difficult problems with which the traditional algorithms struggle. Fully supervised methods are widely studied and have notable results, but the generation of real or synthetic displacement fields is hard, and these displacements fields might be different from the real ground truth, which can impact the accuracy and efficiency of these kinds of methods~\cite{Zou2022}. Notable approaches include \emph{BIRNet}~\cite{BIRNet}.
 
-\subsection{Unsupervised Registration}
+\subsection{Unsupervised Registration} \label{SubSec:UnsupervisedRegistration}
 As the preparation of the ground truth displacement field for supervised methods is inconvenient, limitations in generalizing results in different domains and various registration tasks are inevitable. Thus, unsupervised registration has a more convenient training process with paired images as inputs, but without a ground truth. Generally, unsupervised learning consists of similarity-based and GAN-based methods, where the loss function computes the similarity between the aligned images and the smoothness of the displacement field, rather than the difference to a ground truth~\cite{Zou2022}. Well known example are \emph{IC-Net}~\cite{IC-Net},  \emph{VoxelMorph}~\cite{Voxelmorph}, \emph{TransMorph}~\cite{TransMorph} and \emph{SYMNet}~\cite{SYM-Net}.
 
 
-\section{MRI Image Reconstruction}
+\section{MRI Motion Reconstruction} \label{Sec:MRI_MotionReconstruction}
 Patient motion during acquisition is one of the major impediments of high-quality MRI scans. This is especially true for thoracic and abdominal imaging, as organs move during breathing. This motion can induce several consequences on MR signal formation. Intraview and interview motion have to be distinguished between: motion is intraview when occurring during individual MR experiments (between RF excitation and echo formation), whereas motion is interview when occurring between individual MR experiments. Whenever the period of motion is slow compared to the period of MR acquisition defined by the repetition time $TR$, the assumption can be made that motion is interview. This is often a reasonable assumption when considering pseudo-periodic motion induced by respiration, and also possibly by cardiac contraction, which are the two common sources of motion in cardiac and abdominal imaging (typically, the adult respiratory period is about 4–5 $s$, and $TR \approx 10 ms$ for fast imaging). Interview motion results in spatial encoding inconsistencies, and thus in image deterioration which can take complex forms (blurring/ghosting artifacts) as acquisition is performed in a Fourier space. Several strategies can be employed in order to handle patient motion better. Patient cooperation is the most commonly used method. However, breath-holds cannot last much longer than $20 s$ and physiological drifts cannot be completely avoided. This leads to a limitation on the time-period of signal recording and thus, signal-to-noise ratio (SNR). Moreover, the position of organs in successive breath-holds may not be reproducible. Synchronization techniques are well-established and systematically used in clinical protocols, but they require a high-level of motion reproducibility. This is often a limiting factor considering heart rate variability (whether in free breathing or during a breathhold), and respiratory variability in terms of amplitude and frequency. This is why alternative techniques have been put forward with the aim of inverting the process of spatial encoding of moving structures that underlies artifacts. While it is possible to correct for motion prospectively, by modulating the magnetic field gradients and RF fields in order to cancel the effect of motion in the Bloch equations, the method is limited to correcting of, at best, affine motion, due to magnetic field gradient systems being linear. Motion can also be compensated for in reconstruction, however, many methods are restricted to rigid or affine motion due either to computational issues or to the difficulty of modeling complex displacement fields~\cite{GRICS}. The latter however seems to become less of a problem as image registration improves with e.g. the help of deep learning.\\
 Motion-resolved data acquisition for these applications are usually accelerated by Parallel Imaging or Compressed Sensing techniques yielding sub-Nyquist sampled (subsampled) k-space data. In order to reconstruct aliasing-free images, these methods rely on reconstruction schemes that, for example incorporate sparsity or low-rank constraints to solve the ill-posed problem. Fixed sparsity assumptions in Compressed Sensing are often too restrictive and incapable of fully modeling spatio-temporal dynamics. Careful fine-tuning between regularization and data consistency is required and especially in highly subsampled cases residual aliasing may remain in the image (under-regularization) or staircasing and blurring artifacts can occur (over-regularization) which affect the image registration. After reconstruction, non-rigid motion fields can be estimated in image space from reconstructed images by solving a registration problem. A particular interest and challenge lies in the derivation of reliable motion fields which capture the spatio-temporal non-rigid deformations, such as respiratory or cardiac movement. Instead of performing these two steps sequentially, motion-compensated image reconstruction schemes like \emph{GRICS}~\cite{GRICS} integrate both motion field estimation and motion correction into the reconstruction process. These methods require reliable motion-resolved images from which the motion fields can be estimated. Motion field estimation can be controlled or supported by external motion surrogate signals, initial motion field estimates, from motion-aliased images or low-frequency image contents. Moreover, spatio-temporal redundancies can be exploited to achieve an aliasing-free image. While these methods have been proven to be more robust against registration errors, they can require a significantly increased computational demand and/or limit imaging acceleration~\cite{Kuestner2022}.
 
@@ -136,13 +142,15 @@ There are also approaches for learning new subsampling strategies in a data-driv
 %\chapter{Methodology}
 %In this chapter the main part of the actual work is discussed.
 
-\chapter{Data}
-In the following chapter, the datasets used in this thesis are presented and potential pre-processing steps, as well as uses, discussed. The first dataset \emph{OASIS} containing MRI brain scans was used in the original publications for training and evaluating both \emph{Fourier-Net} and \emph{Fourier-Net+}. It was thus used to get familiar with these networks and their respective work-flows. For our major experiment the \emph{CMRxRecon} dataset was later used. The cardiac MRI data was used for extending the networks to frame-to-frame registration in order for them to be integrated into a motion reconstruction pipeline.
+\chapter{Data}	\label{Ch:Data}
+In the following chapter, the datasets used in this thesis are presented and potential pre-processing steps, as well as uses, discussed. The first dataset called \emph{OASIS}, containing MRI brain scans, was used in the original publications for training and evaluation of both \emph{Fourier-Net} and \emph{Fourier-Net+}. It was thus used to get familiar with these networks and their respective work-flows as well as reproducing some results from the paper to ensure that the code works as intended.\\ 
+For our major experiment the \emph{CMRxRecon} dataset was used. The cardiac MRI k-space data was used for extending the networks to frame-to-frame registration in order for them to be integrated into a motion reconstruction pipeline. It already contains subsampled data, but does not provide segmentations for multi-coil data.\\
+Thus a third dataset, the \emph{ACDC} cardiac dataset, was used. While it contains no k-space data segmentations are given for end-systolic and end-diastolic frames, which can thus be used for the evaluation of registration performance. Most parameter studies and optimizations of the networks were done with this dataset.
 
-\section{OASIS}
+\section{OASIS} \label{Sec:OASIS}
 The \emph{OASIS-1} dataset~\cite{OASIS} contains T1-weighted MRI brain scans from 454 subjects and was mainly used for training and testing the original \emph{Fourier-Net/Fourier-Net+}. The brain scans were further pre-processed by~\cite{HyperMorph} for the \emph{Learn2Reg}-Challenge~\cite{Learn2Reg}. This enables subject-to-subject brain registration, as all MRI scans were bias-corrected, skull-stripped, aligned, and cropped to the size of $160 \times 192 \times 224$. The images were stored in the \emph{NIFTI} format,  which makes it really easy to use. Examples can be seen in Figures~\ref{fig:image1} and \ref{fig:image2} with slices from the center of the x-, y- and z-axis.
 
-\begin{figure}[htpb]
+\begin{figure}[h]%tpb
 	\centering
 	\graphicspath{{images/}{\main/images/}}
 	\begin{subfigure}{0.45\textwidth}
@@ -162,10 +170,12 @@ The \emph{OASIS-1} dataset~\cite{OASIS} contains T1-weighted MRI brain scans fro
 	\label{fig:OASIS}
 \end{figure}
 
-\section{CMRxRecon}
-The \emph{CMRxRecon} dataset~\cite{CMRxRecon} from the \emph{CMRxRecon2024} challenge specializes in Cardiac magnetic resonance imaging (CMR). The dataset includes multi-contrast k-space data, consisting of cardiac cine, T1/T2-mapping, tagging, phase-contrast (i.e., flow2d), and dark-blood imaging. It also includes imaging of different anatomical views like long-axis (2-chamber, 3-chamber, and 4-chamber), short-axis (SAX), left ventricul outflow tract (LVOT), and aorta (transversal and sagittal views). There is a total of 200 training data, 60 validation data, and 70 test data from healthy volunteers, however the test data is being withheld until the challenge is finished. One of the goals of the challenge is the reconstruction from subsampling and motion correction for the heart movement.
+\section{CMRxRecon} \label{Sec:CMRxRecon}
+The \emph{CMRxRecon} dataset~\cite{CMRxRecon} from the \emph{CMRxRecon2023} challenge specializes in Cardiac magnetic resonance imaging (CMR). The dataset includes 
+%multi-contrast k-space data, consisting of cardiac cine, T1/T2-mapping, tagging, phase-contrast (i.e., flow2d), and dark-blood imaging
+fully sampled and subsampled multi-coil k-space data, as well as auto-calibration lines. This includes imaging of different anatomical views like long-axis (2-chamber, 3-chamber, and 4-chamber) and short-axis (SAX). There is a total of 120 training data, 60 validation data, and 120 test data from healthy volunteers. One of the goals of the challenge is the reconstruction from subsampling and motion correction for the heart movement.
 
-\subsection{Image Reconstruction}
+\subsection{Image Reconstruction} \label{SubSec:ImageReconstruction}
 As the data was recorded in the k-space (see Figure~\ref{fig:k-space}) and stored as \emph{.mat} files we first need to reconstruct the images to use them for training and testing of \emph{Fourier-Net/Fourier-Net+}. For this, multi-coil reconstruction algorithms like \emph{SENSE}~\cite{SENSE1} can be used. The sensitivity of the different coils can be seen in Figure~\ref{fig:Coils}, where each coil focuses on a specific area of the image. These images are then stitched together in reconstruction to produce a combined image with great overall contrast.
 %, while Figure~\ref{fig:ImageSlice} contains the complete reconstructed image. 
 The dataset, as mentioned before, contains fully sampled as well as subsampled k-space data (see Figure~\ref{fig:fullySampled} and Figure~\ref{fig:subSampled}), with the latter being typically used to accelerate the MRI acquisition process. This is done by not using all of the available k-space data, but rather masking the signal to achieve the subsampling. The center region of the k-space is always fully sampled, but the outer regions are subsampled depending on the sampling strategy~\cite{SubsamplingStrategies}. The dataset contains subsampled k-space data for 4x and 8x acceleration with the latter of course leading to more distortions in the reconstructed image as the subsampling can induce image reconstruction artifacts. This can be seen in Figure~\ref{fig:subSampledImage}, where the image reconstructed from 4x accelerated k-space data seems blurred when compared to the fully sampled one in Figure~\ref{fig:fullySampledImage}. 
@@ -174,7 +184,7 @@ For all experiments the short-axis  view data was used. As image sizes between p
 %ensure coherent sizes between images to avoid problems with the network and 
 loss calculation. Additionally, min-max-normalization is used to standardize the data range for all images to $[0,1]$ as this was also varying. The reconstructed images were stored for every image slice for every patient. Thus, all frames for a specific image slice were in a single folder to enable easy access for later data load-in for frame-to-frame registration.
 
-\begin{figure}[htpb]
+\begin{figure}[h]%tpb
 	\centering
 	\graphicspath{{images/}{\main/images/}}
 	\includegraphics[width=\linewidth]{CoilsHorizontal.png} 
@@ -183,29 +193,29 @@ loss calculation. Additionally, min-max-normalization is used to standardize the
 \end{figure}
 
 
-\begin{figure}[htpb]
+\begin{figure}[h]%tpb
 	\centering
 	\graphicspath{{images/}{\main/images/}}
-	\begin{subfigure}{0.4\textwidth}
+	\begin{subfigure}{0.45\textwidth}
     		\includegraphics[width=\textwidth]{k-space_fullysampled.png}
-    		\caption{Example for a fully sampled k-space.}
+    		\caption{Example for a fully sampled k-space with the low frequencies in the middle.}
     		\label{fig:fullySampled}
 	\end{subfigure}
 	\hfill
-	\begin{subfigure}{0.4\textwidth}
+	\begin{subfigure}{0.45\textwidth}
     		\includegraphics[width=\textwidth]{k-space_subsampled.png}
     		\caption{Example of a subsampled k-space for 4x acceleration.}
     		\label{fig:subSampled}
 	\end{subfigure}\\
-	\begin{subfigure}{0.4\textwidth}
+	\begin{subfigure}{0.45\textwidth}
     		\includegraphics[width=\textwidth]{image_fullysampled.png}
-    		\caption{Corresponding image reconstructed from fully sampled k-space.}
+    		\caption{Corresponding image reconstructed from the fully sampled k-space.}
     		\label{fig:fullySampledImage}
 	\end{subfigure}
 	\hfill
-	\begin{subfigure}{0.4\textwidth}
+	\begin{subfigure}{0.45\textwidth}
     		\includegraphics[width=\textwidth]{image_subsampled.png}
-    		\caption{Corresponding image reconstructed from subsampled k-space.}
+    		\caption{Corresponding image reconstructed from the subsampled k-space.}
     		\label{fig:subSampledImage}
 	\end{subfigure}
 	\caption{Fully sampled and subsampled k-space data from the from the \emph{CMRxRecon} dataset~\cite{CMRxRecon} with corresponding images.}
@@ -247,44 +257,110 @@ loss calculation. Additionally, min-max-normalization is used to standardize the
 %	\label{fig:Subsampling}
 %\end{figure}
 
-\subsection{Pre-Processing}
+\subsection{Pre-Processing} \label{SubSec:Pre-Processing}
 As seen before, a large part of the image is just black background that contains no usable information. The interesting cardiac region in the image, however, is much smaller and thus image cropping can be used to extract it. The fairly large image size can thus be cut down without losing important image information, which also helps with memory efficiency. One problem however remains: image alignment. Whereas in the \emph{OASIS} dataset the brain scan were already aligned, the cardiac data in the \emph{CMRxRecon} dataset is not. Thus, one cannot simply center-crop all images as the cardiac region might be located in very different parts of the image. To resolve this issue, adaptive cropping with automatic detection of the cardiac region in the images is needed. \\
 To begin, some assumption about the data needs to be made: First, the cardiac region is at the same position for all slices and frames from one patient. Second, most of the movement happens in the cardiac region between frames. From the latter we can conclude that we need to examine the frames, thus the difference between consecutive frames is calculated and averaged for each slice. According to the first assumption this process is repeated for all slices and their results summed to create a sort of heatmap as seen in Figure~\ref{fig:SumDifferences} with a clearly higher intensity in the cardiac region compared to the background. To further isolate this region a simple thresholding is performed followed by an opening operation, which removes any smaller fragments still left in the image. The cardiac region is now clearly separated from the rest of the image as seen in Figure~\ref{fig:MaskCropping}. The only step left is to calculate the approximate center of this region and create a crop around it. To drastically reduce the image size a cropping factor of one third was used, reducing the image size from $246 \times 512$ to $82 \times 170$. The result of this drastic crop can be seen in Figure~\ref{fig:ImageCropped} when compared to the original image in Figure~\ref{fig:fullImage}. Note, however, that the cropped image in Figure~\ref{fig:ImageCropping} appears larger than it actually is, when compared to the original, to allow for a more detailed look. Thus both images are not presented to scale, but in order to show the most image detail.
 
-\begin{figure}[htpb]
+\begin{figure}[h]%tpb
 	\centering
 	\graphicspath{{images/}{\main/images/}}
-	\begin{subfigure}{0.6\textwidth}
+	\begin{subfigure}{0.4\textwidth}
     		\includegraphics[width=\textwidth]{FullImage.png}
     		\caption{The original full-size image.}
     		\label{fig:fullImage}
 	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+    		\includegraphics[width=\textwidth]{ImageCrop.png}
+    		\caption{The corresponding cropped image.}
+    		\label{fig:ImageCropped}
+	\end{subfigure}
 	\\
-	\begin{subfigure}{0.6\textwidth}
+	\begin{subfigure}{0.4\textwidth}
     		\includegraphics[width=\textwidth]{DifferencesSlices.png}
     		\caption{Sum of the differences between slices and their respective frames with the cardiac region in the middle.}
     		\label{fig:SumDifferences}
 	\end{subfigure}
-	\\
-	\begin{subfigure}{0.6\textwidth}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
     		\includegraphics[width=\textwidth]{MaskForCropping.png}
     		\caption{Mask of the cardiac region generated from the sum of differences by thresholding and opening.}
     		\label{fig:MaskCropping}
-	\end{subfigure}
-	\\
-	\begin{subfigure}{0.6\textwidth}
-    		\includegraphics[width=\textwidth]{ImageCrop.png}
-    		\caption{The corresponding cropped image.}
-    		\label{fig:ImageCropped}
 	\end{subfigure}
 	\caption{Cropping of an example image by locating the movement between frames for each slice. Note that the cropped image appears larger than it actually is compared to the original.}
 	\label{fig:ImageCropping}
 \end{figure}
 
-\chapter{Network Architectures}
-As a starting point \emph{Fourier-Net}~\cite{Fourier-Net} and its successor \emph{Fourier-Net+}~\cite{Fourier-Net+} were used. These networks, which are explained in the following pages, enable fast and accurate registration while needing less resources compared to similar approaches. These attributes are very beneficial for a potential application like motion correction because the current networks, e.g. \emph{LAPNet}, are usually supervised and require large computational resources.
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\begin{subfigure}{0.6\textwidth}
+%    		\includegraphics[width=\textwidth]{FullImage.png}
+%    		\caption{The original full-size image.}
+%    		\label{fig:fullImage}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.6\textwidth}
+%    		\includegraphics[width=\textwidth]{DifferencesSlices.png}
+%    		\caption{Sum of the differences between slices and their respective frames with the cardiac region in the middle.}
+%    		\label{fig:SumDifferences}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.6\textwidth}
+%    		\includegraphics[width=\textwidth]{MaskForCropping.png}
+%    		\caption{Mask of the cardiac region generated from the sum of differences by thresholding and opening.}
+%    		\label{fig:MaskCropping}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.6\textwidth}
+%    		\includegraphics[width=\textwidth]{ImageCrop.png}
+%    		\caption{The corresponding cropped image.}
+%    		\label{fig:ImageCropped}
+%	\end{subfigure}
+%	\caption{Cropping of an example image by locating the movement between frames for each slice. Note that the cropped image appears larger than it actually is compared to the original.}
+%	\label{fig:ImageCropping}
+%\end{figure}
 
-\section{Fourier-Net}
+\section{ACDC}
+The \emph{ACDC} dataset~\cite{ACDC} from the \emph{Automated Cardiac Diagnosis Challenge (ACDC)} during the \emph{MICCAI 2017} conference. It contains cardiac cine-MRI short-axis data from 150 subjects that were divided into 5 subgroups (4 pathological, 1 healthy). For each subject systolic (see Figure~\ref{fig:Image_ACDC_systolic}) and diastolic frames (see Figure~\ref{fig:Image_ACDC_diastolic}) are provided with corresponding segmentations (see Figure~\ref{fig:Segmentation_ACDC_systolic} and ~\ref{fig:Segmentation_ACDC_diastolic}), which enables direct comparison via e.g. the Dice score. The segmentations contain only four values with 0, 1, 2 and 3 representing pixels located in the background, in the RV cavity, in the myocardium, and in the LV cavity. The frames themselves are 3D volumes with size $216 \times 256 \times 10$, thus ten image slices can be extracted which each have size $216 \times 256$. The same holds true for the segmentation, which means that both the image data and segmentations can generated in the same manner.\\
+For the training data, the original 4D data was used as we do not require the segmentations for the end-systolic and end-diastolic frames. As the 4D data has size $216 \times 256 \times 10 \times 30$ we can extract 30 frames for each of the ten slices. These can be sorted into 251376 image pairs for training. For the validation and test data the end-systolic and end-diastolic frames with their segmentations were used given us 641 image pairs each as we can only have these two frames to align.
+
+\begin{figure}[h]%tpb
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\begin{subfigure}{0.4\textwidth}
+    		\includegraphics[width=\textwidth]{Image_ACDC_systolic.png}
+    		\caption{Image of systolic phase.}
+    		\label{fig:Image_ACDC_systolic}
+	\end{subfigure}
+	\hfill
+	\graphicspath{{images/}{\main/images/}}
+	\begin{subfigure}{0.4\textwidth}
+    		\includegraphics[width=\textwidth]{Image_ACDC_diastolic.png}
+    		\caption{Image of diastolic phase.}
+    		\label{fig:Image_ACDC_diastolic}
+	\end{subfigure} 
+	\\
+	\begin{subfigure}{0.4\textwidth}
+    		\includegraphics[width=\textwidth]{Segmentation_ACDC_systolic.png}
+    		\caption{Segmentation of systolic phase.}
+    		\label{fig:Segmentation_ACDC_systolic}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.4\textwidth}
+    		\includegraphics[width=\textwidth]{Segmentation_ACDC_diastolic.png}
+    		\caption{Segmentation of diastolic phase.}
+    		\label{fig:Segmentation_ACDC_diastolic}
+	\end{subfigure}
+	\caption{Example images for systolic (a) and diastolic frames (b) with corresponding segmentations (c),(d) taken from the \emph{ACDC} dataset~\cite{ACDC}.}
+	\label{fig:}
+\end{figure}
+
+
+\chapter{Network Architectures} \label{Ch:NetworkArchitecture}
+As a starting point \emph{Fourier-Net}~\cite{Fourier-Net} and its successor \emph{Fourier-Net+}~\cite{Fourier-Net+} were used. These networks, which are explained in the following pages, enable fast and accurate registration while needing less resources compared to similar approaches. These attributes are very beneficial for a potential application like motion correction because the current networks, e.g. \emph{LAPNet}~\cite{LAPNet}, are usually supervised and require large computational resources.
+
+\section{Fourier-Net}	\label{Sec:Fourier-Net}
 \emph{Fourier-Net} is a new unsupervised approach that aims to learn a low-dimensional representation of the displacement field in a band-limited Fourier domain instead of the full field in the spatial domain. This band-limited representation is then decoded by a model-driven decoder to the dense, full-resolution displacement field in the spatial domain. This allows for fewer parameters and computational operations, resulting in faster inference speeds~\cite{Fourier-Net}. The architecture is based on the U-Net~\cite{U-Net}, like most deep registration approaches, but replaces the expanding path with a parameter-free model-driven decoder as mentioned before. The encoder of \emph{Fourier-Net} consists of a CNN, which takes two images (fixed and moving) as inputs. The output is a displacement field that is then converted from the spatial domain into the Fourier domain via an discrete Fourier transformation (DFT). From there, this band-limiting representation 
 %of the displacement field 
 is padded with zeros to the full resolution of the original displacement field. The field is then recovered by using the inverse DFT (iDFT) to convert it back into the spatial domain. This displacement field is then used to warp the moving image into the fixed image. Additionally, squaring and scaling layers~\cite{Dalca2018} can be added before warping the image in order to encourage a diffeomorphism in final deformation. 
@@ -297,7 +373,7 @@ is padded with zeros to the full resolution of the original displacement field. 
 	\label{fig:Fourier-Net}
 \end{figure}
 
-\subsection{Encoder}
+\subsection{Encoder}	\label{SubSec:Encoder}
 The encoder of \emph{Fourier-Net} consists of a CNN that generates the displacement field between the two inputs followed by a DFT layer that produces a band-limited representation of the full displacement field. The fully convolutional neural network (FCN) from \emph{SYMNet}~\cite{SYM-Net} was modified to function as the CNN of the encoder. Its (original) architecture (see Figure~\ref{fig:SYMNet}) is again based on the \emph{U-Net} with a contracting and expanding path. 
 \begin{figure}[htpb]
 	\centering
@@ -329,7 +405,7 @@ as:
 with the DFT layer $\mathcal{F}$, full-resolution spatial displacement field $\phi$ and the complex band-limited displacement field $\mathbb{B}_\phi$. The low dimensional representation $\mathbb{S}_\phi$ actually contains all the information of the band-limited Fourier coefficients in $\mathbb{B}_\phi$. As such, \emph{Fourier-Net} does not need to learn the coefficients of $\mathbb{B}_\phi$, but instead only the real-valued coefficients in $\mathbb{S}_\phi$, which is the low dimensional spatial representation of the full-resolution spatial displacement field $\phi$, which is then reconstructed by the decoder. 
 
 
-\subsection{Decoder}
+\subsection{Decoder} \label{SubSec:Decoder}
 The decoder contains no learnable parameters, instead the usual expansive path is replaced with a zero-padding layer, an iDFT layer, and an optional squaring and scaling layer. \\
 The output from the encoder is a band-limited representation $\mathbb{B}_\phi$ in the frequency domain of the low dimensional displacement field $\mathbb{S}_\phi$ in the spatial domain. To recover the full-resolution displacement field $\phi$ in the spatial domain, we first pad the patch $\mathbb{B}_\phi$, containing mostly low frequency signals, to the original image resolution with zeros. We then feed the zero-padded complex-valued coefficients, denoted as $\mathcal{F}(\phi)$, to an iDFT layer consisting of two steps: shifting the Fourier coefficients from centers to corners and then applying the iDFT to convert them into the spatial domain:
 \begin{equation} \label{eq:iDFT}
@@ -353,7 +429,7 @@ As both padding and iDFT layers are differentiable, \emph{Fourier-Net} can be op
 	\label{fig:DecoderDisplacementField}
 \end{figure} 
 
-\subsection{Diffeomorphic Transforms}
+\subsection{Diffeomorphic Transforms} \label{SubSec:DiffeomorphicTransforms}
 Diffeomorphic deformations are differentiable and invertible, thus preserving topology, which is a desirable property for transformations. $\phi: \mathbb{R}^N \rightarrow \mathbb{R}^N$ represents the deformation that maps the coordinates from one image to coordinates in another image, as long as both images have the dimension $N$. When using a stationary velocity field representation like e.g. \emph{DARTEL}~\cite{DARTEL}, the deformation field is defined through the following ordinary differential equation (ODE)~\cite{Dalca2018}:
 \begin{equation}
 	\frac{\partial \phi^{(t)}}{\partial t} = v(\phi^{(t)}),
@@ -368,9 +444,7 @@ As diffeomorphic deformations are defined as smooth and invertible deformations,
 Thus, the diffeomorphic deformation can be efficiently calculated. When used, the specific version is then called \emph{Fourier-Net Diff} to differentiate it from the baseline version.
 
 
-
-
-\subsection{Spatial Transformer}
+\subsection{Spatial Transformer} \label{SubSec:SpatialTransformer}
 The warping layer of \emph{Fourier-Net} utilizes the \emph{Spatial Transformer}~\cite{SpatialTransformer}, which allows for spatial image manipulation within the network. This is a differentiable and learnable module for neural networks which applies a spatial transformation to a feature map during a single forward pass. The spatial transformer mechanism is split into three parts as seen in Figure~\ref{fig:SpatialTransformer}. First is the localization network, which takes the input and outputs the parameters for the transformation. These are then used to create a sample grid using the grid generator. Lastly, the sampler produces the output feature map based on the input at the grid points.\\
 From the input feature map $U \in \mathbb{R}^{H \times W \times C}$ with width $W$, height $H$ and channels $C$ the localization network $f_{\text{loc}}$ computes the parameters $\theta = f_{\text{loc}}(U)$ of the transformation $\mathcal{T}_\theta$ which is later applied to the feature map. Thus the size of $\theta$ varies depending on the transformation. 
 %(e.g. 6D for an affine transformation). 
@@ -390,7 +464,7 @@ with $\Phi_x$ and $\Phi_y$ being the parameters for a generic sampling  kernel $
 \end{figure}
 
 
-\subsection{Loss Function}
+\subsection{Loss Function} \label{SubSec:LossFunction}
 The loss function consists of two parts to enable unsupervised learning, which are balanced using the scalar parameter $\lambda$. The first, $\mathcal{L}_{1}$, measures the similarity between the fixed image and the moving image after warping, while the second, $\mathcal{L}_{2}$, ensures a smooth displacement field. Thus, the unsupervised loss $\mathcal{L}$ can be calculated as follows:
 \begin{equation}	\label{eq:unsupervisedLoss}
 	\begin{split} 
@@ -415,33 +489,34 @@ When using the squaring and scaling layers, thus making the deformation of the m
 	\mathcal{L}_{2} (v(\Theta)) = \frac{1}{N} \sum^{N}_{i=1} || \nabla v_i(\Theta) ||^2_2  \bigg .
 \end{equation}
 
-\subsection{Training on OASIS}
-We first trained \emph{Fourier-Net} and \emph{Fourier-Net+} with the \emph{OASIS} dataset, as it was used in the original publication. \emph{Fourier-Net}/\emph{Fourier-Net+} can work with both 2D and 3D inputs, however the latter are harder to visualize. As the \emph{OASIS} dataset provides 3D volumes with annotations, 2D image data can be obtained by slicing the 3D volumes (see Figure~\ref{fig:OASIS} with matching labels for Dice-Score calculation. Thus we can easily visualize the training success of the 2D network by looking at the difference between images before and after registration in addition to the Dice-Score, which can also be calculated for 3D data. Examples for this can be seen in Figure~\ref{fig:DifferencesTrainingProgress} with two examples from different stages of the training process. Despite the example in Figure~\ref{fig:Training29600it} being the far harder example to align the network performs better than before (see Figure~\ref{fig:Training800it}) due to the training progress.
+% Should go into Chapter Experiments, but is unimportant anyway...
+%\subsection{Training on OASIS}
+%We first trained \emph{Fourier-Net} and \emph{Fourier-Net+} with the \emph{OASIS} dataset, as it was used in the original publication. \emph{Fourier-Net}/\emph{Fourier-Net+} can work with both 2D and 3D inputs, however the latter are harder to visualize. As the \emph{OASIS} dataset provides 3D volumes with annotations, 2D image data can be obtained by slicing the 3D volumes (see Figure~\ref{fig:OASIS} with matching labels for Dice-Score calculation. Thus we can easily visualize the training success of the 2D network by looking at the difference between images before and after registration in addition to the Dice-Score, which can also be calculated for 3D data. Examples for this can be seen in Figure~\ref{fig:DifferencesTrainingProgress} with two examples from different stages of the training process. Despite the example in Figure~\ref{fig:Training29600it} being the far harder example to align the network performs better than before (see Figure~\ref{fig:Training800it}) due to the training progress.
+%
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\begin{subfigure}{0.45\textwidth}
+%		\centering
+%    		\includegraphics[width=\textwidth]{results1.png}
+%    		\caption{Training progress after 800 iterations.}
+%    		\label{fig:Training800it}
+%	\end{subfigure}
+%	\hfill
+%	\begin{subfigure}{0.45\textwidth}
+%		\centering
+%    		\includegraphics[width=\textwidth]{results2.png}
+%    		\caption{Training progress after 29600 iterations.}
+%    		\label{fig:Training29600it}
+%	\end{subfigure}
+%	\caption{Differences between moving and fixed images before and after registration.}
+%	\label{fig:DifferencesTrainingProgress}
+%\end{figure}
+%
+%\subsection{Training on CMRxRecon}
+%For the further experiments we used the \emph{CMRxRecon} dataset. We reconstructed 2D images and trained the network similar to the \emph{OASIS} dataset.
 
-\begin{figure}[htpb]
-	\centering
-	\graphicspath{{images/}{\main/images/}}
-	\begin{subfigure}{0.45\textwidth}
-		\centering
-    		\includegraphics[width=\textwidth]{results1.png}
-    		\caption{Training progress after 800 iterations.}
-    		\label{fig:Training800it}
-	\end{subfigure}
-	\hfill
-	\begin{subfigure}{0.45\textwidth}
-		\centering
-    		\includegraphics[width=\textwidth]{results2.png}
-    		\caption{Training progress after 29600 iterations.}
-    		\label{fig:Training29600it}
-	\end{subfigure}
-	\caption{Differences between moving and fixed images before and after registration.}
-	\label{fig:DifferencesTrainingProgress}
-\end{figure}
-
-\subsection{Training on CMRxRecon}
-For the further experiments we used the \emph{CMRxRecon} dataset. We reconstructed 2D images and trained the network similar to the \emph{OASIS} dataset.
-
-\section{Fourier Net+}
+\section{Fourier Net+} \label{Sec:Fourier-Net+}
 \emph{Fourier-Net+}, as the name suggests, is an extension of Fourier-Net which takes the band-limited spatial representation of the images as input, instead of their original full-resolution counterparts. This leads to further reduction in the number of convolutional layers in the contracting path of the network, resulting in a decrease of parameters, memory usage, and computational operations. This makes \emph{Fourier-Net+} even more efficient than its predecessor~\cite{Fourier-Net+}.\\
 As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the same as for \emph{Fourier-Net} (see Figure~\ref{fig:Fourier-Net} for comparison). However, while the decoder, and thus the loss function, remain the same, the encoder is slightly altered to make the network even more efficient. For this, similarly to the decoder, a DFT is used, however this time the idea is applied to the input images. These are first transformed into the Fourier domain, then low-pass filtered by center-cropping and finally reconstructed from their band-limited representation back into the spatial domain via an iDFT. The two images, now compressed, are the input for the encoder of \emph{Fourier-Net}, meaning the CNN and following DFT. However, due to the band-limiting before the CNN, the latter can be made much more light-weight, thus reducing computational cost. This is visualized in Figure~\ref{fig:Fourier-Net+CNN}. Thus, \emph{Fourier-Net+} too is overall lighter than the baseline \emph{Fourier-Net} in terms of the number of parameters and computations. However, such a light network may face limitations in accurately capturing complex deformations. To counter this potential weakness, the authors propose a cascaded version of \emph{Fourier-Net+}, which uses multiple versions of \emph{Fourier-Net+} cascaded one after the other to achieve a better overall displacement field~\cite{Fourier-Net+}. A schematic for this can be seen in Figure~\ref{fig:Fourier-Net+Cascaded}.
 
@@ -453,7 +528,7 @@ As seen in Figure~\ref{fig:Fourier-Net+}, the network architecture is almost the
 	\label{fig:Fourier-Net+}
 \end{figure}
 
-\subsection{Changes to the Encoder}
+\subsection{Changes to the Encoder} \label{SubSec:ChangesEncoder}
 In order to further reduce the amount of computational operations, \emph{Fourier-Net+} discards the early layers of the encoder. Instead, a DFT $\mathcal{F}(I_M)$ followed by a center-crop to produce the band-limited representation $\mathbb{B}_{I_M}$ in the frequency domain and iDFT are used to get the spatial patch $\mathbb{S}_{I_M}$, while the rest of the encoder from \emph{Fourier-Net} stays the same. The input $I_M$ is thus compressed to a lower resolution (i.e. band-limited) using the frequency space, which reduces the computational cost. This process is visualized in Figure~\ref{fig:Fourier-Net+EncoderCompression}. The encoder of \emph{Fourier-Net+} has several convolutional layers less in the contracting path compared to \emph{Fourier-Net}, which leads to a further accelerated registration process while reducing the memory footprint. These advantages are visualized in Figure~\ref{fig:Fourier-Net+CNN} where the amount of different layers between a conventional \emph{U-Net}, \emph{Fourier-Net} (with the smaller decoder) and \emph{Fourier-Net+} (with a smaller encoder and decoder) are shown.
 \begin{figure}[htpb]
 	\centering
@@ -470,8 +545,17 @@ In order to further reduce the amount of computational operations, \emph{Fourier
 	\label{fig:Fourier-Net+CNN}
 \end{figure}
 
-\subsection{Effects of Cascading}
-Why use cascaded version of the network?
+\subsection{Effects of Cascading} \label{SubSec:EffectsCascading}
+As seen in the previous section, \emph{Fourier-Net+} is lighter than \emph{Fourier-Net} due to the band-limited representation of both images and deformations lowering the number of parameters and computations. This, however, can lead to limitations when trying to accurately capture complex deformations. To this end, a cascaded version of \emph{Fourier-Net+} called \emph{K$\times$Fourier-Net+} (see Figure~\ref{fig:Fourier-Net+Cascaded}), with $K$ denoting the amount of cascades, can be used where the the warped image of one cascade is used as the moving image of the next. It is important to note that the weights are not shared between cascades. The squaring and scaling layers, in case a diffeomorphic deformation is wanted, are applied after the last cascade. The same is true for the calculation of the loss function.\\
+In order to more accurately describe this version of \emph{Fourier-Net+} one can look at the in- and outputs of the different cascades. The first cascade of \emph{K$\times$Fourier-Net+} has the moving image $I_M$ and fixed image $I_F$ as inputs. While the latter always stays the same for all cascades the warped image $I_M^{w(1)}$ from the first cascade is used as input for the second cascade instead of the original moving image. Thus, in general $I_M^{w(k-1)}$ and $I_F$ are the inputs for a cascade $k \in [1, K]$ with output $\delta \phi^{(k)}$. Furthermore, $I_M^{w(k)}$ can be defined as:
+\begin{equation}
+	I_M^{w(k)} = ((((I_M \circ \delta \phi^{(1)}) \circ \delta \phi^{(2)}) \circ \dots ) \circ \delta \phi^{(k-1)}) \circ \delta \phi^{(k)} = I_M \circ  \phi^{(k)},
+\end{equation}
+with $\phi^{(k)}$ being the displacement field computed by composing the outputs of the first cascade up to the $k$-th cascade:
+\begin{equation}
+	\phi^{(k)} = \delta \phi^{(1)} \circ \delta \phi^{(2)} \circ \dots \circ \delta \phi^{(k-1)} \circ \delta \phi^{(k)}.
+\end{equation}
+Thus, the output displacement field of the $K$-th cascade $\phi^{(K)}$ is the final displacement which is then used to warp $I_M$, the original moving image, in order to compute the loss~\cite{Fourier-Net+}.
 
 \begin{figure}[htpb]
 	\centering
@@ -481,24 +565,377 @@ Why use cascaded version of the network?
 	\label{fig:Fourier-Net+Cascaded}
 \end{figure}
 
-\chapter{Experiments} %Evaluation
-Describe the experiment and evaluation methods being used.
-%Describe data here?!?
+\chapter{Experiments} \label{Ch:Experiments}
+In the following chapter the different experiments that were conducted are described and explained. First was frame-to-frame registration on cardiac data from the \emph{CMRxRecon} dataset to lay the basis for later experiments with a motion-correcting reconstruction pipeline.
+
+\section{Frame-to-Frame Registration on CMRxRecon} \label{Sec:Frame-to-Frame_CMRxRecon}
+As a first step, frame-to-frame registration on the \emph{CMRxRecon} dataset was tested. The goal of these initial experiments was to examine whether the network could learn to align the cardiac image pairs despite the movement between the frames. This would hopefully form the basis to use the networks in a motion-corrected reconstruction pipeline later. \\
+As discussed in section~\ref{SubSec:Pre-Processing}, the CMR images were cropped to extract the moving cardiac region. This was done for both the fully sampled and subsampled (Acc4, Acc8, Acc10) data. Image pairs for each slice from each patient of the training set were generated to train the network. In order to evaluate the training progress the mean MSE and mean SSIM metrics calculated the validation data at each checkpoint (usually every 1000 iterations). The best model parameters, as determined by the metrics, were saved in a separate folder. To further evaluate the training success the unseen test data containing new patients was used. To benchmark the networks training success the MSE and SSIM were again used, but the mean inference time and the percentage of negative Jacobian determinant of deformation ($|J|_{<0}\%$) were also calculated. The procedure, however, was slightly altered for the subsampled data as only the displacement field of the model was used to align the corresponding fully sampled image pairs. The evaluation metrics were then calculated on these images for better comparability.
+
+\subsection{Quantitative Comparison with NiftyReg} \label{SubSec:QuantitativeComparisonNiftyReg}
+To establish a baseline, \emph{Fourier-Net+} was first trained with the MSE-loss, 8 channels, $\lambda = 0.01$ and a learning rate of $0.0001$. It was then compared to \emph{NiftyReg}, a traditional registration algorithm which iteratively optimizes the displacement~\cite{NiftiReg}. For the fully sampled data \emph{NiftyReg} provides the warped image directly, but for the subsampled data, the control point grid provided by \emph{NiftyReg} was used to resample the corresponding fully sampled data for comparability. Thus only the fully sampled test data is needed for an unregistrated baseline. The MSE our registration methods should thus not exceed is $0.000535$ and the SSIM should be higher than $0.91714$.
+
+\section{Parameter Studies on the CMRxRecon Dataset} \label{Sec:ParameterStudies}
+As the results from the initial test were not better than the conventional algorithm, different parameters were tested in order to find the optimal model parameters.
+
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+}
+First, the baseline network \emph{Fourier-Net} was compared to its supposedly improved version \emph{Fourier-Net+} once with both using the diffeomorphic version and once without the transform. Thus the effect of the diffeomorphic deformation can be compared to the normal transformation on \emph{Fourier-Net} and \emph{Fourier-Net+}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The other parameters were also kept constant with a learning rate of $0.0001$, MSE-loss and $\lambda = 0.01$. FT crop in \emph{Fourier-Net+} was set to $24 \times 24$.
+
+\subsection{Starting Channel Size} \label{SubSec:StartingChannels}
+Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} was trained with MSE-loss, a learning rate of $0.0001$, $\lambda = 0.01$, FT crop of $24 \times 24$ and no diffeomorphic transform. The experiments were again only conducted on the fully sampled data. Three different channel sizes were used for training \emph{Fourier-Net+}: $8$, $16$ and $32$. Due to the early stopping the networks were trained for x, 17 and 10 epochs respectively. 
+%\\Similarly, \emph{Fourier-Net} was tested with the same parameters for channel sizes $8$, $16$ and $32$. These were trained for y epochs.
+
+\section{Further Tests on the ACDC Dataset}
+As the evaluation on the \emph{CMRxRecon} dataset is limited to image similarity measures, further testing was done on the \emph{ACDC} dataset which contains cardiac data with segmentations. These can be used to better evaluate the registration performance by using e.g. the Dice score.
+
+
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+}
+First, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared as well as their diffeomorphic versions. The registration performance was evaluated on the test set using Dice scores calculated with and without the background label, SSIM, MSE and the percentage of negative Jacobian determinant of deformation. The mean inference time on GPU together with memory consumption is also added to the comparison with the latter containing number of trainable model parameters, mult-add operations (in millions) and the total memory in Megabyte. The latter is only given for the baseline versions as the diffeomorphic version require the same amount of memory. The first network was trained for a maximum of 100 epochs with early stopping activating after 3 epochs without improvement of the validation Dice score. The other variants were than trained with the same number of epochs, which worked out to be only 6 epochs due to the large training set in the experiments. All networks were trained on the fully sampled \emph{ACDC} data with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. \emph{Fourier-Net+} and \emph{4xFourier-Net} used a FT crop size of $48 \times 48$ for these experiments. All of these parameters were the same for the diffeomorphic versions of the networks.
+
+
+\subsection{Fourier-Transform Crop Size} \label{SubSec:FTCropSize}
+The FT crop size used for compressing the images is a parameter specific to \emph{Fourier-Net+}. Four different sizes of the FT crop were analyzed: $80 \times 168$, $40 \times 84$, $48 \times 48$ and $24 \times 24$. A larger crop would obviously compress the images less, thus leading to less efficiency, however, a very small crop, while very efficient, might lose some of the image details leading to a decrease in performance. The experiments were again only conducted on the fully sampled data as one would expect similar results on subsampled data. The network variants were trained with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. Again, the networks were trained for only 5 epochs, as this is were the first model ended training due to early stopping. The registration performance was evaluated on the test set using the Dice score calculated once on all labels, once without the background using only the cardiac labels, as well as the SSIM, MSE and the percentage of negative Jacobian determinant of deformation. Additionally the number of network parameters, number of mult-add operations in millions and memory consumption in Megabyte are listed for all network variants to better compare the relationship between registration performance and memory consumption to potentially find a optimal configuration for both performance and efficiency. The mean inference time was measured on GPU in seconds.
+
+
+\section{Integration into a Motion-Corrected Reconstruction Pipeline} \label{Sec:IntegrationMotion-CorrectedReconstructionPipeline}
+Describe qualitative test to see whether the network can be used to improve a reconstruction pipeline for cardiac data.
+
+
+\subsection{General Reconstruction Pipeline}
+Overview of the reconstruction pipeline using \emph{Fourier-Net+}.
+
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=\linewidth]{ReconstructionPipelineCompact.png} 
+	\caption{Overview of the general reconstruction pipeline using \emph{Fourier-Net+} as a registration network.}
+	\label{fig:ReconstructionPipeline}
+\end{figure}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Results and Discussion %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Results and Discussion}
-Here go the results with the discussion.
+\chapter{Results and Discussion} \label{Ch:ResultsDiscussion}
+In this chapter, the results for the experiment described in the previous chapter will be examined. Possible implications will be discussed to determine the effectiveness of this new method.
 
+\section{Frame-to-Frame Registration} \label{Sec:Frame-to-FrameRegistration}
+As mentioned in section~\ref{Sec:Frame-to-Frame_CMRxRecon}, frame-to-frame registration on the \emph{CMRxRecon} dataset was the first set of experiments. Goal of these initial tests was to examine whether the network could learn to align the cardiac image despite the movement between the frames. 
+
+\subsection{Quantitative Results Comparison with NiftyReg}  \label{SubSec:QuantitativeResultsComparisonNiftyReg}
+For this first quantitative test similarity metrics such as MSE and SSIM were used to judge image similarity as an indicator for proper image alignment. The results can be seen in Table~\ref{tab:BenchmarkNiftyReg} as well as Figure~\ref{fig:TestBenchmark_MSE_Boxplots} for the MSE and Figure~\ref{fig:TestBenchmark_SSIM_Boxplots} for the SSIM results.  \emph{Fourier-Net+} needed about 0.0104~s per frame pair for registration with $|J|_{<0}\% < 0.001$ for all kinds of subsampling, while \emph{NiftyReg} took up to 15~s for aligning an image pair. The results for \emph{Fourier-Net+} look good on their own as the metrics are stable even for the subsampled data. However, its baseline performance is slightly worse than \emph{NiftyReg} except for the Acc10 data, were both perform worse than the unregistrated baseline of the test data, and \emph{Fourier-Net+} is slightly better. Overall, the network is much faster than the iterative registration algorithm as expected.
+
+\begin{table}[htpb]
+	\centering
+	\caption{Benchmark results for \emph{Fourier-Net+} and \emph{NiftiReg} on the \emph{CMRxRecon} test data.}
+	\label{tab:BenchmarkNiftyReg}
+	\begin{tabular}{c c c c} % c
+		\toprule
+		\textbf{Subsampling} & \textbf{Method} & \textbf{MSE} & \textbf{SSIM} \\
+		
+		\midrule
+		\multirow{2}{*}{Full} & Fourier-Net+ & $0.000435 \pm 0.00055$ &  $0.92346 \pm 0.045684$\\   % & $0.0003276 \pm 0.00710346$ 
+		 & NiftyReg & $0.000514 \pm 0.000771$ & $0.93967 \pm 0.03909$ \\
+		
+		\midrule
+		\multirow{2}{*}{Acc4} & Fourier-Net+ & $0.000482 \pm 0.000626$ & $0.91809 \pm 0.05012$\\ % & $0.00010437 \pm 0.0031161$ 
+		 & NiftyReg & $0.000551 \pm 0.000798$ & $0.92384 \pm 0.04935$ \\
+		
+		\midrule
+		\multirow{2}{*}{Acc8} & Fourier-Net+ & $0.000479 \pm 0.000620$ & $0.91736 \pm 0.05118$\\ %   & $0.0000764 \pm 0.00296053$ 
+		 & NiftyReg & $0.000565 \pm 0.000803$ & $0.92058 \pm 0.05087$ \\
+
+		\midrule
+		\multirow{2}{*}{Acc10} & Fourier-Net+ & $0.000491 \pm 0.000640$ & $0.91599 \pm 0.05223$\\  % & $0.0000712 \pm 0.0023164$ 
+		 & NiftyReg & $0.000926 \pm 0.002867$ & $0.90655 \pm 0.10321$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\begin{subfigure}{0.495\textwidth}
+%    		\includegraphics[width=\textwidth]{TestBenchmark_MSE_Boxplots.png}
+%    		\caption{Boxplot of MSE results.}
+%    		\label{fig:TestBenchmark_MSE_Boxplots}
+%	\end{subfigure}
+%	\hfill
+%	\begin{subfigure}{0.495\textwidth}
+%    		\includegraphics[width=\textwidth]{TestBenchmark_SSIM_Boxplots.png}
+%    		\caption{Boxplot of SSIM results.}
+%    		\label{fig:TestBenchmark_SSIM_Boxplots}
+%	\end{subfigure}
+%	\caption{Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph{Fourier-Net+} and \emph{NiftyReg}.}
+%	\label{fig:TestBenchmark_Boxplots}
+%\end{figure}
+
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=.85\linewidth]{TestBenchmark_MSE_Boxplots.png} 
+	\caption{MSE results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
+	\label{fig:TestBenchmark_MSE_Boxplots}
+\end{figure}
+
+\begin{figure}[htpb]
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=.85\linewidth]{TestBenchmark_SSIM_Boxplots.png} 
+	\caption{SSIM results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
+	\label{fig:TestBenchmark_SSIM_Boxplots}
+\end{figure}
+
+\section{Parameter Studies on the CMRxRecon Dataset} \label{Sec:ParameterStudies}
+As the results from the initial test were not better than the conventional algorithm, different parameters were tested in order to find the optimal model parameters.
+
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+CMRxRecon}
+First, the baseline network \emph{Fourier-Net} was compared to its more efficient successor \emph{Fourier-Net+} with both using the diffeomorphic version as we can then compare the effect of the diffeomorphic deformation compared to the normal transformation on \emph{Fourier-Net+}. However, this effect should be similar for \emph{Fourier-Net}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The results can be seen in Table~\ref{tab:Fourier-NetvsFourier-Net+CMRxRecon}. The \emph{Fourier-Net} model without the diffeomorphic transform was trained for 17 epochs, while the diffeomorphic version trained for 100 epochs. Despite this, the latter is only marginally better in terms of MSE and SSIM. The percentage of negative Jacobian determinants was actually better for the normal transformation compared to the diffeomorphic one. The baseline \emph{Fourier-Net+} model trained for 37 epochs, while the diffeomorphic version trained for 100 epochs. \\
+\emph{Fourier-Net+} performs slightly worse than \emph{Fourier-Net}, however it is far more efficient.
+
+
+\begin{table}[htpb]
+	\centering
+	\caption{Results for \emph{Fourier-Net} and \emph{Fourier-Net+} on the fully sampled \emph{CMRxRecon} test data with a diffeomorphic transform.}
+	\label{tab:Fourier-NetvsFourier-Net+CMRxRecon}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		Model & MSE & SSIM & $|J|_{<0}\%$ & Time [s] \\
+		\midrule
+		Fourier-Net & $0.000319 \pm 0.000352$ &  $0.93299 \pm 0.03847$ & $0.0022 \pm 0.0183$ & 0.0025\\ 
+		Fourier-Net+ & $0.000352 \pm 0.000449$ & $0.93078 \pm 0.04086$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
+		\midrule
+		Diff-Fourier-Net & $0.000318 \pm 0.000388$ &  $0.93395 \pm 0.03818$ & $0.0273 \pm 0.0897$ & 0.0028\\ 
+		Diff-Fourier-Net+ & $0.000352 \pm 0.000448$ & $0.93079 \pm 0.04109$ & $0.0029 \pm 0.0214$ & 0.0103\\  
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+
+\subsection{Starting Channel Size} \label{SubSec:StartingChannelsCMRxRecon}
+Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} and \emph{Fourier-Net+} were trained with three different channel sizes: $8$, $16$, $32$ and $64$. 
+%Due to the early stopping the \emph{Fourier-Net} variants were trained for 17, x, x and x epochs, while the channel sizes: $8$, $16$, $32$ and $64$. 
+Due to the early stopping the \emph{Fourier-Net+} variants were trained for x, 17 and 10 epochs respectively. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+CMRxRecon} with the inference time for each version being calculated on the GPU.
+% and~\ref{tab:StartingChannelsFourierNet}. 
+Despite training for the least amount of epochs channel size $32$ performs the best for \emph{Fourier-Net+}.
+
+\begin{table}[htpb]
+	\centering
+	\caption{Results for three different starting channel sizes of  \emph{Fourier-Net+} on the fully sampled \emph{CMRxRecon} test data.}
+	\label{tab:StartingChannelsFourierNet+CMRxRecon}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		Starting Channels & MSE & SSIM & $|J|_{<0}\%$ & Time [s]\\
+		\midrule
+		8 & $0.000352 \pm 0.000449$ & $0.93078 \pm 0.04086$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
+		16 & $0.000347 \pm 0.000439$ & $0.93123 \pm 0.04041$ & $0.0003 \pm 0.0059$ & 0.0113\\  
+		32 & $0.000344 \pm 0.000429$ & $0.93134 \pm 0.04006$ & $0.0008 \pm 0.0098$ & 0.0106\\  
+		%64 & $0.000xxx \pm 0.000xxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxx \pm 0.xxxx$\\  
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\section{Further Tests on the ACDC Dataset}
+Due to the limitations of the \emph{CMRxRecon} dataset in terms of segmentations, the registration performance is further evaluated on the \emph{ACDC} dataset. Some of the parameter studies done on \emph{CMRxRecon} were repeated, others were added to further test the networks ability.
+
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+ACDC}
+Again, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared in terms of registration performance and inference time together with their diffeomorphic version, however, memory consumption is also added to the comparison with the number of parameters, mult-add operations (in millions) and the total memory in Megabyte. The latter is only given for the baseline versions as the diffeomorphic version required roughly the same amount of memory. \emph{Fourier-Net+} and \emph{4xFourier-Net} use a FT crop size of $48 \times 48$.
+
+
+\begin{table}[htpb]
+	\scriptsize
+	\centering
+	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} on the fully sampled \emph{ACDC} test data with a diffeomorphic transform.}
+	\label{tab:Fourier-NetvsFourier-Net+ACDC}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
+		\midrule
+		Dice & $0.77952 \pm 0.14708$ & $0.75345 \pm 0.14278$ & $0.76590 \pm 0.14837$\\
+		Dice* & $0.69962 \pm 0.21548$ & $0.64739 \pm 0.21117$ & $0.66815 \pm 0.21552$ \\
+		SSIM & $0.91345 \pm 0.03511$ & $0.88421 \pm 0.03940$ & $0.88599 \pm 0.04225$\\
+		MSE & $0.001000 \pm 0.000712$ & $0.002057 \pm 0.001536$ & $0.001916 \pm 0.001461$ \\
+		$|J|_{<0}\%$ & $0.3586 \pm 0.3822$ & $0.1308 \pm 0.3483$ & $0.0247 \pm 0.1199$ \\
+		Time [s] & 0.0145 & 0.0145 & 0.0335 \\
+		\midrule
+		 & Diff-Fourier-Net & Diff-Fourier-Net+ & Diff-4xFourier-Net+\\		
+		\midrule
+		Dice & $0.77933 \pm 0.14928$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$\\
+		Dice* & $0.69905 \pm 0.21999$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		SSIM & $0.91239 \pm 0.03555$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$\\
+		MSE & $0.000980 \pm 0.000674$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		$|J|_{<0}\%$ & $0.0090 \pm 0.0330$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		Time [s] & 0.0150 & - & - \\
+		\midrule
+		Parameters  & 434,519 & 75,429 & 301,716 \\
+		Mult-Adds  & 595.04  & 10.98  & 43.91 \\
+		Memory [MB] & 44.69   & 2.25   & 7.66 \\
+		\bottomrule
+	\end{tabular}	
+\end{table}
+
+
+\subsection{Starting Channel Size} \label{SubSec:StartingChannelsACDC}
+Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} and \emph{Fourier-Net+} were trained with four different channel sizes: $8$, $16$, $32$ and $64$. The first network variant was trained with early stopping, which ended at x epochs. For better comparability, the other network variants were also trained with the same number of epochs. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+ACDC}, The memory consumption as well as inference time on the GPU were calculated to extend the evaluation given by the other metrics.
+
+
+\begin{table}[htpb]
+	\scriptsize
+	\centering
+	\caption{Results for different starting channel sizes of \emph{4xFourier-Net+} on the fully sampled \emph{ACDC} test data.}
+	\label{tab:StartingChannelsFourierNet+ACDC}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		 & 8 & 16 & 32 & 64 \\		
+		\midrule
+		Dice & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		Dice* & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		SSIM & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		MSE & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		$|J|_{<0}\%$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		Time [s] 	& - & - & - & - \\
+		Parameters 	& - & - & - & - \\
+		Mult-Adds  	& - & - & - & - \\
+		Memory [MB] 	& - & - & - & - \\
+		\bottomrule
+	\end{tabular}	
+\end{table}
+
+
+\subsection{Fourier-Transform Crop Size} \label{SubSec:FTCropSize}
+As a parameter specific to \emph{Fourier-Net+} and \emph{4xFourier-Net+}, the impact of the FT crop size used for compressing the images was analyzed. Four different sizes of the FT crop were used for training: $80 \times 168$, $40 \times 84$, $48 \times 48$ and $24 \times 24$. The experiments were again only conducted on the fully sampled data and each network trained for 5 epochs. The results can be seen in Table~\ref{tab:FTCropSize}. Memory obviously decreases with smaller crop sizes for the same number of network parameters due to the smaller image size. However, the performance also decreases with crop size as seen with the Dice score, both with and without background labels. Jacoby determinants are small for all models and the inference times are very fast. It is notable that the SSIM and MSE metrics to not capture the deterioration of registration performance as well as the Dice score as the latter focuses more on the moving cardiac structure in the frames. To conclude, a balance between memory consumption and registration performance has to be found for \emph{4xFourier-Net+} as both apparently cannot be maximized at the same time.
+
+%\begin{table}[htpb]
+%	\tiny
+%	\centering
+%	\caption{Results for four different starting FT crop sizes in  \emph{Fourier-Net+} examined on the fully sampled \emph{ACDC} test data.}
+%	\label{tab:FTCropSize}
+%	\begin{tabular}{c c c c c c c c} %
+%		\hline
+%		FT Crop & Dice & Dice* & SSIM & MSE & $|J|_{<0}\%$ & Time [s] & Memory [MB]\\
+%		\hline
+%		% TODO: Werte aktualisieren!!		
+%		$80 \times 168$ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & $0.0448 \pm 0.1207$ & 0.0419 & -\\ 
+%		$40 \times 84$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000xxx \pm 0.000xxx$ & $0.xxxx \pm 0.xxxx$ & - & -\\  
+%		$48 \times 48$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000xxx \pm 0.000xxx$ & $0.xxxx \pm 0.xxxx$ & $0.xxxxx \pm 0.xxxxxx$ & - & -\\  
+%		$24 \times 24$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000xxx \pm 0.000xxx$ & $0.xxxx \pm 0.xxxx$ & - & -\\   
+%		\hline
+%	\end{tabular}
+%\end{table}
+
+\begin{table}[htpb]
+	\scriptsize
+	\centering
+	\caption{Results for four different starting FT crop sizes in  \emph{4xFourier-Net+} examined on the fully sampled \emph{ACDC} test data.}
+	\label{tab:FTCropSize}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		 & $80 \times 168$ & $40 \times 84$ & $48 \times 48$ & $24 \times 24$ \\		
+		\midrule
+		Dice & $0.78123 \pm 0.15005$ & $0.77491 \pm 0.14671$ & $0.74951 \pm 0.14152$ & $0.72583 \pm 0.14667$ \\
+		Dice* & $0.70083 \pm 0.21919$ & $0.68025 \pm 0.21565$ & $0.64535 \pm 0.20748$ & $0.61188 \pm 0.21633$ \\
+		SSIM & $0.89905 \pm 0.04007$ & $0.89029 \pm 0.03975$ & $0.87975 \pm 0.03941$ & $0.87023 \pm 0.03951$ \\
+		MSE & $0.001447 \pm 0.001108$ & $0.001805 \pm 0.001368$ & $0.002217 \pm 0.001612$ & $0.002644 \pm 0.001841$ \\
+		$|J|_{<0}\%$ & $0.1201 \pm 0.2271$ & $0.0246 \pm 0.1047$ & $0.0553 \pm 0.2325$ & $0.0170 \pm 0.1460$ \\
+		Time [s] 	& 0.0390  & 0.0301  & 0.0277  & 0.0289 \\
+		Parameters 	& 301,716 & 301,716 & 301,716 & 301,716 \\
+		Mult-Adds 	& 256.14  & 65.50   & 43.91   & 10.98 \\
+		Memory [MB] 	& 36.70   & 10.54   & 7.66    & 3.15 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\subsection{Comparison with VoxelMorph} \label{SubSec:ComparisonVoxelMorph}
+Compare \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+}, both of the latter with a FT crop size of $48 \times 48$, to \emph{VoxelMorph}. For this different similarity metrics as well as the Dice score for all labels (DICE) and Dice score without the background (DICE*) were used on the fully sampled data. Inference time and memory consumption are also listed for all models as these should be consistent with the subsampled data. 
+
+%\begin{table}[htpb]
+%	\tiny
+%	\centering
+%	\caption{Comparison of \emph{Fourier-Net+} and \emph{VoxelMorph} the fully sampled \emph{ACDC} test data.}
+%	\label{tab:FTCropSize}
+%	\begin{tabular}{c c c c c c c c} %
+%		\hline
+%		Model & Dice & Dice* & SSIM & MSE & $|J|_{<0}\%$ & Time [s] & Memory [MB]\\
+%		\hline
+%		Fourier-Net+ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & $0.0448 \pm 0.1207$ & 0.0419 & -\\ 
+%		VoxelMorph & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000xxx \pm 0.000xxx$ & $0.xxxx \pm 0.xxxx$ & - & -\\  
+%		\hline
+%	\end{tabular}
+%\end{table}
+
+\begin{table}[htpb]
+	\scriptsize
+	\centering
+	\caption{Comparison of \emph{Fourier-Net+} and \emph{VoxelMorph} the fully sampled \emph{ACDC} test data.}
+	\label{tab:CompareVoxelMorph}
+	\begin{tabular}{c c c c c} %
+		\toprule
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+ & VoxelMorph \\		
+		\midrule
+		Dice & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.75074 \pm 0.14293$ \\
+		Dice* & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.66543 \pm 0.21219$ \\
+		SSIM & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.92786 \pm 0.03405$ \\
+		MSE & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000738 \pm 0.000527$ \\
+		$|J|_{<0}\%$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
+		Time [s] 	& - 		 & - & - & 0.0161 \\
+		Parameters 	& 434,519 & 75,429 & 301,716 & 84,322 \\
+		Mult-Adds 	& 595.04  & 10.98  & 43.91   & 1.57 \\
+		Memory [MB] 	& 44.69   & 2.25   & 7.66    & 39.04 \\
+		\bottomrule
+	\end{tabular}		
+\end{table}
+
+
+\subsection{Comparison on Subsampled Data} \label{SubSec:FinalComparison}
+Compare \emph{Fourier-Net+} to a baseline of the unaligned test image pairs as well as \emph{NiftyReg}, \emph{VoxelMorph} and \emph{LAPNet}.
+
+\begin{table}[htpb]
+	\tiny
+	\centering
+	\caption{Benchmark results for \emph{Fourier-Net+}, \emph{NiftiReg} and \emph{VoxelMorph} on the \emph{ACDC} test data.}
+	\label{tab:BenchmarkVoxelMorph}
+	\begin{tabular}{c c c c c c c} 
+		\toprule
+		\textbf{Sampling} & \textbf{Method} & \textbf{DICE} & \textbf{DICE*} & \textbf{SSIM} & \textbf{MSE} & \textbf{Time [s]} \\
+		
+		\midrule
+		\multirow{4}{*}{Full} & Baseline & $0.70228 \pm 0.18693$  & $0.58909 \pm 0.26894$ & $0.86389 \pm 0.04082$ &  $0.003328 \pm 0.002272$ & -\\  
+		% TODO: Werte aktualisieren!!		
+		 & Fourier-Net+ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & 0.0419\\  
+		 & NiftyReg & $0.70740 \pm 0.13772$  & $0.57556 \pm 0.18866$ & $0.91258 \pm 0.03184$ & $0.001939 \pm 0.001612$  & 20\\
+		 & VoxelMorph & $0.75074 \pm 0.14293$ & $0.66543 \pm 0.21219$ & $0.92786 \pm 0.03405$ & $0.000738 \pm 0.000527$  & 0.0161\\
+		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		
+		\midrule
+		\multirow{4}{*}{Acc4} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		
+		\midrule
+		\multirow{4}{*}{Acc8} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		\midrule
+		
+		\multirow{4}{*}{Acc10} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
+		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		\bottomrule
+	\end{tabular}
+\end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %%%%%  Conclusion %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{Conclusion}
+\chapter{Conclusion} \label{Ch:Conclusion}
 Summery of all stuff...
 
 \end{document}
