@@ -1034,10 +1034,13 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         raise ValueError('Data is missing!!')
 
     # make sure that every data point has a label in the legend
-    assert data.shape[0] == len(legend), f"Number of data arrays must be the same as the number of elements in the legend!"
+    assert data.shape[0] == len(legend), f"Expected number of data arrays to be the same as number of elements in the legend, but got {data.shape[0]} and {len(legend)}"
+    
+    # make sure that every data point has a label in the legend
+    assert data.shape[1] == len(labels), f"Expected number of data arrays to be the same as number of labels, but got {data.shape[1]} and {len(labels)}"
     
     # make sure that offsets math number of boxplots
-    assert data.shape[0] == len(offsets), f"Number of data arrays must be the same as the number of offsets!"
+    assert data.shape[0] == len(offsets), f"Expected number of data arrays to be the same as number of offsets, but got {data.shape[0]} and {len(offsets)}"
     
     # init colors for plots
     color = cm.rainbow(np.linspace(0, 1, data.shape[0]))
@@ -1045,7 +1048,9 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
     # interate through size of data
     for i in range(data.shape[0]):
         # reformat data for boxplots (array with array containing the label scores)
-        data_newFormat = [data[i,0,:], data[i,1,:], data[i,2,:], data[i,3,:]]
+        data_newFormat = []
+        for j in range(data.shape[1]):
+            data_newFormat.append(data[i,j,:]) 
         # create boxplot
         bp = plt.boxplot(data_newFormat, positions=np.array(range(len(data_newFormat)))*2+offsets[i], sym='', widths=width, patch_artist=True) 
         # set colors for boxes

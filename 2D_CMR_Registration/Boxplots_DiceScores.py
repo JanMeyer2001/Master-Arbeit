@@ -46,13 +46,13 @@ with open(csv_name,'r') as csvfile:
 #print('Mean Dice scores:\n    Baseline          {}\n    NiftyReg          {}\n    VoxelMorph        {}\n    Fourier-Net       {}\n    Fourier-Net+      {}\n    4xFourier-Net+   {}'.format(np.mean(DICE_test[0,:,:]), np.mean(DICE_test[1,:,:]), np.mean(DICE_test[2,:,:]), np.mean(DICE_test[3,:,:]), np.mean(DICE_test[4,:,:]), np.mean(DICE_test[5,:,:])))
 
 # create labels for the x axis
-labels = ['Background', 'RV Cavity', 'Myocardium', 'LV Cavity']
+labels = ['RV Cavity', 'Myocardium', 'LV Cavity'] #'Background', 
 # create legend 
 legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+']
 # create path to save the boxplot to
 save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores.png'
 # init offsets so that plots do not overlap
-offsets = np.arange(start=-0.6,stop=0.6,step=1.2/DICE_test.shape[0])
+offsets = np.arange(start=-0.8,stop=0.8,step=1.6/DICE_test.shape[0])
 #print('offsets: ',offsets)
-# create boxplot for MSE
-create_boxplot(savename=save_path, data=DICE_test, labels=labels, legend=legend, figure_size=(10, 6), offsets=offsets, width=0.175)
+# create boxplot for Dice scores (without background)
+create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(8, 6), offsets=offsets, width=0.175)
