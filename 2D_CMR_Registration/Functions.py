@@ -26,6 +26,7 @@ import csv
 from os import mkdir
 from os.path import isdir
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+from matplotlib.pyplot import cm
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -668,8 +669,8 @@ def dice_ACDC(pred, truth):
     label_values = [0,1,2,3] #[0.0, 0.33333334, 0.6666667, 1.0]
     #labels_pred_int = np.unique(pred)
     #labels_truth_int = np.unique(truth)
-    dice_list=[]
-    for k in label_values:
+    dice_list=np.ones(4)
+    for i,k in enumerate(label_values):
         truth_bool = truth == k
         pred_bool = pred == k
         sum_pred = np.sum(pred_bool)
@@ -678,7 +679,7 @@ def dice_ACDC(pred, truth):
         # only calculate dice if label is in one of the segmentations (get NaN values otherwise)
         if (sum_pred != 0) or (sum_truth != 0):
             intersection = sum_total * 2.0
-            dice_list.append(intersection / (sum_pred + sum_truth)) 
+            dice_list[i] = intersection / (sum_pred + sum_truth)
     return dice_list
 
 def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
@@ -1021,3 +1022,46 @@ def create_AB_boxplot(savename=None, title=None, data_A=None, data_B=None, label
         plt.savefig('boxplot.png')   
     else:
         plt.savefig(savename)    
+
+def create_boxplot(savename=None, title=None, data=None, labels=None, legend=None, figure_size=(10,4), offsets=None, width=0.5):
+    ''' Create boxplots of any size with legend and labels on the x-axis  '''
+    
+    # set plot size
+    plt.figure(figsize=figure_size)
+
+    # check whether data was input
+    if data is None:
+        raise ValueError('Data is missing!!')
+
+    # make sure that every data point has a label in the legend
+    assert data.shape[0] == len(legend), f"Number of data arrays must be the same as the number of elements in the legend!"
+    
+    # make sure that offsets math number of boxplots
+    assert data.shape[0] == len(offsets), f"Number of data arrays must be the same as the number of offsets!"
+    
+    # init colors for plots
+    color = cm.rainbow(np.linspace(0, 1, data.shape[0]))
+
+    # interate through size of data
+    for i in range(data.shape[0]):
+        # reformat data for boxplots (array with array containing the label scores)
+        data_newFormat = [data[i,0,:], data[i,1,:], data[i,2,:], data[i,3,:]]
+        # create boxplot
+        bp = plt.boxplot(data_newFormat, positions=np.array(range(len(data_newFormat)))*2+offsets[i], sym='', widths=width, patch_artist=True) 
+        # set colors for boxes
+        plt.setp(bp["boxes"], facecolor=color[i])
+        # draw temporary lines and use them to create a legend
+        plt.plot([], c=color[i], label=legend[i])
+    
+    plt.legend()
+    plt.xticks(range(0, len(labels) * 2, 2), labels)
+    plt.xlim(-2, len(labels)*2)
+    plt.tight_layout()
+    
+    if title is not None:
+        plt.title(title, y=1.0, pad=-14)
+    
+    if savename is None:
+        plt.savefig('boxplot.png')   
+    else:
+        plt.savefig(savename)            
