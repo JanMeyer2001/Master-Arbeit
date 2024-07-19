@@ -33,8 +33,8 @@ transform = SpatialTransform().to(device)
 transform_voxelmorph = SpatialTransformer(input_shape, mode = 'nearest').to(device)
 csv_name = './TestResults-{}/DiceScores_Mode_{}.csv'.format(dataset,mode)
 
-# init Dice score 6 methods, 4 labels and 224 data points
-DICE_test = np.zeros([6,4,224])# init different models
+# init Dice score 9 methods, 4 labels and 224 data points
+DICE_test = np.zeros([9,4,224])
 
 # get data for the models
 with open(csv_name,'r') as csvfile: 
@@ -48,11 +48,11 @@ with open(csv_name,'r') as csvfile:
 # create labels for the x axis
 labels = ['RV Cavity', 'Myocardium', 'LV Cavity'] #'Background', 
 # create legend 
-legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+']
+legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+','Diff-Fourier-Net','Diff-Fourier-Net+','Diff-4xFourier-Net+']
 # create path to save the boxplot to
-save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores.png'
+save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_FullySampled.png'
 # init offsets so that plots do not overlap
-offsets = np.arange(start=-0.8,stop=0.8,step=1.6/DICE_test.shape[0])
+offsets = np.arange(start=-0.9,stop=0.9,step=1.8/DICE_test.shape[0])
 #print('offsets: ',offsets)
 # create boxplot for Dice scores (without background)
-create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(8, 6), offsets=offsets, width=0.175)
+create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(10, 6), offsets=offsets, width=0.175)
