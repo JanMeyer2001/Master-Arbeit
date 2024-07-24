@@ -16,6 +16,7 @@ from skimage.morphology import area_opening
 from skimage.util import img_as_ubyte
 from Functions import *
 import nibabel as nib
+from mri.operators import FFT
 
 parser = ArgumentParser()
 
@@ -37,18 +38,18 @@ if mode == 0:
 elif mode == 1:
     # target path for images
     path_target = path_target + 'AccFactor04/'
-    # get subsampling mask
-    mask = 0    # TODO: Add subsampling mask from acc4 CMRxRecon dataset
+    # get Acc4 mask
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4]) 
 elif mode == 2:
     # target path for images
     path_target = path_target + 'AccFactor08/'
-    # get subsampling mask
-    mask = 0    # TODO: Add subsampling mask from acc8 CMRxRecon dataset
+    # get Acc8 mask
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8]) 
 elif mode == 3:
     # target path for images
     path_target = path_target + 'AccFactor10/'
-    # get subsampling mask
-    mask = 0    # TODO: Add subsampling mask from acc10 CMRxRecon dataset
+    # get Acc10 mask
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10]) 
 else:
     print('Wrong input for mode!! Choose either fully sampled (0), 4x accelerated (1) or 8x accelerated (2)')    
 
@@ -105,9 +106,16 @@ for i, patient_path in enumerate(patients_folders):
                     
                     # manually subsample image for accelerated data
                     if mode != 0:
-                        k_space = torch.fft.fftn(image)                             # apply fft to get k-space
-                        subsampled_k_space = mask*k_space                           # apply mask for subsampling
-                        image = torch.real(torch.fft.ifftn(subsampled_k_space))     # convert subsampled k-space back to image space
+                        # apply fft to get k-space
+                        k_space_fullysampled = torch.fft.fftn(torch.from_numpy(image))                             
+                        # apply mask for subsampling
+                        k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
+                        # use pySAP for reconstruction
+                        fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
+                        kspace_obs = fourier_op.op(image)
+                        # Zero order solution
+                        image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:]
+                        image = np.array(image*255, dtype='uint8')   
 
                     # save image to target dir as png and gt as nifti file
                     imsave(join(image_path, folder, subfolder) + '/Image_Frame{0:02d}.png'.format(frame), image, check_contrast=False) 
@@ -145,9 +153,16 @@ for i, patient_path in enumerate(patients_folders):
 
                 # manually subsample image for accelerated data
                 if mode != 0:
-                    k_space = torch.fft.fftn(image)                             # apply fft to get k-space
-                    subsampled_k_space = mask*k_space                           # apply mask for subsampling
-                    image = torch.real(torch.fft.ifftn(subsampled_k_space))     # convert subsampled k-space back to image space
+                    # apply fft to get k-space
+                    k_space_fullysampled = torch.fft.fftn(torch.from_numpy(image))                             
+                    # apply mask for subsampling
+                    k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
+                    # use pySAP for reconstruction
+                    fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
+                    kspace_obs = fourier_op.op(image)
+                    # Zero order solution
+                    image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:] 
+                    image = np.array(image*255, dtype='uint8')   
 
                 # save image to target dir as png and gt as nifti file
                 imsave(join(image_path, folder, subfolder) + '/Image_Frame' + frame + '.png', image, check_contrast=False) # + '_Slice' + str(slice)
