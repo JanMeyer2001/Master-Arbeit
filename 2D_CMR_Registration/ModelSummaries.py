@@ -14,16 +14,19 @@ parser.add_argument("--model", type=int,
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
                     help="choose whether to use a diffeomorphic transform (1) or not (0)")
-parser.add_argument("--FT_size", type=tuple,
-                    dest="FT_size", default=[12,12],
-                    help="choose size of FT crop: Should be smaller than [40,84].")
+parser.add_argument("--FT_size_x", type=int,
+                    dest="FT_size_x", default=24,
+                    help="choose size x of FT crop: Should be smaller than 40.")
+parser.add_argument("--FT_size_y", type=int,
+                    dest="FT_size_y", default=24,
+                    help="choose size y of FT crop: Should be smaller than 84.")
 opt = parser.parse_args()
 
 start_channel = opt.start_channel
 dataset = opt.dataset
 model = opt.model
 diffeo = opt.diffeo
-FT_size = opt.FT_size
+FT_size = [opt.FT_size_x,opt.FT_size_y]
 
 if dataset == 'ACDC':
     # load ACDC test data
@@ -39,7 +42,7 @@ else:
 
 input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
 
-assert model >= 0 and model <= 3, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {model}"
+assert model >= 0 and model <= 6, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {model}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).cuda() 
@@ -50,7 +53,16 @@ elif model == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade(2, 2, start_channel, diffeo, FT_size).cuda()
 elif model == 3:
-    model = VxmDense(inshape=input_shape[2:4], nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda()
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo, FT_size).cuda()
+    input_shape = [1,1,224,256] 
+elif model == 4:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model == 5:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model == 6:
+    model = VxmDense(inshape=input_shape[2:4], nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda() 
 
 summary(model, input_size=[list(input_shape),list(input_shape)])
 

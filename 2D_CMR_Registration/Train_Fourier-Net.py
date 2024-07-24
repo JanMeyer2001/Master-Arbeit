@@ -1,23 +1,21 @@
 from argparse import ArgumentParser
 import numpy as np
 import torch
-import torch.nn as nn
 from Models import *
 from Functions import *
 import torch.utils.data as Data
-import matplotlib.pyplot as plt
 import csv
 import time
 from skimage.metrics import structural_similarity, mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+from pytorch_msssim import MS_SSIM
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
                     dest="learning_rate", default=1e-4, help="learning rate")
 parser.add_argument("--epochs", type=int,
-                    dest="epochs", default=50,
+                    dest="epochs", default=25,
                     help="number of epochs")
 parser.add_argument("--lambda", type=float,
                     dest="smth_lambda", default=0.01,
@@ -34,8 +32,8 @@ parser.add_argument("--choose_loss", type=int,
 parser.add_argument("--mode", type=int,
                     dest="mode", default=0,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
-parser.add_argument("--F_Net_plus", type=int,
-                    dest="F_Net_plus", default=1, 
+parser.add_argument("--model", type=int,
+                    dest="model_num", default=1, 
                     help="choose whether to use Fourier-Net (0), Fourier-Net+ (1) or cascaded Fourier-Net (2) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
@@ -58,7 +56,7 @@ smth_lambda = opt.smth_lambda
 dataset = opt.dataset
 choose_loss = opt.choose_loss
 mode = opt.mode
-F_Net_plus = opt.F_Net_plus
+model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 earlyStop = opt.earlyStop
@@ -67,16 +65,24 @@ use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 
 # choose the model
-assert F_Net_plus == 0 or F_Net_plus == 1 or F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {F_Net_plus}"
+assert model_num >= 0 or model_num <= 5, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
-if F_Net_plus == 0:
+if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).cuda() 
-elif F_Net_plus == 1:
+elif model_num == 1:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).cuda() 
-elif F_Net_plus == 2:
+elif model_num == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 3:
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 4:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 5:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).cuda()  
 
 # choose the loss function for similarity
 assert choose_loss >= 0 and choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: {choose_loss}"
@@ -122,8 +128,8 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
-model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
+model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
+model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda, learning_rate, mode)
 
 if not isdir(model_dir_png):
     mkdir(model_dir_png)
@@ -131,7 +137,7 @@ if not isdir(model_dir_png):
 if not isdir(model_dir):
     mkdir(model_dir)
 
-csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(F_Net_plus,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
+csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -159,7 +165,12 @@ for epoch in range(epochs):
     for i, image_pair in enumerate(training_generator):
         mov_img = image_pair[0].cuda().float()
         fix_img = image_pair[1].cuda().float()
-        
+
+        if model_num == 3:
+            # ensure that all images have the same size for dense F-Net
+            mov_img = F.interpolate(mov_img, [224,256], mode='nearest') 
+            fix_img = F.interpolate(fix_img, [224,256], mode='nearest')
+                
         Df_xy = model(mov_img, fix_img)
         grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
         
@@ -192,6 +203,13 @@ for epoch in range(epochs):
                 mov_seg = image_pair[2].cuda().float()
                 fix_seg = image_pair[3].cuda().float()
             
+        if model_num == 3:
+            # ensure that all images and segmentations have the same size for dense F-Net
+            mov_img = F.interpolate(mov_img, [224,256], mode='nearest') 
+            fix_img = F.interpolate(fix_img, [224,256], mode='nearest')
+            mov_seg = F.interpolate(mov_seg, [224,256], mode='nearest') 
+            fix_seg = F.interpolate(fix_seg, [224,256], mode='nearest')     
+            
             Df_xy = model(mov_img, fix_img)
 
             # get warped image and segmentation
@@ -217,9 +235,9 @@ for epoch in range(epochs):
         with f:
             writer = csv.writer(f)
             if dataset == 'CMRxRecon':
-                writer.writerow([epoch, Mean_MSE, Mean_SSIM]) 
+                writer.writerow([epoch+1, Mean_MSE, Mean_SSIM]) 
             else:
-                writer.writerow([epoch, Mean_Dice, Mean_MSE, Mean_SSIM]) 
+                writer.writerow([epoch+1, Mean_Dice, Mean_MSE, Mean_SSIM]) 
 
         # save best metrics and reset counter if Dice/SSIM got better, else increase counter for early stopping
         if dataset == 'CMRxRecon':
@@ -237,13 +255,13 @@ for epoch in range(epochs):
         
         # save model     
         if dataset == 'CMRxRecon':
-            modelname = 'SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch)
+            modelname = 'SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_SSIM, Mean_MSE, epoch+1)
         else:
-            modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice, Mean_SSIM, Mean_MSE, epoch)
+            modelname = 'DICE_{:.5f}_SSIM_{:.5f}_MSE_{:.6f}_Epoch_{:04d}.pth'.format(Mean_Dice, Mean_SSIM, Mean_MSE, epoch+1)
         save_checkpoint(model.state_dict(), model_dir, modelname)
         
         # save image
-        sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
+        sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch+1))
         save_flow(mov_img, fix_img, warped_mov_img, grid.permute(0, 3, 1, 2), sample_path)
         if dataset == 'CMRxRecon':
             print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))

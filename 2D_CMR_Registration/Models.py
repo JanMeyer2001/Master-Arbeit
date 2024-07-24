@@ -9,6 +9,359 @@ import functools
 import math
 from  Functions import *
 
+class SYMNet_dense(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+
+        bias_opt = True
+
+        super(SYMNet_dense, self).__init__()
+        self.eninput = self.encoder(self.in_channel, self.start_channel, bias=bias_opt)
+        self.ec1 = self.encoder(self.start_channel, self.start_channel, bias=bias_opt)
+        self.ec2 = self.encoder(self.start_channel, self.start_channel * 2, stride=2, bias=bias_opt)
+        self.ec3 = self.encoder(self.start_channel * 2, self.start_channel * 2, bias=bias_opt)
+        self.ec4 = self.encoder(self.start_channel * 2, self.start_channel * 4, stride=2, bias=bias_opt)
+        self.ec5 = self.encoder(self.start_channel * 4, self.start_channel * 4, bias=bias_opt)
+        self.ec6 = self.encoder(self.start_channel * 4, self.start_channel * 8, stride=2, bias=bias_opt)
+        self.ec7 = self.encoder(self.start_channel * 8, self.start_channel * 8, bias=bias_opt)
+        self.ec8 = self.encoder(self.start_channel * 8, self.start_channel * 16, stride=2, bias=bias_opt)
+        self.ec9 = self.encoder(self.start_channel * 16, self.start_channel * 8, bias=bias_opt)
+
+        self.dc1 = self.encoder(self.start_channel * 8 + self.start_channel * 8, self.start_channel * 8, kernel_size=3,
+                                stride=1, bias=bias_opt)
+        self.dc2 = self.encoder(self.start_channel * 8, self.start_channel * 4, kernel_size=3, stride=1, bias=bias_opt)
+        self.dc3 = self.encoder(self.start_channel * 4 + self.start_channel * 4, self.start_channel * 4, kernel_size=3,
+                                stride=1, bias=bias_opt)
+        self.dc4 = self.encoder(self.start_channel * 4, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.dc5 = self.encoder(self.start_channel * 2 + self.start_channel * 2, self.start_channel * 4, kernel_size=3,
+                                stride=1, bias=bias_opt)
+        self.dc6 = self.encoder(self.start_channel * 4, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.dc7 = self.encoder(self.start_channel * 2 + self.start_channel * 1, self.start_channel * 2, kernel_size=3,
+                                stride=1, bias=bias_opt)
+        self.dc8 = self.encoder(self.start_channel * 2, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.dc9 = self.outputs(self.start_channel * 2, self.n_classes, kernel_size=5, stride=1, padding=2, bias=False)
+        self.dc10 = self.outputs(self.start_channel * 2, self.n_classes, kernel_size=5, stride=1, padding=2, bias=False)
+
+        self.up1 = self.decoder(self.start_channel * 8, self.start_channel * 8)
+        self.up2 = self.decoder(self.start_channel * 4, self.start_channel * 4)
+        self.up3 = self.decoder(self.start_channel * 2, self.start_channel * 2)
+        self.up4 = self.decoder(self.start_channel * 2, self.start_channel * 2)
+
+    def encoder(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1,
+                bias=False, batchnorm=False):
+        if batchnorm:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(out_channels),
+                nn.PReLU())
+        else:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.PReLU())
+        return layer
+
+    def decoder(self, in_channels, out_channels, kernel_size=2, stride=2, padding=0,
+                output_padding=0, bias=True):
+        layer = nn.Sequential(
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride=stride,
+                               padding=padding, output_padding=output_padding, bias=bias),
+            nn.PReLU())
+        return layer
+
+    def outputs(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1,
+                bias=False, batchnorm=False):
+        if batchnorm:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(out_channels),
+                nn.Tanh())
+        else:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias))#,
+        return layer
+
+    def forward(self, x, y):
+        x_in = torch.cat((x, y), 1)
+        e0 = self.eninput(x_in)
+        e0 = self.ec1(e0)
+
+        e1 = self.ec2(e0)
+        e1 = self.ec3(e1)
+
+        e2 = self.ec4(e1)
+        e2 = self.ec5(e2)
+
+        e3 = self.ec6(e2)
+        e3 = self.ec7(e3)
+
+        e4 = self.ec8(e3)
+        e4 = self.ec9(e4)
+
+        d0 = torch.cat((self.up1(e4), e3), 1)
+
+        d0 = self.dc1(d0)
+        d0 = self.dc2(d0)
+
+        d1 = torch.cat((self.up2(d0), e2), 1)
+
+        d1 = self.dc3(d1)
+        d1 = self.dc4(d1)
+
+        d2 = torch.cat((self.up3(d1), e1), 1)
+
+        d2 = self.dc5(d2)
+        d2 = self.dc6(d2)
+
+        d3 = torch.cat((self.up4(d2), e0), 1)
+        d3 = self.dc7(d3)
+        d3 = self.dc8(d3)
+
+        f_xy = self.dc9(d3)
+        f_yx = self.dc10(d3)
+
+        return f_xy[:,0:1,:,:], f_xy[:,1:2,:,:]
+
+class Fourier_Net_dense(nn.Module):
+    """ Version of Fourier-Net that gives back a dense displacement field """
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
+
+        super(Fourier_Net_dense, self).__init__()
+        self.model = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        out_1, out_2 = self.model(Moving, Fixed)
+
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+                
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
+        return Df_xy
+
+class Fourier_Net_plus_dense(nn.Module):
+    """ Version of Fourier-Net+ that gives back a dense displacement field """
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
+
+        super(Fourier_Net_plus_dense, self).__init__()
+        self.model = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
+        
+        # compressing the images
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        #offsetx = 24 #80
+        #offsety = 24 #96
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        F_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(F_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+            
+        # normalize images have data range [0,1]
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        F_temp_low_spatial_low = normalize(F_temp_low_spatial_low)
+
+        out_1, out_2 = self.model(M_temp_low_spatial_low, F_temp_low_spatial_low)
+
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+                
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
+        return Df_xy
+
+class Cascade_dense(nn.Module):
+    """ Version of 4xFourier-Net+ that gives back a dense displacement field """
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
+
+        super(Cascade_dense, self).__init__()
+        self.net1 = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        self.net2 = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        self.net3 = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        self.net4 = SYMNet_dense(self.in_channel, self.n_classes, self.start_channel)
+        self.warp = SpatialTransform()
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
+        
+        # compressing the images
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        F_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(F_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+            
+        # normalize images have data range [0,1]
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        F_temp_low_spatial_low = normalize(F_temp_low_spatial_low)
+
+        # input into the network
+        out_1, out_2 = self.net1(M_temp_low_spatial_low, F_temp_low_spatial_low)
+
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+         
+        __, Moving = self.warp(Moving, fxy_1.permute(0, 2, 3, 1))
+                
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        
+        out_1, out_2 = self.net2(M_temp_low_spatial_low, F_temp_low_spatial_low)
+        
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        fxy_2 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+                  
+        __, fxy_2_ = self.warp(fxy_1, fxy_2.permute(0, 2, 3, 1))
+        
+        fxy_2_ = fxy_2_ + fxy_2
+                
+        __, Moving = self.warp(Moving, fxy_2_.permute(0, 2, 3, 1))
+                
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        
+        out_1, out_2 = self.net3(M_temp_low_spatial_low, F_temp_low_spatial_low)
+        
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        fxy_3 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+           
+        __, fxy_3_ = self.warp(fxy_2_, fxy_3.permute(0, 2, 3, 1))
+        fxy_3_ = fxy_3_ + fxy_3
+        
+        __, Moving = self.warp(Moving, fxy_3_.permute(0, 2, 3, 1))
+        
+        M_temp = Moving.squeeze().squeeze()
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]#[40:120,48:144]
+        M_temp_low_spatial_low = torch.real(torch.fft.ifftn(torch.fft.ifftshift(M_temp_fourier_low)).unsqueeze(0).unsqueeze(0))
+        
+        M_temp_low_spatial_low = normalize(M_temp_low_spatial_low)
+        
+        out_1, out_2 = self.net4(M_temp_low_spatial_low, F_temp_low_spatial_low)
+                
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        padx = int((M_temp.shape[0]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((M_temp.shape[1]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        fxy_4 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+           
+        __, fxy_4_ = self.warp(fxy_3_, fxy_4.permute(0, 2, 3, 1))
+        fxy_4_ = fxy_4_ + fxy_4
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(fxy_4_)
+        else:
+            Df_xy = fxy_4_
+        
+        return Df_xy
+
 class Fourier_Net_plus(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
         self.in_channel = in_channel

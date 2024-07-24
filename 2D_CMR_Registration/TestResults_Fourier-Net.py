@@ -1,4 +1,3 @@
-import os
 from argparse import ArgumentParser
 import numpy as np
 import torch
@@ -10,7 +9,6 @@ import time
 from skimage.metrics import structural_similarity, mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
-import argparse
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
@@ -28,12 +26,12 @@ parser.add_argument("--choose_loss", type=int, dest="choose_loss", default=1,
                     help="choose similarity loss: SAD (0), MSE (1), NCC (2), SSIM (3)")
 parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
-parser.add_argument("--F_Net_plus", type=bool,
-                    dest="F_Net_plus", default=True, action=argparse.BooleanOptionalAction, 
-                    help="choose whether to use Fourier-Net (False) or Fourier-Net+ (True) as the model")
-parser.add_argument("--diffeo", type=bool,
-                    dest="diffeo", default=True, action=argparse.BooleanOptionalAction, 
-                    help="choose whether to use a diffeomorphic transform (True) or not (False)")
+parser.add_argument("--model", type=int,
+                    dest="model_num", default=1, 
+                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1) or cascaded Fourier-Net (2) as the model")
+parser.add_argument("--diffeo", type=int,
+                    dest="diffeo", default=0, 
+                    help="choose whether to use a diffeomorphic transform (1) or not (0)")
 parser.add_argument("--FT_size_x", type=int,
                     dest="FT_size_x", default=24,
                     help="choose size x of FT crop: Should be smaller than 40.")
@@ -48,32 +46,46 @@ smooth = opt.smth_lambda
 dataset = opt.dataset
 choose_loss = opt.choose_loss
 mode = opt.mode
-F_Net_plus = opt.F_Net_plus
+model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 
 # choose the model
-model_name = 0
-if F_Net_plus:
-    assert  FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade(2, 2, start_channel, FT_size).cuda() 
-    model_name = 1
-else:     
-    model = Fourier_Net(2, 2, start_channel).cuda()  
-
-# choose whether to use a diffeomorphic transform or not
-diffeo_name = 0
-if diffeo:
-    diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-    diffeo_name = 1
+assert model_num >= 0 or model_num <= 5, f"Expected number for model to be either 0, 1 or 2, but got: {model_num}"
+assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
+if model_num == 0:
+    model = Fourier_Net(2, 2, start_channel, diffeo).cuda() 
+elif model_num == 1:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 2:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 3:
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 4:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+elif model_num == 5:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
 
 transform = SpatialTransform().cuda()
 
-path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+
+"""
+# choose best model
 model_idx = -1
 from natsort import natsorted
 print('Best model: {}'.format(natsorted(os.listdir(path))[model_idx]))
 modelpath = path + natsorted(os.listdir(path))[model_idx]
+"""
+
+# choose model after certain epoch of training
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0004') == -1)][0]
+print('Best model: {}'.format(basename(modelpath)))
+
 bs = 1
 
 torch.backends.cudnn.benchmark = True
@@ -105,7 +117,7 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -119,30 +131,37 @@ with f:
 
 for i, image_pairs in enumerate(test_generator): 
     with torch.no_grad():
-        mov_img_fullySampled = image_pairs[0]
-        fix_img_fullySampled = image_pairs[1]
+        mov_img_fullySampled = image_pairs[0].float().to(device)
+        fix_img_fullySampled = image_pairs[1].float().to(device)
         if dataset == 'CMRxRecon':
-            mov_img_subSampled = image_pairs[2]
-            fix_img_subSampled = image_pairs[3]
+            mov_img_subSampled = image_pairs[2].float().to(device)
+            fix_img_subSampled = image_pairs[3].float().to(device)
         else:
-            mov_seg = image_pairs[2]
-            fix_seg = image_pairs[3]
+            mov_seg = image_pairs[2].float().to(device)
+            fix_seg = image_pairs[3].float().to(device)
+
+        if model_num == 3:
+            # ensure that all images and segmentations have the same size for dense F-Net
+            mov_img_fullySampled = F.interpolate(mov_img_fullySampled, [224,256], mode='nearest') 
+            fix_img_fullySampled = F.interpolate(fix_img_fullySampled, [224,256], mode='nearest')
+            mov_seg = F.interpolate(mov_seg, [224,256], mode='nearest') 
+            fix_seg = F.interpolate(fix_seg, [224,256], mode='nearest')    
 
         start = time.time()
         # calculate displacement on subsampled data
         if dataset == 'CMRxRecon':
-            V_xy = model(mov_img_subSampled.float().to(device), fix_img_subSampled.float().to(device))
+            V_xy = model(mov_img_subSampled, fix_img_subSampled)
         else:
-            V_xy = model(mov_img_fullySampled.float().to(device), fix_img_fullySampled.float().to(device))
+            V_xy = model(mov_img_fullySampled, fix_img_fullySampled)
         
         # get inference time
         inference_time = time.time()-start
         times.append(inference_time)
         
         # but warp fully sampled data
-        __, warped_mov_img_fullySampled = transform(mov_img_fullySampled.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+        __, warped_mov_img_fullySampled = transform(mov_img_fullySampled, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
         if dataset != 'CMRxRecon':
-            __, warped_mov_seg = transform(mov_seg.float().to(device), V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+            __, warped_mov_seg = transform(mov_seg, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
         
         # calculate MSE, SSIM and Dice 
         if dataset == 'OASIS':
@@ -210,11 +229,11 @@ with f:
     elif dataset == 'OASIS':
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
     elif dataset == 'ACDC':
-        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
+        writer.writerow(['-', '-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
 
 if dataset == 'CMRxRecon':
-    print('Mean inference time: {:.4f} seconds\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
 elif dataset == 'OASIS':
-    print('Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % DICE: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
 elif dataset == 'ACDC':
-    print('Mean inference time: {:.4f} seconds\n     DICE full: {:.5f} +- {:.5f}\n     DICE no background: {:.5f} +- {:.5f}\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % DICE full: {:.2f} \\pm {:.2f}\n     % DICE no background: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
