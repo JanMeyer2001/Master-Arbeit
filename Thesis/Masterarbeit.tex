@@ -48,6 +48,7 @@
 \usepackage{booktabs} 	% for toprule, etc. in tables
 
 
+
 % add bibliography
 %\addbibresource{Bibliography.bib}
 \bibliography{Bibliography.bib}
@@ -566,36 +567,63 @@ Thus, the output displacement field of the $K$-th cascade $\phi^{(K)}$ is the fi
 \end{figure}
 
 \chapter{Experiments} \label{Ch:Experiments}
-In the following chapter the different experiments that were conducted are described and explained. First was frame-to-frame registration on cardiac data from the \emph{CMRxRecon} dataset to lay the basis for later experiments with a motion-correcting reconstruction pipeline.
+In the following chapter the different experiments that were conducted are described and explained. 
+%First was frame-to-frame registration on cardiac data from the \emph{CMRxRecon} dataset to lay the basis for later experiments with a motion-correcting reconstruction pipeline.
+First, experiments were conducted on the \emph{CMRxRecon} dataset to find the optimal parameters for our model. As this dataset lacks ground truth segmentations, the \emph{ACDC} dataset was used to extend these tests.
 
-\section{Frame-to-Frame Registration on CMRxRecon} \label{Sec:Frame-to-Frame_CMRxRecon}
-As a first step, frame-to-frame registration on the \emph{CMRxRecon} dataset was tested. The goal of these initial experiments was to examine whether the network could learn to align the cardiac image pairs despite the movement between the frames. This would hopefully form the basis to use the networks in a motion-corrected reconstruction pipeline later. \\
-As discussed in section~\ref{SubSec:Pre-Processing}, the CMR images were cropped to extract the moving cardiac region. This was done for both the fully sampled and subsampled (Acc4, Acc8, Acc10) data. Image pairs for each slice from each patient of the training set were generated to train the network. In order to evaluate the training progress the mean MSE and mean SSIM metrics calculated the validation data at each checkpoint (usually every 1000 iterations). The best model parameters, as determined by the metrics, were saved in a separate folder. To further evaluate the training success the unseen test data containing new patients was used. To benchmark the networks training success the MSE and SSIM were again used, but the mean inference time and the percentage of negative Jacobian determinant of deformation ($|J|_{<0}\%$) were also calculated. The procedure, however, was slightly altered for the subsampled data as only the displacement field of the model was used to align the corresponding fully sampled image pairs. The evaluation metrics were then calculated on these images for better comparability.
-
-\subsection{Quantitative Comparison with NiftyReg} \label{SubSec:QuantitativeComparisonNiftyReg}
-To establish a baseline, \emph{Fourier-Net+} was first trained with the MSE-loss, 8 channels, $\lambda = 0.01$ and a learning rate of $0.0001$. It was then compared to \emph{NiftyReg}, a traditional registration algorithm which iteratively optimizes the displacement~\cite{NiftiReg}. For the fully sampled data \emph{NiftyReg} provides the warped image directly, but for the subsampled data, the control point grid provided by \emph{NiftyReg} was used to resample the corresponding fully sampled data for comparability. Thus only the fully sampled test data is needed for an unregistrated baseline. The MSE our registration methods should thus not exceed is $0.000535$ and the SSIM should be higher than $0.91714$.
 
 \section{Parameter Studies on the CMRxRecon Dataset} \label{Sec:ParameterStudies}
-As the results from the initial test were not better than the conventional algorithm, different parameters were tested in order to find the optimal model parameters.
+As a first step, frame-to-frame registration on the \emph{CMRxRecon} dataset was tested. The goal of these initial experiments was to examine whether the network could learn to align the cardiac image pairs despite the movement between the frames. To start, different parameters were tested in order to find the optimal model parameters for the \emph{CMRxRecon} dataset. 
+%This would hopefully form the basis to use the networks in a motion-corrected reconstruction pipeline later. 
+\\
+As discussed in section~\ref{SubSec:Pre-Processing}, the CMR images were cropped to extract the moving cardiac region. This was done for both the fully sampled and subsampled (Acc4, Acc8, Acc10) data. Image pairs for each slice from each patient of the training set were generated to train the network. In order to evaluate the training progress the mean MSE and mean SSIM metrics calculated the validation data at each checkpoint (usually every 1000 iterations). The best model parameters, as determined by the metrics, were saved in a separate folder. To further evaluate the training success the unseen test data containing new patients was used. To benchmark the networks training success the MSE and SSIM were again used, but the mean inference time and the percentage of negative Jacobian determinant of deformation ($\% \, |J_{\phi}|\leq0$) were also calculated. The procedure, however, was slightly altered for the subsampled data as only the displacement field of the model was used to align the corresponding fully sampled image pairs. The evaluation metrics were then calculated on these images for better comparability.
 
 \subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+}
-First, the baseline network \emph{Fourier-Net} was compared to its supposedly improved version \emph{Fourier-Net+} once with both using the diffeomorphic version and once without the transform. Thus the effect of the diffeomorphic deformation can be compared to the normal transformation on \emph{Fourier-Net} and \emph{Fourier-Net+}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The other parameters were also kept constant with a learning rate of $0.0001$, MSE-loss and $\lambda = 0.01$. FT crop in \emph{Fourier-Net+} was set to $24 \times 24$.
+First, the baseline network \emph{Fourier-Net} was compared to its newer version \emph{4xFourier-Net+} once with both using the diffeomorphic version and once without the transform. Thus the effect of the diffeomorphic deformation can be compared to the normal transformation on \emph{Fourier-Net} and \emph{4xFourier-Net+}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The other parameters were also kept constant with a learning rate of $0.0001$, MSE-loss and $\lambda = 0.01$. FT crop in \emph{4xFourier-Net+} was set to $24 \times 24$.
+
 
 \subsection{Starting Channel Size} \label{SubSec:StartingChannels}
-Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} was trained with MSE-loss, a learning rate of $0.0001$, $\lambda = 0.01$, FT crop of $24 \times 24$ and no diffeomorphic transform. The experiments were again only conducted on the fully sampled data. Three different channel sizes were used for training \emph{Fourier-Net+}: $8$, $16$ and $32$. Due to the early stopping the networks were trained for x, 17 and 10 epochs respectively. 
+Next, the impact of the starting channels was examined. For this, \emph{4xFourier-Net+} was trained with MSE-loss, a learning rate of $0.0001$, $\lambda = 0.01$, FT crop of $24 \times 24$ and no diffeomorphic transform. The experiments were again only conducted on the fully sampled data. Three different channel sizes were used for training \emph{Fourier-Net+}: $8$, $16$ and $32$. Due to the early stopping the networks were trained for 17, 17 and 10 epochs respectively. 
 %\\Similarly, \emph{Fourier-Net} was tested with the same parameters for channel sizes $8$, $16$ and $32$. These were trained for y epochs.
 
-\section{Further Tests on the ACDC Dataset}
+
+\subsection{Quantitative Comparison with NiftyReg} \label{SubSec:QuantitativeComparisonNiftyReg}
+To establish a baseline, the similarity metrics were calculated between the unaligned test data. \emph{4xFourier-Net+} was then trained with the MSE-loss, 8 channels, $\lambda = 0.01$ and a learning rate of $0.0001$. \emph{NiftyReg}, a traditional registration algorithm that iteratively optimizes the displacement~\cite{NiftiReg}, was used for comparison. \emph{NiftyReg} provides the warped image for the fully sampled data directly, but for the subsampled data the control point grid produced by \emph{NiftyReg} was used to resample the corresponding fully sampled data for comparability. Thus only the fully sampled test data is needed for an unregistrated baseline as the subsampled data is only used to produce the displacement which is then used to warp the fully sampled data. 
+%The MSE of the registration methods should thus not exceed  $0.000535$ and the SSIM should be higher than $0.91714$.
+
+
+\section{Parameter Tests on the ACDC Dataset}
 As the evaluation on the \emph{CMRxRecon} dataset is limited to image similarity measures, further testing was done on the \emph{ACDC} dataset which contains cardiac data with segmentations. These can be used to better evaluate the registration performance by using e.g. the Dice score.
 
 
 \subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+}
-First, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared as well as their diffeomorphic versions. The registration performance was evaluated on the test set using Dice scores calculated with and without the background label, SSIM, MSE and the percentage of negative Jacobian determinant of deformation. The mean inference time on GPU together with memory consumption is also added to the comparison with the latter containing number of trainable model parameters, mult-add operations (in millions) and the total memory in Megabyte. The latter is only given for the baseline versions as the diffeomorphic version require the same amount of memory. The first network was trained for a maximum of 100 epochs with early stopping activating after 3 epochs without improvement of the validation Dice score. The other variants were than trained with the same number of epochs, which worked out to be only 6 epochs due to the large training set in the experiments. All networks were trained on the fully sampled \emph{ACDC} data with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. \emph{Fourier-Net+} and \emph{4xFourier-Net} used a FT crop size of $48 \times 48$ for these experiments. All of these parameters were the same for the diffeomorphic versions of the networks.
+First, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared for both normal and diffeomorphic versions. Additionally, network versions creating dense instead of band-limited displacements were used a baseline for best achievable performance. The registration performance was evaluated on the test set using the percentage of Dice scores calculated with and without the background label, percentage of SSIM, MSE multiplied by $10^-3$ (denoted by m for milli) and the percentage of negative Jacobian determinant of deformation. The mean inference time on GPU together with memory consumption for each model is also added to the comparison with the latter containing number of trainable model parameters, mult-add operations (in millions or billion as denoted by M or G) and the total memory in Megabyte (MB). The latter is only given for the normal versions as the diffeomorphic version require the same amount of memory and the baseline dense versions. The first network was trained for a maximum of 100 epochs with early stopping activating after 3 epochs without improvement of the validation Dice score. The other variants were than trained with the same number of epochs, which worked out to be only 6 epochs due to the large training set in the experiments. All networks were trained on the fully sampled \emph{ACDC} data with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. \emph{Fourier-Net+} and \emph{4xFourier-Net} used a FT crop size of $48 \times 48$ for these experiments. All of these parameters were the same for the diffeomorphic and dense versions of the networks. The results and subsequent discussion can be found in section~\ref{SubSec:ResultsFourier-NetvsFourier-Net+ACDC}.
+
+
+\subsection{Starting Channel Size} \label{SubSec:StartingChannelsACDC}
+Next, the impact of the starting channels on the \emph{ACDC} data was examined. For this, \emph{Fourier-Net+} and \emph{4xFourier-Net+} was trained with MSE-loss, a learning rate of $0.0001$, $\lambda = 0.01$, FT crop of $24 \times 24$ and no diffeomorphic transform. The experiments were again only conducted on the fully sampled data. Four different channel sizes were used for training: $8$, $16$, $32$ and $64$. The first network variant was trained with early stopping, which ended at 6 epochs. For better comparability, the other network variants were also trained with the same number of epochs. The registration performance was evaluated on the test set using the percentage of the Dice score calculated once on all labels, once without the background using only the cardiac labels, as well as the percentage of SSIM, MSE multiplied by $10^-3$ and the percentage of negative Jacobian determinant of deformation. Additionally the number of network parameters, number of mult-add operations (in millions or billion as denoted by M or G) and memory consumption in Megabyte (MB) are listed for all network variants to better compare the relationship between registration performance and memory consumption to potentially find a optimal configuration for both performance and efficiency. The mean inference time was measured on GPU in seconds. The results and subsequent discussion can be found in section~\ref{SubSec:ResultsStartingChannelsACDC}.
 
 
 \subsection{Fourier-Transform Crop Size} \label{SubSec:FTCropSize}
-The FT crop size used for compressing the images is a parameter specific to \emph{Fourier-Net+}. Four different sizes of the FT crop were analyzed: $80 \times 168$, $40 \times 84$, $48 \times 48$ and $24 \times 24$. A larger crop would obviously compress the images less, thus leading to less efficiency, however, a very small crop, while very efficient, might lose some of the image details leading to a decrease in performance. The experiments were again only conducted on the fully sampled data as one would expect similar results on subsampled data. The network variants were trained with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. Again, the networks were trained for only 5 epochs, as this is were the first model ended training due to early stopping. The registration performance was evaluated on the test set using the Dice score calculated once on all labels, once without the background using only the cardiac labels, as well as the SSIM, MSE and the percentage of negative Jacobian determinant of deformation. Additionally the number of network parameters, number of mult-add operations in millions and memory consumption in Megabyte are listed for all network variants to better compare the relationship between registration performance and memory consumption to potentially find a optimal configuration for both performance and efficiency. The mean inference time was measured on GPU in seconds.
+The FT crop size used for compressing the images is a parameter specific to \emph{Fourier-Net+} and \emph{4xFourier-Net+}. Four different sizes of the FT crop were analyzed: $80 \times 168$, $40 \times 84$, $48 \times 48$ and $24 \times 24$. A larger crop would obviously compress the images less, thus leading to less efficiency, however, a very small crop, while very efficient, might lose some of the image details leading to a decrease in performance. The experiments were again only conducted on the fully sampled data as one would expect similar results on subsampled data. The network variants were trained with MSE as the unsupervised similarity loss, a channel size of 8, learning rate of 0.0001 and $\lambda=0.01$. Again, the networks were trained for only 5 epochs, as this is were the first model ended training due to early stopping. The registration performance was evaluated on the test set using the Dice score calculated once on all labels, once without the background, as well as the SSIM, MSE and the percentage of negative Jacobian determinant of deformation. Additionally, the number of network parameters, number of mult-add operations in millions (M) and memory consumption in Megabyte (MB) are listed for all network variants to better compare the relationship between registration performance and memory consumption to potentially find a optimal configuration for both performance and efficiency. The mean inference time was measured on GPU in seconds. The results and subsequent discussion can be found in section~\ref{SubSec:ResultsFTCropSize}.
 
+
+\subsection{Comparison with VoxelMorph} \label{SubSec:ComparisonVoxelMorph}
+After finding parameters which optimize registration performance while minimizing memory consumption, a comparison to another commonly used registration network should be made. For this, the famous \emph{VoxelMorph}~\cite{Voxelmorph} was used. It was trained with ... and provides a dense displacement field. For comparison \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were trained for 6 epochs with MSE as the unsupervised similarity loss, a channel size of 16, learning rate of 0.0001 and $\lambda=0.01$ as well as a FT crop size of $48 \times 48$, which provide a good balance of performance and memory imprint for the networks. To evaluate registration performance, the Dice score was again computed for all labels and without the background as well as the similarity metrics SSIM, MSE and the percentage of negative Jacobian determinant of deformation. All networks were trained on the fully sampled \emph{ACDC} data. The inference times of all networks were computed on the GPU and the number of network parameters, number of mult-add operations in billions (G) and memory consumption in Megabyte (MB) are also given to further compare the efficiency of the networks. 
+
+
+\subsection{Dense Displacement on Accelerated Data} \label{SubSec:DenseDisplacementAcc}
+The difference between a dense displacement field and a band-limited one was already explored in section~\ref{SubSec:Fourier-NetvsFourier-Net+}. This, however, only includes fully sampled data, not accelerated data. We will explore potential performance changes on the latter in this section with the hypothesis that the network variants with the dense displacement will perform worse than the variants with the band-limited displacement field. This expectation stems from the fact, that frequencies outside the center region of the k-space are dropped for the accelerated data thus reducing the advantage of the dense displacement in comparison to the band-limited (i.e. center-cropped) displacement. \\
+The tests again included \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+}, which were all trained for 6 epochs with MSE as the unsupervised similarity loss, a channel size of 16, learning rate of 0.0001 and $\lambda=0.01$. The registration performance was evaluated on the test set using the Dice score calculated once on all labels, once without the background, as well as the SSIM, MSE and the percentage of negative Jacobian determinant of deformation. Additionally, the number of network parameters, number of mult-add operations in millions (M) and memory consumption in Megabyte (MB) are given.
+
+\subsection{Comparison on Subsampled Data} \label{SubSec:ComparisonSubsampling}
+After comparing \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} with both dense and band-limited displacement fields as well as a comparison with \emph{VoxelMorph}, which also has a dense displacement field, on fully sampled data to access the difference in registration performance and memory consumption an extension to subsampled data needs to be made. For this \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were compared to a baseline consisting of the unaligned test image pairs as well as \emph{NiftyReg}, \emph{VoxelMorph} and \emph{LAPNet}. Thus, observations of the performance on accelerated data can be made as well as comparisons to the aligned baseline (which all methods should hopefully beat), a traditional registration algorithm, a dense registration network working in the image domain and a another dense network which works in the k-space domain.\\
+\emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were trained for 6 epochs with MSE as the unsupervised similarity loss, a channel size of 16, learning rate of 0.0001 and $\lambda=0.01$ as well as a FT crop size of $48 \times 48$ for all subsampling data. VoxelMorph was trained with ... Three different accelerations were tested: \textit{Acc4} (R=4), \textit{Acc8} (R=8) and \textit{Acc10} (R=10). For reference, the data for the fully sampled data (R=0) is also provided. The registration performance of all methods was evaluated on the test set using the Dice score calculated once on all labels, once without the background, as well as the SSIM and MSE as image metrics. All times are computed on CPU for better comparability as \emph{NiftyReg} currently only works on CPU as the GPU capable versions were deprecated and the other networks would gain an unfair advantage when ran on GPU. The baseline obviously has no time associated as it only denotes the metrics on the test data before registration.
+
+
+\section{Data Consistency Experiments}
+As seen in the previous sections, the performance for all methods decreases drastically for highly subsampled/accelerated data due to reconstruction artifacts in the image domain. However, since we are interested in maintaining performance on subsampled data, it might prove useful to use k-space information for the loss calculation and thus for the network training as it should not contain artifacts compared to the image domain. Thus, it would act as a kind of data consistency contraint during training. In order to achieve this, the similarity loss was calculated not on the warped and fixed images, but instead on their corresponding k-spaces. This would hopefully still provide the network with useful information during training that is free of any aliasing artifacts, which might decrease performance on subsampled data. \\
+After trying the MSE as the similarity loss, it quickly became apparent that this yielded unrealistic and wildly deformed displacements which could no longer be reigned in by the smoothness constraint of the loss function. Thus, normalized cross-correlation (NCC) was used for the calculation of the similarity loss with $\lambda = 1$ to place a greater emphasize on the smoothness of the displacement.
 
 \section{Integration into a Motion-Corrected Reconstruction Pipeline} \label{Sec:IntegrationMotion-CorrectedReconstructionPipeline}
 Describe qualitative test to see whether the network can be used to improve a reconstruction pipeline for cardiac data.
@@ -620,79 +648,16 @@ Overview of the reconstruction pipeline using \emph{Fourier-Net+}.
 \chapter{Results and Discussion} \label{Ch:ResultsDiscussion}
 In this chapter, the results for the experiment described in the previous chapter will be examined. Possible implications will be discussed to determine the effectiveness of this new method.
 
-\section{Frame-to-Frame Registration} \label{Sec:Frame-to-FrameRegistration}
-As mentioned in section~\ref{Sec:Frame-to-Frame_CMRxRecon}, frame-to-frame registration on the \emph{CMRxRecon} dataset was the first set of experiments. Goal of these initial tests was to examine whether the network could learn to align the cardiac image despite the movement between the frames. 
+%\section{Frame-to-Frame Registration} \label{Sec:Frame-to-FrameRegistration}
+%As mentioned in section~\ref{Sec:Frame-to-Frame_CMRxRecon}, frame-to-frame registration on the \emph{CMRxRecon} dataset was the first set of experiments. Goal of these initial tests was to examine whether the network could learn to align the cardiac image despite the movement between the frames. 
 
-\subsection{Quantitative Results Comparison with NiftyReg}  \label{SubSec:QuantitativeResultsComparisonNiftyReg}
-For this first quantitative test similarity metrics such as MSE and SSIM were used to judge image similarity as an indicator for proper image alignment. The results can be seen in Table~\ref{tab:BenchmarkNiftyReg} as well as Figure~\ref{fig:TestBenchmark_MSE_Boxplots} for the MSE and Figure~\ref{fig:TestBenchmark_SSIM_Boxplots} for the SSIM results.  \emph{Fourier-Net+} needed about 0.0104~s per frame pair for registration with $|J|_{<0}\% < 0.001$ for all kinds of subsampling, while \emph{NiftyReg} took up to 15~s for aligning an image pair. The results for \emph{Fourier-Net+} look good on their own as the metrics are stable even for the subsampled data. However, its baseline performance is slightly worse than \emph{NiftyReg} except for the Acc10 data, were both perform worse than the unregistrated baseline of the test data, and \emph{Fourier-Net+} is slightly better. Overall, the network is much faster than the iterative registration algorithm as expected.
-
-\begin{table}[htpb]
-	\centering
-	\caption{Benchmark results for \emph{Fourier-Net+} and \emph{NiftiReg} on the \emph{CMRxRecon} test data.}
-	\label{tab:BenchmarkNiftyReg}
-	\begin{tabular}{c c c c} % c
-		\toprule
-		\textbf{Subsampling} & \textbf{Method} & \textbf{MSE} & \textbf{SSIM} \\
-		
-		\midrule
-		\multirow{2}{*}{Full} & Fourier-Net+ & $0.000435 \pm 0.00055$ &  $0.92346 \pm 0.045684$\\   % & $0.0003276 \pm 0.00710346$ 
-		 & NiftyReg & $0.000514 \pm 0.000771$ & $0.93967 \pm 0.03909$ \\
-		
-		\midrule
-		\multirow{2}{*}{Acc4} & Fourier-Net+ & $0.000482 \pm 0.000626$ & $0.91809 \pm 0.05012$\\ % & $0.00010437 \pm 0.0031161$ 
-		 & NiftyReg & $0.000551 \pm 0.000798$ & $0.92384 \pm 0.04935$ \\
-		
-		\midrule
-		\multirow{2}{*}{Acc8} & Fourier-Net+ & $0.000479 \pm 0.000620$ & $0.91736 \pm 0.05118$\\ %   & $0.0000764 \pm 0.00296053$ 
-		 & NiftyReg & $0.000565 \pm 0.000803$ & $0.92058 \pm 0.05087$ \\
-
-		\midrule
-		\multirow{2}{*}{Acc10} & Fourier-Net+ & $0.000491 \pm 0.000640$ & $0.91599 \pm 0.05223$\\  % & $0.0000712 \pm 0.0023164$ 
-		 & NiftyReg & $0.000926 \pm 0.002867$ & $0.90655 \pm 0.10321$ \\
-		\bottomrule
-	\end{tabular}
-\end{table}
-
-%\begin{figure}[htpb]
-%	\centering
-%	\graphicspath{{images/}{\main/images/}}
-%	\begin{subfigure}{0.495\textwidth}
-%    		\includegraphics[width=\textwidth]{TestBenchmark_MSE_Boxplots.png}
-%    		\caption{Boxplot of MSE results.}
-%    		\label{fig:TestBenchmark_MSE_Boxplots}
-%	\end{subfigure}
-%	\hfill
-%	\begin{subfigure}{0.495\textwidth}
-%    		\includegraphics[width=\textwidth]{TestBenchmark_SSIM_Boxplots.png}
-%    		\caption{Boxplot of SSIM results.}
-%    		\label{fig:TestBenchmark_SSIM_Boxplots}
-%	\end{subfigure}
-%	\caption{Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph{Fourier-Net+} and \emph{NiftyReg}.}
-%	\label{fig:TestBenchmark_Boxplots}
-%\end{figure}
-
-\begin{figure}[htpb]
-	\centering
-	\graphicspath{{images/}{\main/images/}}
-	\includegraphics[width=.85\linewidth]{TestBenchmark_MSE_Boxplots.png} 
-	\caption{MSE results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
-	\label{fig:TestBenchmark_MSE_Boxplots}
-\end{figure}
-
-\begin{figure}[htpb]
-	\centering
-	\graphicspath{{images/}{\main/images/}}
-	\includegraphics[width=.85\linewidth]{TestBenchmark_SSIM_Boxplots.png} 
-	\caption{SSIM results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
-	\label{fig:TestBenchmark_SSIM_Boxplots}
-\end{figure}
 
 \section{Parameter Studies on the CMRxRecon Dataset} \label{Sec:ParameterStudies}
-As the results from the initial test were not better than the conventional algorithm, different parameters were tested in order to find the optimal model parameters.
+Different parameters were tested in order to find the optimal model parameters for usage on the \emph{CMRxRecon} dataset. After some tests on the fully sampled data, a comparison with the traditional iterative algorithm \emph{NiftyReg} was conducted on both the fully sampled and subsampled data.
 
-\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+CMRxRecon}
-First, the baseline network \emph{Fourier-Net} was compared to its more efficient successor \emph{Fourier-Net+} with both using the diffeomorphic version as we can then compare the effect of the diffeomorphic deformation compared to the normal transformation on \emph{Fourier-Net+}. However, this effect should be similar for \emph{Fourier-Net}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The results can be seen in Table~\ref{tab:Fourier-NetvsFourier-Net+CMRxRecon}. The \emph{Fourier-Net} model without the diffeomorphic transform was trained for 17 epochs, while the diffeomorphic version trained for 100 epochs. Despite this, the latter is only marginally better in terms of MSE and SSIM. The percentage of negative Jacobian determinants was actually better for the normal transformation compared to the diffeomorphic one. The baseline \emph{Fourier-Net+} model trained for 37 epochs, while the diffeomorphic version trained for 100 epochs. \\
-\emph{Fourier-Net+} performs slightly worse than \emph{Fourier-Net}, however it is far more efficient.
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:ResultsFourier-NetvsFourier-Net+CMRxRecon}
+First, the baseline network \emph{Fourier-Net} was compared to its more efficient successor \emph{4xFourier-Net+} with both using the diffeomorphic version as we can then compare the effect of the diffeomorphic deformation compared to the normal transformation on \emph{4xFourier-Net+}. However, this effect should be similar for \emph{Fourier-Net}. All of the experiments were conducted on the fully sampled data as the subsampling should not effect the tested properties. The baseline MSE (note that all MSE values are multiplied by $10^-3$ as denoted by the m) for unregistrated test images is $0.535$ and the SSIM percentage ($\%$ SSIM) is $91.71$. The results for \emph{Fourier-Net} and \emph{4xFourier-Net+} can be seen in Table~\ref{tab:Fourier-NetvsFourier-Net+CMRxRecon}. \\
+The \emph{Fourier-Net} model without the diffeomorphic transform was trained for 17 epochs, while the diffeomorphic version trained for 100 epochs. Despite this, the latter is only marginally better in terms of MSE and SSIM. The percentage of negative Jacobian determinants was actually better for the normal transformation compared to the diffeomorphic one. The normal \emph{Fourier-Net+} model trained for 37 epochs, while the diffeomorphic version trained for 100 epochs. \emph{Fourier-Net+} performs slightly worse than \emph{Fourier-Net}, however it is more efficient.
 
 
 \begin{table}[htpb]
@@ -701,24 +666,24 @@ First, the baseline network \emph{Fourier-Net} was compared to its more efficien
 	\label{tab:Fourier-NetvsFourier-Net+CMRxRecon}
 	\begin{tabular}{c c c c c} %
 		\toprule
-		Model & MSE & SSIM & $|J|_{<0}\%$ & Time [s] \\
+		Model & MSE (m) & $\%$ SSIM & $\% \, |J_{\phi}|\leq0$ & Time [s] \\
 		\midrule
-		Fourier-Net & $0.000319 \pm 0.000352$ &  $0.93299 \pm 0.03847$ & $0.0022 \pm 0.0183$ & 0.0025\\ 
-		Fourier-Net+ & $0.000352 \pm 0.000449$ & $0.93078 \pm 0.04086$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
+		Fourier-Net & $0.319 \pm 0.352$ &  $93.29 \pm 3.85$ & $0.0022 \pm 0.0183$ & 0.0025\\ 
+		4xFourier-Net+ & $0.352 \pm 0.449$ & $93.08 \pm 4.09$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
 		\midrule
-		Diff-Fourier-Net & $0.000318 \pm 0.000388$ &  $0.93395 \pm 0.03818$ & $0.0273 \pm 0.0897$ & 0.0028\\ 
-		Diff-Fourier-Net+ & $0.000352 \pm 0.000448$ & $0.93079 \pm 0.04109$ & $0.0029 \pm 0.0214$ & 0.0103\\  
+		Diff-Fourier-Net & $0.318 \pm 0.388$ &  $93.39 \pm 3.82$ & $0.0273 \pm 0.0897$ & 0.0028\\ 
+		Diff-4xFourier-Net+ & $0.352 \pm 0.448$ & $93.08 \pm 4.11$ & $0.0029 \pm 0.0214$ & 0.0103\\  
 		\bottomrule
 	\end{tabular}
 \end{table}
 
 
-\subsection{Starting Channel Size} \label{SubSec:StartingChannelsCMRxRecon}
-Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} and \emph{Fourier-Net+} were trained with three different channel sizes: $8$, $16$, $32$ and $64$. 
+\subsection{Starting Channel Size} \label{SubSec:ResultsStartingChannelsCMRxRecon}
+Next, the impact of the starting channels was examined. For this, \emph{4xFourier-Net+} was trained with three different channel sizes: $8$, $16$, $32$ and $64$. 
 %Due to the early stopping the \emph{Fourier-Net} variants were trained for 17, x, x and x epochs, while the channel sizes: $8$, $16$, $32$ and $64$. 
-Due to the early stopping the \emph{Fourier-Net+} variants were trained for x, 17 and 10 epochs respectively. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+CMRxRecon} with the inference time for each version being calculated on the GPU.
+Due to the early stopping the \emph{4xFourier-Net+} variants were trained for x, 17 and 10 epochs respectively. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+CMRxRecon} with the inference time for each version being calculated on the GPU.
 % and~\ref{tab:StartingChannelsFourierNet}. 
-Despite training for the least amount of epochs channel size $32$ performs the best for \emph{Fourier-Net+}.
+Despite training for the least amount of epochs channel size $32$ performs the best for \emph{4xFourier-Net+}.
 
 \begin{table}[htpb]
 	\centering
@@ -726,84 +691,191 @@ Despite training for the least amount of epochs channel size $32$ performs the b
 	\label{tab:StartingChannelsFourierNet+CMRxRecon}
 	\begin{tabular}{c c c c c} %
 		\toprule
-		Starting Channels & MSE & SSIM & $|J|_{<0}\%$ & Time [s]\\
+		Starting Channels & MSE (m) & $\%$ SSIM & $\% \, |J_{\phi}|\leq0$ & Time [s]\\
 		\midrule
-		8 & $0.000352 \pm 0.000449$ & $0.93078 \pm 0.04086$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
-		16 & $0.000347 \pm 0.000439$ & $0.93123 \pm 0.04041$ & $0.0003 \pm 0.0059$ & 0.0113\\  
-		32 & $0.000344 \pm 0.000429$ & $0.93134 \pm 0.04006$ & $0.0008 \pm 0.0098$ & 0.0106\\  
-		%64 & $0.000xxx \pm 0.000xxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxx \pm 0.xxxx$\\  
+		8 & $0.352 \pm 0.449$ & $93.08 \pm 4.09$ & $0.0003 \pm 0.0057$ & 0.0123\\ 
+		16 & $0.347 \pm 0.439$ & $93.12 \pm 4.04$ & $0.0003 \pm 0.0059$ & 0.0113\\  
+		32 & $0.344 \pm 0.429$ & $93.13 \pm 4.01$ & $0.0008 \pm 0.0098$ & 0.0106\\  
 		\bottomrule
 	\end{tabular}
 \end{table}
 
+\subsection{Quantitative Comparison with NiftyReg}  \label{SubSec:ResultsQuantitativeComparisonNiftyReg}
+For this first quantitative test similarity metrics such as MSE and SSIM were used to judge image similarity as an indicator for proper image alignment. The results can be seen in Table~\ref{tab:BenchmarkNiftyReg} with the SSIM given in percent $\%$ and the MSE multiplied by $10^-3$ for better readability (this is denoted by m for milli although the MSE has no unit strictly speaking). They are further visualized in Figure~\ref{fig:TestBenchmark_MSE_Boxplots} for the MSE and Figure~\ref{fig:TestBenchmark_SSIM_Boxplots} for the SSIM results. \\ \emph{Fourier-Net+} needed about 0.0104 seconds (s) per frame pair for registration with $|J|_{<0}\% < 0.001$ for all levels of subsampling, while \emph{NiftyReg} took up to 15~s for aligning an image pair. The results for \emph{Fourier-Net+} look good on their own as the metrics are stable even for the subsampled data compared to the fully sampled data. However, its baseline performance is slightly worse than \emph{NiftyReg} except for the Acc10 (R=10) data, where both perform worse than the unalinged baseline of the test data, however \emph{4xFourier-Net+} is slightly better than \emph{NiftyReg}. Overall, the network is much faster than the iterative registration algorithm as expected, but the latter performs better in terms of similarity metrics.
+
+\begin{table}[htpb]
+	\centering
+	\caption{Benchmark results for \emph{Fourier-Net+} and \emph{NiftiReg} on the \emph{CMRxRecon} test data.}
+	\label{tab:BenchmarkNiftyReg}
+	\begin{tabular}{c c c c} % c
+		\toprule
+		Subsampling & Method & MSE (m) & $\%$ SSIM \\
+		
+		\midrule
+		\multirow{2}{*}{R=0} & 4xFourier-Net+ & $0.435 \pm 0.554$ &  $92.35 \pm 4.59$\\   
+		 & NiftyReg & $0.514 \pm 0.771$ & $93.97 \pm 3.91$ \\
+		
+		\midrule
+		\multirow{2}{*}{R=4} & 4xFourier-Net+ & $0.482 \pm 0.626$ & $91.81 \pm 5.01$\\ 
+		 & NiftyReg & $0.551 \pm 0.798$ & $92.38 \pm 4.94$ \\
+		
+		\midrule
+		\multirow{2}{*}{R=8} & 4xFourier-Net+ & $0.479 \pm 0.620$ & $91.74 \pm 5.12$\\ 
+		 & NiftyReg & $0.565 \pm 0.803$ & $92.06 \pm 5.09$ \\
+
+		\midrule
+		\multirow{2}{*}{R=10} & 4xFourier-Net+ & $0.491 \pm 0.640$ & $91.59 \pm 5.23$\\  
+		 & NiftyReg & $0.926 \pm 2.867$ & $90.66 \pm 10.32$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\includegraphics[width=.85\linewidth]{TestBenchmark_MSE_Boxplots.png} 
+%	\caption{MSE results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
+%	\label{fig:TestBenchmark_MSE_Boxplots}
+%\end{figure}
+%
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\includegraphics[width=.85\linewidth]{TestBenchmark_SSIM_Boxplots.png} 
+%	\caption{SSIM results of \emph{Fourier-Net+} and \emph{NiftyReg} on the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data.}
+%	\label{fig:TestBenchmark_SSIM_Boxplots}
+%\end{figure}
+
+\begin{figure}[h] %tpb
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\begin{subfigure}{0.495\textwidth}
+    		\includegraphics[width=\textwidth]{TestBenchmark_MSE_Boxplots.png}
+    		\caption{Boxplot of MSE results.}
+    		\label{fig:TestBenchmark_MSE_Boxplots}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.495\textwidth}
+    		\includegraphics[width=\textwidth]{TestBenchmark_SSIM_Boxplots.png}
+    		\caption{Boxplot of SSIM results.}
+    		\label{fig:TestBenchmark_SSIM_Boxplots}
+	\end{subfigure}
+	\caption{Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph{Fourier-Net+} and \emph{NiftyReg}.}
+	\label{fig:TestBenchmark_Boxplots}
+\end{figure}
+
 \section{Further Tests on the ACDC Dataset}
 Due to the limitations of the \emph{CMRxRecon} dataset in terms of segmentations, the registration performance is further evaluated on the \emph{ACDC} dataset. Some of the parameter studies done on \emph{CMRxRecon} were repeated, others were added to further test the networks ability.
 
-\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:Fourier-NetvsFourier-Net+ACDC}
-Again, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared in terms of registration performance and inference time together with their diffeomorphic version, however, memory consumption is also added to the comparison with the number of parameters, mult-add operations (in millions) and the total memory in Megabyte. The latter is only given for the baseline versions as the diffeomorphic version required roughly the same amount of memory. \emph{Fourier-Net+} and \emph{4xFourier-Net} use a FT crop size of $48 \times 48$.
+\subsection{Fourier-Net versus Fourier-Net+} \label{SubSec:ResultsFourier-NetvsFourier-Net+ACDC}
+Again, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net} are compared in terms of registration performance and inference time (on GPU) together with their diffeomorphic versions, however, versions with dense instead of band-limited displacements are also added as a baseline for peak performance as these utilize all of the k-space information. The memory consumption is also added to the comparison with the number of parameters, mult-add operations and the total memory. The latter is only given for the dense and normal versions as the diffeomorphic version required roughly the same amount of memory as the normal ones, while the dense versions have a slightly larger encoder. 
+%All \emph{Fourier-Net+} and \emph{4xFourier-Net} variants use a FT crop size of $48 \times 48$. All networks used MSE-loss etc.
+Note that all network variants were trained for 6 epochs. The results can be seen in Table~\ref{tab:Fourier-NetvsFourier-Net+ACDC}.
 
 
-\begin{table}[htpb]
-	\scriptsize
+\begin{table}[H] %htpb
+	%\scriptsize
 	\centering
-	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} on the fully sampled \emph{ACDC} test data with a diffeomorphic transform.}
+	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} with both dense and band-limited displacement fields as well as diffeomorphic transforms on the fully sampled \emph{ACDC} test data.}
 	\label{tab:Fourier-NetvsFourier-Net+ACDC}
-	\begin{tabular}{c c c c c} %
+	\begin{tabular}{c c c c} %
 		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Dense Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
+		\midrule
+		$\%$ Dice & $78.22 \pm 13.84$ & $78.43 \pm 13.96$ & $79.34 \pm 14.03$\\
+		$\%$ Dice* & $71.03 \pm 18.87$ & $70.50 \pm 19.17$ & $72.02 \pm 18.94$ \\
+		$\%$ SSIM & $91.92 \pm 3.32$ & $89.09 \pm 4.10$ & $89.65 \pm 3.85$\\
+		MSE (m) & $0.09 \pm 0.06$ & $0.17 \pm 0.13$ & $0.15 \pm 0.12$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.53 \pm 0.52$ & $0.32 \pm 0.55$ & $0.04 \pm 0.09$ \\
+		Time [s] 	  & 0.0070 	& 0.0107 	& 0.0219 \\
+		\midrule
+		 & Diff-Fourier-Net & Diff-Fourier-Net+ & Diff-4xFourier-Net+\\		
+		\midrule
+		$\%$ Dice & $78.56 \pm 14.13$ & $77.88 \pm 13.81$ & $79.49 \pm 14.26$\\
+		$\%$ Dice* & $71.31 \pm 19.13$ & $70.19 \pm 18.82$ & $72.12 \pm 19.33$ \\
+		$\%$ SSIM & $91.79 \pm 3.38$ & $89.08 \pm 4.10$ & $89.62 \pm 3.98$\\
+		MSE (m) & $0.09 \pm 0.06$ & $0.16 \pm 0.13$ & $0.15 \pm 0.12$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.03 \pm 0.06$ & $0.00 \pm 0.00$ & $0.00 \pm 0.00$ \\
+		Time [s] 	  & 0.0082  & 0.0075 & 0.0203 \\
+		\midrule
+		Parameters    & 645,216 	& 380,470 	& 1,521,880 \\
+		Mult-Adds (G) & 1.12  	& 0.04  		& 0.18 \\
+		Memory [MB]   & 97.63   	& 5.81   	& 21.90 \\
+		\midrule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
+		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
 		\midrule
-		Dice & $0.77952 \pm 0.14708$ & $0.75345 \pm 0.14278$ & $0.76590 \pm 0.14837$\\
-		Dice* & $0.69962 \pm 0.21548$ & $0.64739 \pm 0.21117$ & $0.66815 \pm 0.21552$ \\
-		SSIM & $0.91345 \pm 0.03511$ & $0.88421 \pm 0.03940$ & $0.88599 \pm 0.04225$\\
-		MSE & $0.001000 \pm 0.000712$ & $0.002057 \pm 0.001536$ & $0.001916 \pm 0.001461$ \\
-		$|J|_{<0}\%$ & $0.3586 \pm 0.3822$ & $0.1308 \pm 0.3483$ & $0.0247 \pm 0.1199$ \\
+		$\%$ Dice & $77.95 \pm 14.71$ & $75.35 \pm 14.28$ & $76.59 \pm 14.84$\\
+		$\%$ Dice* & $69.96 \pm 21.55$ & $64.74 \pm 21.12$ & $66.82 \pm 21.55$ \\
+		$\%$ SSIM & $91.35 \pm 3.51$ & $88.42 \pm 3.94$ & $88.59 \pm 4.23$\\
+		MSE (m) & $1.00 \pm 0.71$ & $2.06 \pm 1.54$ & $1.92 \pm 1.46$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.36 \pm 0.38$ & $0.13 \pm 0.35$ & $0.03 \pm 0.12$ \\
 		Time [s] & 0.0145 & 0.0145 & 0.0335 \\
 		\midrule
 		 & Diff-Fourier-Net & Diff-Fourier-Net+ & Diff-4xFourier-Net+\\		
 		\midrule
-		Dice & $0.77933 \pm 0.14928$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$\\
-		Dice* & $0.69905 \pm 0.21999$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		SSIM & $0.91239 \pm 0.03555$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$\\
-		MSE & $0.000980 \pm 0.000674$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		$|J|_{<0}\%$ & $0.0090 \pm 0.0330$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		Time [s] & 0.0150 & - & - \\
+		$\%$ Dice & $77.93 \pm 14.93$ & $75.17 \pm 13.43$ & $78.20 \pm 14.01$\\
+		$\%$ Dice* & $69.91 \pm 21.99$ & $65.67 \pm 18.61$ & $69.61 \pm 19.11$ \\
+		$\%$ SSIM & $91.24 \pm 3.56$ & $87.81 \pm 3.94$ & $88.81 \pm 4.13$\\
+		MSE (m) & $0.98 \pm 0.67$ & $2.29 \pm 1.61$ & $1.85 \pm 1.41$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.01 \pm 0.03$ & $0.00 \pm 0.00$ & $0.00 \pm 0.00$ \\
+		Time [s] 	  & 0.0150  & 0.0207 & 0.0188 \\
 		\midrule
-		Parameters  & 434,519 & 75,429 & 301,716 \\
-		Mult-Adds  & 595.04  & 10.98  & 43.91 \\
-		Memory [MB] & 44.69   & 2.25   & 7.66 \\
+		Parameters    & 434,519 & 75,429 & 301,716 \\
+		Mult-Adds (M) & 595.04  & 10.98  & 43.91 \\
+		Memory [MB]   & 44.69   & 2.25   & 7.66 \\
 		\bottomrule
 	\end{tabular}	
 \end{table}
 
 
-\subsection{Starting Channel Size} \label{SubSec:StartingChannelsACDC}
-Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} and \emph{Fourier-Net+} were trained with four different channel sizes: $8$, $16$, $32$ and $64$. The first network variant was trained with early stopping, which ended at x epochs. For better comparability, the other network variants were also trained with the same number of epochs. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+ACDC}, The memory consumption as well as inference time on the GPU were calculated to extend the evaluation given by the other metrics.
+\subsection{Starting Channel Size} \label{SubSec:ResultsStartingChannelsACDC}
+Next, the impact of the starting channels was examined. For this, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were trained with four different channel sizes: $8$, $16$, $32$ and $64$. All network variants were trained for 6 epochs. The results can be seen in Table~\ref{tab:StartingChannelsFourierNet+ACDC}. The memory consumption as well as inference time on the GPU were calculated to extend the evaluation given by the other metrics.
 
 
-\begin{table}[htpb]
-	\scriptsize
+\begin{table}[h] %tpb
+	%\scriptsize
 	\centering
-	\caption{Results for different starting channel sizes of \emph{4xFourier-Net+} on the fully sampled \emph{ACDC} test data.}
+	\caption{Results for different starting channel sizes of \emph{Fourier-Net+} and \emph{4xFourier-Net+} on the fully sampled \emph{ACDC} test data.}
 	\label{tab:StartingChannelsFourierNet+ACDC}
 	\begin{tabular}{c c c c c} %
 		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{4}{c}{Starting Channels - Fourier-Net+} \\
+		\cline{2-5}
 		 & 8 & 16 & 32 & 64 \\		
 		\midrule
-		Dice & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		Dice* & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		SSIM & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		MSE & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		$|J|_{<0}\%$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		Time [s] 	& - & - & - & - \\
-		Parameters 	& - & - & - & - \\
-		Mult-Adds  	& - & - & - & - \\
-		Memory [MB] 	& - & - & - & - \\
+		$\%$ Dice & $75.50 \pm 13.79$ & $76.88 \pm 13.86$ & $77.66 \pm 13.60$ & $77.81 \pm 13.76$ \\
+		$\%$ Dice* & $65.70 \pm 18.96$ & $67.86 \pm 19.06$ & $68.95 \pm 18.65$ & $69.05 \pm 18.80$ \\
+		$\%$ SSIM & $88.05 \pm 3.89$ & $88.67 \pm 3.88$ & $88.83 \pm 3.83$ & $89.02 \pm 3.67$ \\
+		MSE (m) & $0.22 \pm 0.16$ & $0.20 \pm 0.15$ & $0.19 \pm 0.15$ & $0.19 \pm 0.15$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.07 \pm 0.25$ & $0.04 \pm 0.14$ & $0.01 \pm 0.04$ & $0.00 \pm 0.03$ \\
+		Time [s] 	  & 0.0072 & 0.0072 & 0.0080 & 0.0079 \\
+		Parameters 	  & 75,429 	& 300,477 	& 1,199,469 	& 4,793,037 \\
+		Mult-Adds (M) & 10.98 	& 42.89 		& 169.54 	& 674.10 \\
+		Memory [MB] 	  & 2.25 	& 4.64 		& 11.22 		& 31.57 \\
+		\midrule		
+		\multirow{2}{*}{Metrics} & \multicolumn{4}{c}{Starting Channels - 4xFourier-Net+} \\
+		\cline{2-5} 
+		 & 8 & 16 & 32 & 64 \\		
+		\midrule
+		$\%$ Dice & $77.54 \pm 13.73$ & $77.90 \pm 13.92$ & $78.33 \pm 14.14$ & $78.74 \pm 13.91$ \\
+		$\%$ Dice* & $68.52 \pm 18.62$ & $69.21 \pm 19.02$ & $69.99 \pm 19.21$ & $70.41 \pm 19.02$ \\
+		$\%$ SSIM & $88.70 \pm 4.17$ & $88.89 \pm 4.05$ & $89.08 \pm 4.01$ & $89.29 \pm 3.74$ \\
+		MSE (m) & $0.19 \pm 0.14$ & $0.19 \pm 0.14$ & $0.18 \pm 0.14$ & $0.18 \pm 0.14$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.02 \pm 0.07$ & $0.01 \pm 0.04$ & $0.01 \pm 0.05$ & $0.00 \pm 0.00$ \\
+		Time [s] 	  & 0.0301 	& 0.0244 	& 0.0297 	& 0.0277 \\
+		Parameters 	  & 301,716 	& 1,201,908 	& 4,797,876 	& 19,172,148 \\
+		Mult-Adds (G) & 0.04 	& 0.17 		& 0.68 		& 2.70 \\
+		Memory [MB] 	  & 7.66 	& 17.23 		& 43.56 		& 124.94 \\
 		\bottomrule
 	\end{tabular}	
 \end{table}
 
 
-\subsection{Fourier-Transform Crop Size} \label{SubSec:FTCropSize}
+\subsection{Fourier-Transform Crop Size} \label{SubSec:ResultsFTCropSize}
 As a parameter specific to \emph{Fourier-Net+} and \emph{4xFourier-Net+}, the impact of the FT crop size used for compressing the images was analyzed. Four different sizes of the FT crop were used for training: $80 \times 168$, $40 \times 84$, $48 \times 48$ and $24 \times 24$. The experiments were again only conducted on the fully sampled data and each network trained for 5 epochs. The results can be seen in Table~\ref{tab:FTCropSize}. Memory obviously decreases with smaller crop sizes for the same number of network parameters due to the smaller image size. However, the performance also decreases with crop size as seen with the Dice score, both with and without background labels. Jacoby determinants are small for all models and the inference times are very fast. It is notable that the SSIM and MSE metrics to not capture the deterioration of registration performance as well as the Dice score as the latter focuses more on the moving cardiac structure in the frames. To conclude, a balance between memory consumption and registration performance has to be found for \emph{4xFourier-Net+} as both apparently cannot be maximized at the same time.
 
 %\begin{table}[htpb]
@@ -813,7 +885,7 @@ As a parameter specific to \emph{Fourier-Net+} and \emph{4xFourier-Net+}, the im
 %	\label{tab:FTCropSize}
 %	\begin{tabular}{c c c c c c c c} %
 %		\hline
-%		FT Crop & Dice & Dice* & SSIM & MSE & $|J|_{<0}\%$ & Time [s] & Memory [MB]\\
+%		FT Crop & Dice & Dice* & SSIM & MSE & $\% \, |J_{\phi}|\leq0$ & Time [s] & Memory [MB]\\
 %		\hline
 %		% TODO: Werte aktualisieren!!		
 %		$80 \times 168$ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & $0.0448 \pm 0.1207$ & 0.0419 & -\\ 
@@ -824,109 +896,250 @@ As a parameter specific to \emph{Fourier-Net+} and \emph{4xFourier-Net+}, the im
 %	\end{tabular}
 %\end{table}
 
-\begin{table}[htpb]
-	\scriptsize
+\begin{table}[h] %tpb
+	%\scriptsize
 	\centering
-	\caption{Results for four different starting FT crop sizes in  \emph{4xFourier-Net+} examined on the fully sampled \emph{ACDC} test data.}
+	\caption{Results for four different FT crop sizes for \emph{Fourier-Net+} and \emph{4xFourier-Net+} examined on the fully sampled \emph{ACDC} test data.}
 	\label{tab:FTCropSize}
 	\begin{tabular}{c c c c c} %
 		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{4}{c}{FT crop size - Fourier-Net+} \\
+		\cline{2-5}
 		 & $80 \times 168$ & $40 \times 84$ & $48 \times 48$ & $24 \times 24$ \\		
 		\midrule
-		Dice & $0.78123 \pm 0.15005$ & $0.77491 \pm 0.14671$ & $0.74951 \pm 0.14152$ & $0.72583 \pm 0.14667$ \\
-		Dice* & $0.70083 \pm 0.21919$ & $0.68025 \pm 0.21565$ & $0.64535 \pm 0.20748$ & $0.61188 \pm 0.21633$ \\
-		SSIM & $0.89905 \pm 0.04007$ & $0.89029 \pm 0.03975$ & $0.87975 \pm 0.03941$ & $0.87023 \pm 0.03951$ \\
-		MSE & $0.001447 \pm 0.001108$ & $0.001805 \pm 0.001368$ & $0.002217 \pm 0.001612$ & $0.002644 \pm 0.001841$ \\
-		$|J|_{<0}\%$ & $0.1201 \pm 0.2271$ & $0.0246 \pm 0.1047$ & $0.0553 \pm 0.2325$ & $0.0170 \pm 0.1460$ \\
-		Time [s] 	& 0.0390  & 0.0301  & 0.0277  & 0.0289 \\
-		Parameters 	& 301,716 & 301,716 & 301,716 & 301,716 \\
-		Mult-Adds 	& 256.14  & 65.50   & 43.91   & 10.98 \\
-		Memory [MB] 	& 36.70   & 10.54   & 7.66    & 3.15 \\
+		$\%$ Dice & $78.24 \pm 14.43$ & $76.61 \pm 13.90$ & $75.27 \pm 13.49$ & $73.77 \pm 14.42$ \\
+		$\%$ Dice* & $70.66 \pm 19.70$ & $67.60 \pm 19.24$ & $65.48 \pm 18.76$ & $63.37 \pm 20.07$ \\
+		$\%$ SSIM & $89.81 \pm 4.09$ & $88.58 \pm 3.87$ & $87.98 \pm 3.91$ & $87.00 \pm 3.99$ \\
+		MSE (m) & $0.15 \pm 0.12$ & $0.20 \pm 0.15$ & $0.22 \pm 0.16$ & $0.27 \pm 0.19$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.22 \pm 0.46$ & $0.05 \pm 0.15$ & $0.09 \pm 0.25$ & $0.00 \pm 0.02$ \\		
+		Time [s] 	  & 0.0158 & 0.0077 & 0.0079 & 0.0081 \\
+		Parameters 	  & 75,429 & 75,429 & 75,429 & 75,429 \\
+		Mult-Adds (M) & 64.03  & 16.37  & 10.98  & 2.74 \\
+		Memory [MB] 	  & 9.51   & 2.97   & 2.25   & 1.12 \\
+		\midrule
+		\multirow{2}{*}{Metrics} & \multicolumn{4}{c}{FT crop size - 4xFourier-Net+} \\
+		\cline{2-5}
+		 & $80 \times 168$ & $40 \times 84$ & $48 \times 48$ & $24 \times 24$ \\		
+		\midrule
+		$\%$ Dice & $78.12 \pm 15.01$ & $77.49 \pm 14.67$ & $74.95 \pm 14.15$ & $72.58 \pm 14.67$ \\
+		$\%$ Dice* & $70.08 \pm 21.92$ & $68.03 \pm 21.57$ & $64.54 \pm 20.75$ & $61.19 \pm 21.63$ \\
+		$\%$ SSIM & $89.91 \pm 4.01$ & $89.03 \pm 3.98$ & $87.98 \pm 3.94$ & $87.02 \pm 3.95$ \\
+		MSE (m) & $1.45 \pm 1.11$ & $1.81 \pm 1.37$ & $2.22 \pm 1.61$ & $2.64 \pm 1.84$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.12 \pm 0.23$ & $0.03 \pm 0.15$ & $0.06 \pm 0.23$ & $0.02 \pm 0.15$ \\	
+%		Dice & $0.78123 \pm 0.15005$ & $0.77491 \pm 0.14671$ & $0.74951 \pm 0.14152$ & $0.72583 \pm 0.14667$ \\
+%		Dice* & $0.70083 \pm 0.21919$ & $0.68025 \pm 0.21565$ & $0.64535 \pm 0.20748$ & $0.61188 \pm 0.21633$ \\
+%		SSIM & $0.89905 \pm 0.04007$ & $0.89029 \pm 0.03975$ & $0.87975 \pm 0.03941$ & $0.87023 \pm 0.03951$ \\
+%		MSE & $0.001447 \pm 0.001108$ & $0.001805 \pm 0.001368$ & $0.002217 \pm 0.001612$ & $0.002644 \pm 0.001841$ \\
+%		$\% \, |J_{\phi}|\leq0$ & $0.1201 \pm 0.2271$ & $0.0246 \pm 0.1047$ & $0.0553 \pm 0.2325$ & $0.0170 \pm 0.1460$ \\
+		Time [s] 	 & 0.0390  & 0.0301  & 0.0277  & 0.0289 \\
+		Parameters 	 & 301,716 & 301,716 & 301,716 & 301,716 \\
+		Mult-Adds (M)& 256.14  & 65.50   & 43.91   & 10.98 \\
+		Memory [MB] 	 & 36.70   & 10.54   & 7.66    & 3.15 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-\subsection{Comparison with VoxelMorph} \label{SubSec:ComparisonVoxelMorph}
-Compare \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+}, both of the latter with a FT crop size of $48 \times 48$, to \emph{VoxelMorph}. For this different similarity metrics as well as the Dice score for all labels (DICE) and Dice score without the background (DICE*) were used on the fully sampled data. Inference time and memory consumption are also listed for all models as these should be consistent with the subsampled data. 
+\subsection{Comparison with VoxelMorph} \label{SubSec:ResultsComparisonVoxelMorph}
+Compare \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+}, both of the latter with a FT crop size of $48 \times 48$ and all networks with channel size 16, to \emph{VoxelMorph}. For this different similarity metrics as well as the Dice score for all labels (DICE) and Dice score without the background (DICE*) were used on the fully sampled data. Inference time and memory consumption are also listed for all models as these should be consistent with the subsampled data. 
 
-%\begin{table}[htpb]
-%	\tiny
-%	\centering
-%	\caption{Comparison of \emph{Fourier-Net+} and \emph{VoxelMorph} the fully sampled \emph{ACDC} test data.}
-%	\label{tab:FTCropSize}
-%	\begin{tabular}{c c c c c c c c} %
-%		\hline
-%		Model & Dice & Dice* & SSIM & MSE & $|J|_{<0}\%$ & Time [s] & Memory [MB]\\
-%		\hline
-%		Fourier-Net+ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & $0.0448 \pm 0.1207$ & 0.0419 & -\\ 
-%		VoxelMorph & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000xxx \pm 0.000xxx$ & $0.xxxx \pm 0.xxxx$ & - & -\\  
-%		\hline
-%	\end{tabular}
-%\end{table}
-
-\begin{table}[htpb]
-	\scriptsize
+\begin{table}[h] %tpb
+	%\scriptsize
 	\centering
-	\caption{Comparison of \emph{Fourier-Net+} and \emph{VoxelMorph} the fully sampled \emph{ACDC} test data.}
+	\caption{Comparison of \emph{Fourier-Net}, \emph{Fourier-Net+}, \emph{4xFourier-Net+} and \emph{VoxelMorph} with similarity metrics and memory consumption on the fully sampled \emph{ACDC} test data.}
 	\label{tab:CompareVoxelMorph}
 	\begin{tabular}{c c c c c} %
 		\toprule
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+ & VoxelMorph \\		
 		\midrule
-		Dice & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.75074 \pm 0.14293$ \\
-		Dice* & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.66543 \pm 0.21219$ \\
-		SSIM & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.92786 \pm 0.03405$ \\
-		MSE & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.000738 \pm 0.000527$ \\
-		$|J|_{<0}\%$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ & $0.xxxxx \pm 0.xxxxx$ \\
-		Time [s] 	& - 		 & - & - & 0.0161 \\
-		Parameters 	& 434,519 & 75,429 & 301,716 & 84,322 \\
-		Mult-Adds 	& 595.04  & 10.98  & 43.91   & 1.57 \\
-		Memory [MB] 	& 44.69   & 2.25   & 7.66    & 39.04 \\
+		$\%$ Dice & $78.31 \pm 13.96$ & $76.88 \pm 13.86$ & $77.90 \pm 13.92$ & $75.07 \pm 14.29$ \\
+		$\%$ Dice* & $71.17 \pm 18.99$ & $67.86 \pm 19.06$ & $69.21 \pm 19.02$ & $66.54 \pm 21.22$ \\
+		$\%$ SSIM & $91.53 \pm 3.49$ & $88.67 \pm 3.88$ & $88.89 \pm 4.05$ & $92.79 \pm 3.41$ \\
+		MSE (m) & $0.09 \pm 0.07$ & $0.20 \pm 0.15$ & $0.19 \pm 0.14$ & $0.74 \pm 0.53$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.44 \pm 0.45$ & $0.04 \pm 0.14$ & $0.01 \pm 0.04$ & $0.xx \pm 0.xx$ \\
+		Time [s] 	  & 0.0099    & 0.0071 	& 0.0244  	& 0.0161 \\
+		Parameters 	  & 1,735,447 & 300,477 	& 1,201,908 	& 84,322 \\
+		Mult-Adds (G) & 2.35      & 0.04289  & 0.17157  	& 0.00157 \\
+		Memory [MB] 	  & 90.08     & 4.64   	& 17.23    	& 39.04 \\
 		\bottomrule
 	\end{tabular}		
 \end{table}
 
 
-\subsection{Comparison on Subsampled Data} \label{SubSec:FinalComparison}
-Compare \emph{Fourier-Net+} to a baseline of the unaligned test image pairs as well as \emph{NiftyReg}, \emph{VoxelMorph} and \emph{LAPNet}.
+\begin{figure}[H] %tpb
+	\centering
+	\graphicspath{{images/}{\main/images/}}
+	\includegraphics[width=\linewidth]{Boxplot_DiceScores_FullySampled.png} 
+	\caption{Boxplot of the Dice scores for all models sorted by label (excluding the background) on the fully sampled \emph{ACDC} test data.}
+	\label{fig:Boxplot_DiceScores}
+\end{figure}
 
-\begin{table}[htpb]
-	\tiny
+
+\subsection{Dense Displacement on Accelerated Data} \label{SubSec:DenseDisplacementAcc}
+The difference between a dense displacement field and a band-limited one was already explored in section~\ref{SubSec:ResultsFourier-NetvsFourier-Net+ACDC}. However, the results in Table~\ref{tab:Fourier-NetvsFourier-Net+ACDC} only include fully sampled data, not accelerated data. The tests again included \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+}. Results for Acc4 data can be seen in Table~\ref{tab:DenseDisplacementAcc4}, for Acc8 data in Table~\ref{tab:DenseDisplacementAcc8} and for Acc10 in Table~\ref{tab:DenseDisplacementAcc10}. Out hypothesis that the dense displacements would perform worse compared to the band-limited ones on the accelerated data was...
+
+
+\begin{table}[h] %tpb
+	%\scriptsize
+	\centering
+	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} with both dense and band-limited displacement fields on the Acc4 \emph{ACDC} test data.}
+	\label{tab:DenseDisplacementAcc4}
+	\begin{tabular}{c c c c} %
+		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Dense Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
+		\midrule
+		$\%$ Dice & $67.84 \pm 14.07$ & $73.84 \pm 15.18$ & $72.83 \pm 15.64$\\
+		$\%$ Dice* & $56.14 \pm 18.45$ & $64.31 \pm 21.00$ & $63.19 \pm 21.59$ \\
+		$\%$ SSIM & $71.91 \pm 4.85$ & $77.58 \pm 10.64$ & $77.32 \pm 10.53$\\
+		MSE (m) & $0.28 \pm 0.12$ & $0.20 \pm 0.14$ & $0.21 \pm 0.15$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.37 \pm 0.37$ & $0.15 \pm 0.26$ & $0.15 \pm 0.27$ \\
+		Time [s] 	  & 0.0082  	& 0.0092 	& 0.0337  \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\midrule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
+		\midrule
+		$\%$ Dice & $72.30 \pm 14.04$ & $70.18 \pm 17.43$ & $70.36 \pm 16.63$\\
+		$\%$ Dice* & $61.87 \pm 19.32$ & $59.36 \pm 23.90$ & $59.47 \pm 22.80$ \\
+		$\%$ SSIM & $78.77 \pm 7.22$ & $75.78 \pm 10.63$ & $75.91 \pm 10.72$\\
+		MSE (m) & $0.16 \pm 0.10$ & $0.28 \pm 0.19$ & $0.27 \pm 0.19$ \\
+		$\% \, |J_{\phi}|\leq0$ & $ 0.46 \pm 0.54$ & $0.00 \pm 0.00$ & $0.00 \pm 0.00$ \\
+		Time [s] 	  & 0.0068  	& 0.0079 	& 0.0183  \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\bottomrule
+	\end{tabular}	
+\end{table}
+
+
+\begin{table}[h] %tpb
+	%\scriptsize
+	\centering
+	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} with both dense and band-limited displacement fields on the Acc8 \emph{ACDC} test data.}
+	\label{tab:DenseDisplacementAcc8}
+	\begin{tabular}{c c c c} %
+		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Dense Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
+		\midrule
+		$\%$ Dice & $69.12 \pm 14.05$ & $-$ & $-$\\
+		$\%$ Dice* & $57.99 \pm 18.66$ & $-$ & $-$ \\
+		$\%$ SSIM & $77.27 \pm 3.74$ & $-$ & $-$\\
+		MSE (m) & $0.21 \pm 0.10$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.47 \pm 0.30$ & $-$ & $-$ \\
+		Time [s] 	  & 0.0117  	&  	&   \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\midrule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
+		\midrule
+		$\%$ Dice & $66.07 \pm 13.72$ & $71.13 \pm 15.37$ & $73.13 \pm 15.26$\\
+		$\%$ Dice* & $53.76 \pm 17.03$ & $60.10 \pm 21.34$ & $62.61 \pm 21.39$ \\
+		$\%$ SSIM & $73.34 \pm 3.83$ & $84.02 \pm 4.36$ & $84.61 \pm 4.44$\\
+		MSE (m) & $0.26 \pm 0.09$ & $0.21 \pm 0.16$ & $0.19 \pm 0.15$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.78 \pm 0.37$ & $0.00 \pm 0.00$ & $0.01 \pm 0.04$ \\
+		Time [s] 	  & 0.0138 & 0.0133 & 0.0418  \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\bottomrule
+	\end{tabular}	
+\end{table}
+
+
+\begin{table}[h] %tpb
+	%\scriptsize
+	\centering
+	\caption{Results for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} with both dense and band-limited displacement fields on the Acc10 \emph{ACDC} test data.}
+	\label{tab:DenseDisplacementAcc10}
+	\begin{tabular}{c c c c} %
+		\toprule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Dense Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
+		\midrule
+		$\%$ Dice & $-$ & $-$ & $-$\\
+		$\%$ Dice* & $-$ & $-$ & $-$ \\
+		$\%$ SSIM & $-$ & $-$ & $-$\\
+		MSE (m) & $-$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $-$ & $-$ & $-$ \\
+		Time [s] 	  &   	&  	&   \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\midrule
+		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
+		\cline{2-4} 
+		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
+		\midrule
+		$\%$ Dice & $-$ & $-$ & $-$\\
+		$\%$ Dice* & $-$ & $-$ & $-$ \\
+		$\%$ SSIM & $-$ & $-$ & $-$\\
+		MSE (m) & $-$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $-$ & $-$ & $-$ \\
+		Time [s] 	  &   	&  	&   \\
+%		Parameters    &  	&   	&   \\
+%		Mult-Adds (G) &    	&    		&   \\
+%		Memory [MB]   &     	&     	&   \\
+		\bottomrule
+	\end{tabular}	
+\end{table}
+
+
+\subsection{Comparison on Subsampled Data} \label{SubSec:ResultsComparisonSubsampling}
+Compare \emph{Fourier-Net+} to a baseline of the unaligned test image pairs as well as \emph{NiftyReg}, \emph{VoxelMorph} and \emph{LAPNet}. All times are computed on CPU due to \emph{NiftyReg} only working on the CPU as the GPU capable versions were deprecated.
+
+\begin{table}[h] %tpb
+	%\tiny
+	%\scriptsize
 	\centering
 	\caption{Benchmark results for \emph{Fourier-Net+}, \emph{NiftiReg} and \emph{VoxelMorph} on the \emph{ACDC} test data.}
 	\label{tab:BenchmarkVoxelMorph}
 	\begin{tabular}{c c c c c c c} 
 		\toprule
-		\textbf{Sampling} & \textbf{Method} & \textbf{DICE} & \textbf{DICE*} & \textbf{SSIM} & \textbf{MSE} & \textbf{Time [s]} \\
+		 & Method & $\%$ DICE & $\%$ DICE* & $\%$ SSIM & MSE (m) & Time [s] \\
 		
 		\midrule
-		\multirow{4}{*}{Full} & Baseline & $0.70228 \pm 0.18693$  & $0.58909 \pm 0.26894$ & $0.86389 \pm 0.04082$ &  $0.003328 \pm 0.002272$ & -\\  
-		% TODO: Werte aktualisieren!!		
-		 & Fourier-Net+ & $0.78155 \pm 0.14885$ & $0.70131 \pm 0.21645$  & $0.89801 \pm 0.03926$ & $0.001495 \pm 0.001163$ & 0.0419\\  
-		 & NiftyReg & $0.70740 \pm 0.13772$  & $0.57556 \pm 0.18866$ & $0.91258 \pm 0.03184$ & $0.001939 \pm 0.001612$  & 20\\
-		 & VoxelMorph & $0.75074 \pm 0.14293$ & $0.66543 \pm 0.21219$ & $0.92786 \pm 0.03405$ & $0.000738 \pm 0.000527$  & 0.0161\\
-		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		\multirow{6}{*}{\rotatebox{90}{R=0}} & Baseline & $70.85 \pm 18.27$  & $60.35 \pm 25.24$ & $86.39 \pm 4.08$ &  $0.33 \pm 0.23$ & -\\  
+		 & NiftyReg & $70.74 \pm 13.77$  & $57.56 \pm 18.86$ & $91.26 \pm 3.18$ & $1.94 \pm 1.61$  & 20\\
+		 & VoxelMorph & $75.07 \pm 14.29$ & $66.54 \pm 21.22$ & $92.79 \pm 3.41$ & $0.74 \pm 0.53$  & 0.1845\\ 
+		 %& LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		 & Fourier-Net & $78.31 \pm 13.96$ & $71.17 \pm 18.99$  & $91.53 \pm 3.49$ & $0.09 \pm 0.07$ & 0.1918\\ 
+		 & Fourier-Net+ & $76.88 \pm 13.86$ & $67.86 \pm 19.06$  & $88.67 \pm 3.88$ & $0.20 \pm 0.15$ & 0.0893\\ 
+		 & 4xFourier-Net+ & $77.90 \pm 13.92$ & $69.21 \pm 19.02$  & $88.89 \pm 4.05$ & $0.19 \pm 0.14$ & 0.3262\\ 
+		 		
+		\midrule
+		\multirow{6}{*}{\rotatebox{90}{R=4}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $76.80 \pm 11.02$ & $0.28 \pm 0.19$ & -\\  
+		 & NiftyReg & $69.89 \pm 13.73$ & $56.47 \pm 17.86$ & $86.03 \pm 6.41$ & $0.15 \pm 0.14$ & 80.08 \\  
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ & 0.1858\\  	
+		 & Fourier-Net & $72.30 \pm 14.04$ & $61.87 \pm 19.32$ & $78.77 \pm 7.22$ & $0.16 \pm 0.10$ & 0.1890\\ 
+		 & Fourier-Net+ & $70.18 \pm 17.43$ & $59.36 \pm 23.90$ & $75.78 \pm 10.63$ & $0.28 \pm 0.19$ & 0.0935\\ 
+		 & 4xFourier-Net+ & $70.36 \pm 16.63$ & $59.47 \pm 22.80$ & $75.91 \pm 10.72$ & $0.27 \pm 0.19$ & 0.3462\\  
 		
 		\midrule
-		\multirow{4}{*}{Acc4} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		
-		\midrule
-		\multirow{4}{*}{Acc8} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		\midrule
-		
-		\multirow{4}{*}{Acc10} & Baseline & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & Fourier-Net+ & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ &  $0.xxxxx \pm 0.xxxxx$ & -\\  
-		 & NiftyReg & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & VoxelMorph & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
+		\multirow{6}{*}{\rotatebox{90}{R=8}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $85.35 \pm 4.43$ & $0.22 \pm 0.17$ & -\\  
+		 & NiftyReg & $70.04 \pm 13.42$ & $56.37 \pm 17.63$ & $91.07 \pm 2.80$ & $0.12 \pm 0.13$ & 88.36 \\
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ & 0.1725\\	
+		 & Fourier-Net & $66.07 \pm 13.72$ & $53.76 \pm 17.03$  & $73.34 \pm 3.83$ & $0.26 \pm 0.09$ & 0.2109\\ 
+		 & Fourier-Net+ & $71.13 \pm 15.37$ & $60.10 \pm 21.34$  & $84.02 \pm 4.36$ & $0.21 \pm 0.16$ & 0.1487\\ 
+		 & 4xFourier-Net+ & $73.13 \pm 15.26$ & $62.61 \pm 21.39$  & $84.61 \pm 4.44$ & $0.19 \pm 0.15$ & 0.5373\\ 
+		 	 		 		
+		\midrule		
+		\multirow{6}{*}{\rotatebox{90}{R=10}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $89.17 \pm 3.58$ & $0.20 \pm 0.17$ & -\\ 
+		 & NiftyReg & $70.40 \pm 13.34$ & $56.61 \pm 17.71$ & $93.47 \pm 2.37$ & $0.11 \pm 0.13$ & 47.44 \\
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ & \\	
+		 & Fourier-Net & $-$ & $-$  & $-$ & $-$ & \\ 
+		 & Fourier-Net+ & $-$ & $-$  & $-$ & $-$ & \\ 
+		 & 4xFourier-Net+ & $-$ & $-$  & $-$ & $-$ & \\ 
 		\bottomrule
 	\end{tabular}
 \end{table}
