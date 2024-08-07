@@ -1,26 +1,19 @@
 import numpy as np
 import torch
-import os
 from os import scandir, mkdir
 from os.path import join, basename, isdir
-import matplotlib.pyplot as plt
-import h5py
-import fastmri
 from fastmri.data import transforms as T
-import torch.nn.functional as F
 #from torchvision.utils import save_image # stopped working for some reason...
 from skimage.io import imsave
 from argparse import ArgumentParser
 import time
-from skimage.morphology import area_opening
-from skimage.util import img_as_ubyte
 from Functions import *
 import nibabel as nib
 from mri.operators import FFT
 
 parser = ArgumentParser()
 
-parser.add_argument("--mode", type=int, dest="mode", default='0',
+parser.add_argument("--mode", type=int, dest="mode", default='1',
                     help="choose mode: fully sampled (0) or 4x accelerated (1), 8x accelerated (2) and 10x accelerated (3)")
 opt = parser.parse_args()
 mode = opt.mode
@@ -149,24 +142,26 @@ for i, patient_path in enumerate(patients_folders):
                     
                     image = volume[:,:,slice]
                     image = np.array(255*image/image.max(), dtype='uint8')
-                    gt = np.array(segmentation[:,:,slice], dtype='uint8')
+                    gt    = np.array(segmentation[:,:,slice], dtype='uint8')
 
-                # manually subsample image for accelerated data
-                if mode != 0:
-                    # apply fft to get k-space
-                    k_space_fullysampled = torch.fft.fftn(torch.from_numpy(image))                             
-                    # apply mask for subsampling
-                    k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
-                    # use pySAP for reconstruction
-                    fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
-                    kspace_obs = fourier_op.op(image)
-                    # Zero order solution
-                    image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:] 
-                    image = np.array(image*255, dtype='uint8')   
+                    # manually subsample image for accelerated data
+                    if mode != 0:
+                        # turn image into a float tensor
+                        image = torch.from_numpy(image/255).float()
+                        # apply fft to get k-space
+                        k_space_fullysampled = torch.fft.fftn(image)                             
+                        # apply mask for subsampling
+                        k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
+                        # use pySAP for reconstruction
+                        fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
+                        kspace_obs = fourier_op.op(image)
+                        # Zero order solution
+                        image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:] 
+                        image = np.array(image*255, dtype='uint8')   
 
-                # save image to target dir as png and gt as nifti file
-                imsave(join(image_path, folder, subfolder) + '/Image_Frame' + frame + '.png', image, check_contrast=False) # + '_Slice' + str(slice)
-                imsave(join(image_path, folder, subfolder) + '/Segmentation_Frame' + frame + '.png', gt, check_contrast=False) # + '_Slice' + str(slice)
-                #nibabel.save(gt, join(image_path, folder, subfolder) + '/Segmentation_Frame' + str(basename(frame_path)[-2]))
+                    # save image to target dir as png and gt as nifti file
+                    imsave(join(image_path, folder, subfolder) + '/Image_Frame' + frame + '.png', image, check_contrast=False) # + '_Slice' + str(slice)
+                    imsave(join(image_path, folder, subfolder) + '/Segmentation_Frame' + frame + '.png', gt, check_contrast=False) # + '_Slice' + str(slice)
+                    #nibabel.save(gt, join(image_path, folder, subfolder) + '/Segmentation_Frame' + str(basename(frame_path)[-2]))
                 
 print('Finished generating image data on ', time.ctime())        
