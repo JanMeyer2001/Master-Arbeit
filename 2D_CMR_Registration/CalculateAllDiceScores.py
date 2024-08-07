@@ -20,6 +20,9 @@ parser.add_argument("--FT_size_x", type=int,
 parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
+parser.add_argument("--diffeo", type=int,
+                    dest="diffeo", default=0, 
+                    help="choose whether to use a diffeomorphic transform (1) or not (0)")
 parser.add_argument("--mode", type=int, dest="mode", default=0,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
@@ -27,6 +30,7 @@ opt = parser.parse_args()
 start_channel = opt.start_channel
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 mode = opt.mode
+diffeo = opt.diffeo
 
 dataset = 'ACDC'
 # load ACDC test data
@@ -43,9 +47,10 @@ model_voxelmorph              = VxmDense(inshape=input_shape, nb_unet_features=3
 model_f_net                   = Fourier_Net(2, 2, start_channel, 0).to(device)
 model_f_net_plus              = Fourier_Net_plus(2, 2, start_channel, 0, FT_size).to(device) 
 model_f_net_plus_cascade      = Cascade(2, 2, start_channel, 0, FT_size).to(device)
-model_f_net_diff              = Fourier_Net(2, 2, start_channel, 1).to(device)
-model_f_net_plus_diff         = Fourier_Net_plus(2, 2, start_channel, 1, FT_size).to(device) 
-model_f_net_plus_cascade_diff = Cascade(2, 2, start_channel, 1, FT_size).to(device)
+if diffeo == 1:
+    model_f_net_diff              = Fourier_Net(2, 2, start_channel, 1).to(device)
+    model_f_net_plus_diff         = Fourier_Net_plus(2, 2, start_channel, 1, FT_size).to(device) 
+    model_f_net_plus_cascade_diff = Cascade(2, 2, start_channel, 1, FT_size).to(device)
 
 # load different models
 path_voxelmorph      = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,0,0.01,0.0001,mode) # for voxelmorph 0 is MSE loss
@@ -68,20 +73,21 @@ modelpath_f_net_plus_cascade = path_f_net_plus_cascade + natsorted(listdir(path_
 model_f_net_plus_cascade.load_state_dict(torch.load(modelpath_f_net_plus_cascade))
 model_f_net_plus_cascade.eval()
 
-path_f_net_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net_diff = path_f_net_diff + natsorted(listdir(path_f_net_diff))[-1]
-model_f_net_diff.load_state_dict(torch.load(modelpath_f_net_diff))
-model_f_net_diff.eval()
+if diffeo == 1:
+    path_f_net_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    modelpath_f_net_diff = path_f_net_diff + natsorted(listdir(path_f_net_diff))[-1]
+    model_f_net_diff.load_state_dict(torch.load(modelpath_f_net_diff))
+    model_f_net_diff.eval()
 
-path_f_net_plus_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net_plus_diff = path_f_net_plus_diff + natsorted(listdir(path_f_net_plus_diff))[-1]
-model_f_net_plus_diff.load_state_dict(torch.load(modelpath_f_net_plus_diff))
-model_f_net_plus_diff.eval()
+    path_f_net_plus_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    modelpath_f_net_plus_diff = path_f_net_plus_diff + natsorted(listdir(path_f_net_plus_diff))[-1]
+    model_f_net_plus_diff.load_state_dict(torch.load(modelpath_f_net_plus_diff))
+    model_f_net_plus_diff.eval()
 
-path_f_net_plus_cascade_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net_plus_cascade_diff = path_f_net_plus_cascade_diff + natsorted(listdir(path_f_net_plus_cascade_diff))[-1]
-model_f_net_plus_cascade_diff.load_state_dict(torch.load(modelpath_f_net_plus_cascade_diff))
-model_f_net_plus_cascade_diff.eval()
+    path_f_net_plus_cascade_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    modelpath_f_net_plus_cascade_diff = path_f_net_plus_cascade_diff + natsorted(listdir(path_f_net_plus_cascade_diff))[-1]
+    model_f_net_plus_cascade_diff.load_state_dict(torch.load(modelpath_f_net_plus_cascade_diff))
+    model_f_net_plus_cascade_diff.eval()
 
 csv_name = './TestResults-{}/DiceScores_Mode_{}.csv'.format(dataset,mode)
 
@@ -92,9 +98,10 @@ dices_voxelmorph              = np.zeros((4,224))
 dices_f_net                   = np.zeros((4,224))
 dices_f_net_plus              = np.zeros((4,224))
 dices_f_net_plus_cascade      = np.zeros((4,224))
-dices_f_net_diff              = np.zeros((4,224))
-dices_f_net_plus_diff         = np.zeros((4,224))
-dices_f_net_plus_cascade_diff = np.zeros((4,224))
+if diffeo == 1:
+    dices_f_net_diff              = np.zeros((4,224))
+    dices_f_net_plus_diff         = np.zeros((4,224))
+    dices_f_net_plus_cascade_diff = np.zeros((4,224))
         
 
 for i, image_pairs in enumerate(test_generator): 
@@ -108,17 +115,19 @@ for i, image_pairs in enumerate(test_generator):
         V_f_net                               = model_f_net(moving_image,fixed_image)
         V_f_net_plus                          = model_f_net_plus(moving_image,fixed_image)
         V_f_net_plus_cascade                  = model_f_net_plus_cascade(moving_image,fixed_image)
-        V_f_net_diff                          = model_f_net(moving_image,fixed_image)
-        V_f_net_plus_diff                     = model_f_net_plus(moving_image,fixed_image)
-        V_f_net_plus_cascade_diff             = model_f_net_plus_cascade(moving_image,fixed_image)
+        if diffeo == 1:
+            V_f_net_diff                          = model_f_net(moving_image,fixed_image)
+            V_f_net_plus_diff                     = model_f_net_plus(moving_image,fixed_image)
+            V_f_net_plus_cascade_diff             = model_f_net_plus_cascade(moving_image,fixed_image)
         
         warped_seg_voxelmorph                  = transform_voxelmorph(moving_seg, V_voxelmorph) #.permute(0, 2, 3, 1), mod = 'nearest'
         __, warped_seg_f_net                   = transform(moving_seg, V_f_net.permute(0, 2, 3, 1), mod = 'nearest')
         __, warped_seg_f_net_plus              = transform(moving_seg, V_f_net_plus.permute(0, 2, 3, 1), mod = 'nearest')
         __, warped_seg_f_net_plus_cascade      = transform(moving_seg, V_f_net_plus_cascade.permute(0, 2, 3, 1), mod = 'nearest')
-        __, warped_seg_f_net_diff              = transform(moving_seg, V_f_net_diff.permute(0, 2, 3, 1), mod = 'nearest')
-        __, warped_seg_f_net_plus_diff         = transform(moving_seg, V_f_net_plus_diff.permute(0, 2, 3, 1), mod = 'nearest')
-        __, warped_seg_f_net_plus_cascade_diff = transform(moving_seg, V_f_net_plus_cascade_diff.permute(0, 2, 3, 1), mod = 'nearest')
+        if diffeo == 1:
+            __, warped_seg_f_net_diff              = transform(moving_seg, V_f_net_diff.permute(0, 2, 3, 1), mod = 'nearest')
+            __, warped_seg_f_net_plus_diff         = transform(moving_seg, V_f_net_plus_diff.permute(0, 2, 3, 1), mod = 'nearest')
+            __, warped_seg_f_net_plus_cascade_diff = transform(moving_seg, V_f_net_plus_cascade_diff.permute(0, 2, 3, 1), mod = 'nearest')
 
         # calculate Dices
         dices_baseline[:,i]                = dice_ACDC(moving_seg[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
@@ -126,9 +135,10 @@ for i, image_pairs in enumerate(test_generator):
         dices_f_net[:,i]                   = dice_ACDC(warped_seg_f_net[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
         dices_f_net_plus[:,i]              = dice_ACDC(warped_seg_f_net_plus[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
         dices_f_net_plus_cascade[:,i]      = dice_ACDC(warped_seg_f_net_plus_cascade[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
-        dices_f_net_diff[:,i]              = dice_ACDC(warped_seg_f_net_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
-        dices_f_net_plus_diff[:,i]         = dice_ACDC(warped_seg_f_net_plus_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
-        dices_f_net_plus_cascade_diff[:,i] = dice_ACDC(warped_seg_f_net_plus_cascade_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
+        if diffeo == 1:
+            dices_f_net_diff[:,i]              = dice_ACDC(warped_seg_f_net_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
+            dices_f_net_plus_diff[:,i]         = dice_ACDC(warped_seg_f_net_plus_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
+            dices_f_net_plus_cascade_diff[:,i] = dice_ACDC(warped_seg_f_net_plus_cascade_diff[0,0,:,:].cpu().numpy(),fixed_seg[0,0,:,:].cpu().numpy())
 
 # path to NiftyReg images        
 path = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/Nifti_FullySampled'
@@ -182,19 +192,20 @@ with f:
     writer.writerow(dices_f_net_plus_cascade[1,:])
     writer.writerow(dices_f_net_plus_cascade[2,:])
     writer.writerow(dices_f_net_plus_cascade[3,:])       
-    # then Diff-Fourier-Net
-    writer.writerow(dices_f_net_diff[0,:]) 
-    writer.writerow(dices_f_net_diff[1,:])
-    writer.writerow(dices_f_net_diff[2,:])
-    writer.writerow(dices_f_net_diff[3,:])          
-    # then Diff-Fourier-Net+Diff
-    writer.writerow(dices_f_net_plus_diff[0,:]) 
-    writer.writerow(dices_f_net_plus_diff[1,:])
-    writer.writerow(dices_f_net_plus_diff[2,:])
-    writer.writerow(dices_f_net_plus_diff[3,:])             
-    # then Diff-4xCascaded Fourier-Net+
-    writer.writerow(dices_f_net_plus_cascade_diff[0,:]) 
-    writer.writerow(dices_f_net_plus_cascade_diff[1,:])
-    writer.writerow(dices_f_net_plus_cascade_diff[2,:])
-    writer.writerow(dices_f_net_plus_cascade_diff[3,:])       
+    if diffeo == 1:
+        # then Diff-Fourier-Net
+        writer.writerow(dices_f_net_diff[0,:]) 
+        writer.writerow(dices_f_net_diff[1,:])
+        writer.writerow(dices_f_net_diff[2,:])
+        writer.writerow(dices_f_net_diff[3,:])          
+        # then Diff-Fourier-Net+Diff
+        writer.writerow(dices_f_net_plus_diff[0,:]) 
+        writer.writerow(dices_f_net_plus_diff[1,:])
+        writer.writerow(dices_f_net_plus_diff[2,:])
+        writer.writerow(dices_f_net_plus_diff[3,:])             
+        # then Diff-4xCascaded Fourier-Net+
+        writer.writerow(dices_f_net_plus_cascade_diff[0,:]) 
+        writer.writerow(dices_f_net_plus_cascade_diff[1,:])
+        writer.writerow(dices_f_net_plus_cascade_diff[2,:])
+        writer.writerow(dices_f_net_plus_cascade_diff[3,:])       
     
