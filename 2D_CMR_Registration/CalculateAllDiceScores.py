@@ -23,6 +23,9 @@ parser.add_argument("--FT_size_y", type=int,
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
                     help="choose whether to use a diffeomorphic transform (1) or not (0)")
+parser.add_argument("--domain_sim", type=int,
+                    dest="domain_sim", default=0,
+                    help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 parser.add_argument("--mode", type=int, dest="mode", default=0,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
@@ -31,6 +34,7 @@ start_channel = opt.start_channel
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 mode = opt.mode
 diffeo = opt.diffeo
+domain_sim = opt.domain_sim
 
 dataset = 'ACDC'
 # load ACDC test data
@@ -58,33 +62,36 @@ modelpath_voxelmorph = path_voxelmorph + natsorted(listdir(path_voxelmorph))[-1]
 model_voxelmorph.load_state_dict(torch.load(modelpath_voxelmorph))
 model_voxelmorph.eval()
 
-path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net = path_f_net + natsorted(listdir(path_f_net))[-1]
+path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,0,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
+#modelpath_f_net = path_f_net + natsorted(listdir(path_f_net))[-1]
+modelpath_f_net = [f.path for f in scandir(path_f_net) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
 model_f_net.load_state_dict(torch.load(modelpath_f_net))
 model_f_net.eval()
 
-path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net_plus = path_f_net_plus + natsorted(listdir(path_f_net_plus))[-1]
+path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,1,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
+#modelpath_f_net_plus = path_f_net_plus + natsorted(listdir(path_f_net_plus))[-1]
+modelpath_f_net_plus = [f.path for f in scandir(path_f_net_plus) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
 model_f_net_plus.load_state_dict(torch.load(modelpath_f_net_plus))
 model_f_net_plus.eval()
 
-path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
-modelpath_f_net_plus_cascade = path_f_net_plus_cascade + natsorted(listdir(path_f_net_plus_cascade))[-1]
+path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,2,0,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
+#modelpath_f_net_plus_cascade = path_f_net_plus_cascade + natsorted(listdir(path_f_net_plus_cascade))[-1]
+modelpath_f_net_plus_cascade = [f.path for f in scandir(path_f_net_plus_cascade) if f.is_file() and not (f.name.find('Epoch_0004') == -1)][0]
 model_f_net_plus_cascade.load_state_dict(torch.load(modelpath_f_net_plus_cascade))
 model_f_net_plus_cascade.eval()
 
 if diffeo == 1:
-    path_f_net_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    path_f_net_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,0,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
     modelpath_f_net_diff = path_f_net_diff + natsorted(listdir(path_f_net_diff))[-1]
     model_f_net_diff.load_state_dict(torch.load(modelpath_f_net_diff))
     model_f_net_diff.eval()
 
-    path_f_net_plus_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    path_f_net_plus_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,1,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
     modelpath_f_net_plus_diff = path_f_net_plus_diff + natsorted(listdir(path_f_net_plus_diff))[-1]
     model_f_net_plus_diff.load_state_dict(torch.load(modelpath_f_net_plus_diff))
     model_f_net_plus_diff.eval()
 
-    path_f_net_plus_cascade_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
+    path_f_net_plus_cascade_diff      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,2,1,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode,domain_sim)
     modelpath_f_net_plus_cascade_diff = path_f_net_plus_cascade_diff + natsorted(listdir(path_f_net_plus_cascade_diff))[-1]
     model_f_net_plus_cascade_diff.load_state_dict(torch.load(modelpath_f_net_plus_cascade_diff))
     model_f_net_plus_cascade_diff.eval()

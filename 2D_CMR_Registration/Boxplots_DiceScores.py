@@ -9,32 +9,24 @@ import warnings
 warnings.filterwarnings("ignore")
 
 parser = ArgumentParser()
-parser.add_argument("--start_channel", type=int, dest="start_channel", default=8,
-                    help="number of start channels")
-parser.add_argument("--FT_size_x", type=int,
-                    dest="FT_size_x", default=24,
-                    help="choose size x of FT crop: Should be smaller than 40.")
-parser.add_argument("--FT_size_y", type=int,
-                    dest="FT_size_y", default=24,
-                    help="choose size y of FT crop: Should be smaller than 84.")
+parser.add_argument("--diffeo", type=int,
+                    dest="diffeo", default=0, 
+                    help="choose whether to use a diffeomorphic transform (1) or not (0)")
 parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 opt = parser.parse_args()
 
-start_channel = opt.start_channel
-FT_size = [opt.FT_size_x,opt.FT_size_y]
 mode = opt.mode
+diffeo = opt.diffeo
 
 dataset = 'ACDC'
-input_shape = [216,256]
-diffeo = 0
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-transform = SpatialTransform().to(device)
-transform_voxelmorph = SpatialTransformer(input_shape, mode = 'nearest').to(device)
 csv_name = './TestResults-{}/DiceScores_Mode_{}.csv'.format(dataset,mode)
 
 # init Dice score 6 methods (9 with Diff-versions), 4 labels and 224 data points
-DICE_test = np.zeros([6,4,224]) #9
+if diffeo == 1:
+    DICE_test = np.zeros([9,4,224])
+else:
+    DICE_test = np.zeros([6,4,224])    
 
 # get data for the models
 with open(csv_name,'r') as csvfile: 
@@ -47,12 +39,19 @@ with open(csv_name,'r') as csvfile:
 
 # create labels for the x axis
 labels = ['RV Cavity', 'Myocardium', 'LV Cavity'] #'Background', 
-# create legend 
-legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+'] #,'Diff-Fourier-Net','Diff-Fourier-Net+','Diff-4xFourier-Net+'
+
+# create legend and init offsets so that plots do not overlap
+if diffeo == 1:
+    legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+','Diff-Fourier-Net','Diff-Fourier-Net+','Diff-4xFourier-Net+']
+    offsets = np.arange(start=-0.9,stop=0.9,step=1.8/DICE_test.shape[0])
+    width = 0.175
+else:
+    legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+']    
+    offsets = np.arange(start=-0.75,stop=0.75,step=1.5/DICE_test.shape[0])
+    width = 0.19
+
 # create path to save the boxplot to
 save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_FullySampled.png'
-# init offsets so that plots do not overlap
-offsets = np.arange(start=-0.9,stop=0.9,step=1.8/DICE_test.shape[0])
-#print('offsets: ',offsets)
+
 # create boxplot for Dice scores (without background)
-create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(10, 6), offsets=offsets, width=0.175)
+create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(10, 6), offsets=offsets, width=width)

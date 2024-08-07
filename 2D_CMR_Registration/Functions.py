@@ -801,7 +801,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             #wandb.log_model(path=model_dir, name=modelname)
 
             # save image
-            sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
+            sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch+1))
             save_flow(mov_img, fix_img, warped_mov_img, grid.permute(0, 3, 1, 2), sample_path)
             if dataset == 'CMRxRecon':
                 print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))
@@ -810,7 +810,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 
             if earlyStop:    
                 # stop training if metrics stop improving for three epochs (only on the first run)
-                if counter_earlyStopping == 3:
+                if counter_earlyStopping == 5:
                     epochs = epoch+1      # save number of epochs for other runs
                     break
                 
@@ -1059,8 +1059,8 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         plt.plot([], c=color[i], label=legend[i])
     
     plt.legend()
-    plt.xticks(range(0, len(labels) * 2, 2), labels)
-    plt.xlim(-2, len(labels)*2)
+    plt.xticks(range(0, len(labels)*2, 2), labels)
+    plt.xlim(-1.5, len(labels)*1.65)
     plt.tight_layout()
     
     if title is not None:
