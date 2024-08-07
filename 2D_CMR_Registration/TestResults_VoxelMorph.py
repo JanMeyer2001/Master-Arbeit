@@ -18,9 +18,6 @@ parser.add_argument("--learning_rate", type=float,
 parser.add_argument("--lambda", type=float,
                     dest="smth_lambda", default=0.01,
                     help="lambda loss: suggested range 0.1 to 10")
-parser.add_argument("--start_channel", type=int,
-                    dest="start_channel", default=8,
-                    help="number of start channels")
 parser.add_argument("--dataset", type=str, 
                     dest="dataset", default="ACDC",
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
@@ -31,8 +28,7 @@ parser.add_argument("--mode", type=int, dest="mode", default='0',
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
-start_channel = opt.start_channel
-smth_lambda = opt.smth_lambda
+smooth = opt.smth_lambda
 dataset = opt.dataset
 choose_loss = opt.choose_loss
 mode = opt.mode
@@ -58,11 +54,19 @@ input_shape = test_set.__getitem__(0)[0].shape[1:3]
 model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda()  #, int_steps=7, int_downsize=2
 transform = SpatialTransformer(input_shape, mode = 'nearest').cuda()
 
-path = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smth_lambda,learning_rate,mode)
+path = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smooth,learning_rate,mode)
+
+"""
+# choose best model
 model_idx = -1
 from natsort import natsorted
 print('Best model: {}'.format(natsorted(os.listdir(path))[model_idx]))
 modelpath = path + natsorted(os.listdir(path))[model_idx]
+"""
+
+# choose model after certain epoch of training
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0004') == -1)][0]
+print('Best model: {}'.format(basename(modelpath)))
 bs = 1
 
 torch.backends.cudnn.benchmark = True
@@ -78,7 +82,7 @@ if dataset != 'CMRxRecon':
     Dice_test_full = []
     Dice_test_noBackground = []
 
-csv_name = './TestResults-{}/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,choose_loss,smth_lambda,learning_rate,mode)
+csv_name = './TestResults-{}/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,choose_loss,smooth,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -184,8 +188,8 @@ with f:
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
 
 if dataset == 'CMRxRecon':
-    print('Mean inference time: {:.4f} seconds\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
 elif dataset == 'OASIS':
-    print('Mean inference time: {:.4f} seconds\n     DICE: {:.5f} +- {:.5f}\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % DICE: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
 elif dataset == 'ACDC':
-    print('Mean inference time: {:.4f} seconds\n     DICE full: {:.5f} +- {:.5f}\n     DICE no background: {:.5f} +- {:.5f}\n     SSIM: {:.5f} +- {:.5f}\n     MSE: {:.6f} +- {:.6f}\n     DetJ<0 %: {:.4f} +- {:.4f}'.format(mean_time, mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE, mean_NegJ, std_NegJ))
+    print('Mean inference time: {:.4f} seconds\n     % DICE full: {:.2f} \\pm {:.2f}\n     % DICE no background: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))

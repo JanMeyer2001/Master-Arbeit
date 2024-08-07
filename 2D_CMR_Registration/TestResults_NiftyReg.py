@@ -79,7 +79,7 @@ with f:
 image_pairs = [basename(f.path) for f in scandir(path) if f.is_dir() and f.name.startswith('ImagePair')]
 
 for image_pair in image_pairs:
-    if mode == 0:
+    if mode == 0 or dataset != 'CMRxRecon':
         # read in images from folder 
         warped_img  = nibabel.load(join(path, image_pair, 'WarpedImage.nii'))
         fix_img     = nibabel.load(join(path, image_pair, 'FixedImage.nii'))
@@ -126,11 +126,11 @@ for image_pair in image_pairs:
     with f:
         writer = csv.writer(f)
         if dataset == 'CMRxRecon':
-            writer.writerow([image_pair[-1], csv_SSIM, csv_MSE, '-', '-'])  
+            writer.writerow([image_pair[-3:-1], csv_SSIM, csv_MSE, '-', '-'])  
         elif dataset == 'OASIS':
-            writer.writerow([image_pair[-1], csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-']) 
+            writer.writerow([image_pair[-3:-1], csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-']) 
         elif dataset == 'ACDC':    
-            writer.writerow([image_pair[-1], csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-']) 
+            writer.writerow([image_pair[-3:-1], csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-']) 
 
 mean_MSE = np.mean(MSE_test)
 std_MSE = np.std(MSE_test)
@@ -158,8 +158,8 @@ with f:
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE])
 
 if dataset == 'CMRxRecon':
-    print('SSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+    print('% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'OASIS':
-    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+    print('% DICE: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'ACDC':
-    print('DICE full: {:.5f} +- {:.5f}\nDICE no background: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}\n'.format(mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+    print('% DICE full: {:.2f} \\pm {:.2f}\n% DICE no background: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))

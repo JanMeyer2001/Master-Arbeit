@@ -95,9 +95,9 @@ for i, image_pairs in enumerate(test_generator):
             if dataset == 'CMRxRecon':
                 writer.writerow([i, csv_SSIM, csv_MSE, '-', '-']) 
             elif dataset == 'OASIS':
-                writer.writerow([i, csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-']) 
+                writer.writerow([i, csv_Dice_full, csv_SSIM, csv_MSE,'-', '-', '-']) 
             elif dataset == 'ACDC':    
-                writer.writerow([i, csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-'])  
+                writer.writerow([i, csv_Dice_full, csv_Dice_noBackground, csv_SSIM, csv_MSE, '-', '-', '-', '-'])  
 
 mean_MSE = np.mean(MSE_Test)
 std_MSE = np.std(MSE_Test)
@@ -125,8 +125,8 @@ with f:
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE])  
 
 if dataset == 'CMRxRecon':
-    print('SSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_SSIM,std_SSIM,mean_MSE,std_MSE))
+    print('% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'OASIS':
-    print('DICE: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}\n'.format(mean_Dice_full, std_Dice_full, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+    print('% DICE: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'ACDC':
-    print('DICE full: {:.5f} +- {:.5f}\nDICE no background: {:.5f} +- {:.5f}\nSSIM: {:.5f} +- {:.5f}\nMSE: {:.6f} +- {:.6f}'.format(mean_Dice_full, std_Dice_full, mean_Dice_noBackground, std_Dice_noBackground, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+    print('% DICE full: {:.2f} \\pm {:.2f}\n% DICE no background: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
