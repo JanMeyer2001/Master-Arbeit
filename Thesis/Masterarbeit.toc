@@ -13,58 +13,60 @@
 \contentsline {section}{\numberline {1.3}Structure of the Thesis}{2}{section.1.3}%
 \contentsline {chapter}{\numberline {2}Basics}{3}{chapter.2}%
 \contentsline {section}{\numberline {2.1}Magnetic Resonance Imaging}{3}{section.2.1}%
+\contentsline {subsection}{Imaging Acceleration}{3}{section*.2}%
 \contentsline {section}{\numberline {2.2}Image Registration}{3}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Deep Learning Architectures}{4}{section.2.3}%
-\contentsline {subsection}{Convolutional Neural Networks}{5}{section*.2}%
-\contentsline {subsection}{U-Net}{5}{section*.3}%
-\contentsline {subsection}{Autoencoders}{5}{section*.4}%
-\contentsline {subsection}{Generative Adversarial Networks}{6}{section*.5}%
+\contentsline {section}{\numberline {2.3}Deep Learning Architectures}{5}{section.2.3}%
+\contentsline {subsection}{Convolutional Neural Networks}{5}{section*.3}%
+\contentsline {subsection}{U-Net}{5}{section*.4}%
+\contentsline {subsection}{Autoencoders}{6}{section*.5}%
+\contentsline {subsection}{Generative Adversarial Networks}{6}{section*.6}%
 \contentsline {section}{\numberline {2.4}Deep Learning for Image Registration}{6}{section.2.4}%
-\contentsline {subsection}{Supervised Registration}{6}{section*.6}%
-\contentsline {subsection}{Unsupervised Registration}{7}{section*.7}%
-\contentsline {section}{\numberline {2.5}MRI Motion Reconstruction}{7}{section.2.5}%
-\contentsline {chapter}{\numberline {3}Data}{9}{chapter.3}%
-\contentsline {section}{\numberline {3.1}OASIS}{9}{section.3.1}%
-\contentsline {section}{\numberline {3.2}CMRxRecon}{9}{section.3.2}%
-\contentsline {subsection}{Image Reconstruction}{10}{section*.9}%
-\contentsline {subsection}{Pre-Processing}{11}{section*.12}%
-\contentsline {section}{\numberline {3.3}ACDC}{12}{section.3.3}%
-\contentsline {chapter}{\numberline {4}Network Architectures}{14}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Fourier-Net}{14}{section.4.1}%
-\contentsline {subsection}{Encoder}{14}{section*.16}%
-\contentsline {subsection}{Decoder}{17}{section*.18}%
-\contentsline {subsection}{Diffeomorphic Transforms}{18}{section*.20}%
-\contentsline {subsection}{Spatial Transformer}{19}{section*.21}%
-\contentsline {subsection}{Loss Function}{20}{section*.23}%
-\contentsline {section}{\numberline {4.2}Fourier Net+}{21}{section.4.2}%
-\contentsline {subsection}{Changes to the Encoder}{21}{section*.25}%
-\contentsline {subsection}{Effects of Cascading}{22}{section*.28}%
-\contentsline {chapter}{\numberline {5}Experiments}{24}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Parameter Studies on the CMRxRecon Dataset}{24}{section.5.1}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{24}{section*.30}%
-\contentsline {subsection}{Starting Channel Size}{25}{section*.31}%
-\contentsline {subsection}{Quantitative Comparison with NiftyReg}{25}{section*.32}%
-\contentsline {section}{\numberline {5.2}Parameter Tests on the ACDC Dataset}{25}{section.5.2}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{25}{section*.33}%
-\contentsline {subsection}{Starting Channel Size}{26}{section*.34}%
-\contentsline {subsection}{Fourier-Transform Crop Size}{26}{section*.35}%
-\contentsline {subsection}{Comparison with VoxelMorph}{27}{section*.36}%
-\contentsline {subsection}{Dense Displacement on Accelerated Data}{27}{section*.37}%
-\contentsline {subsection}{Comparison on Subsampled Data}{27}{section*.38}%
-\contentsline {section}{\numberline {5.3}Data Consistency Experiments}{28}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{28}{section.5.4}%
-\contentsline {subsection}{General Reconstruction Pipeline}{29}{section*.39}%
-\contentsline {chapter}{\numberline {6}Results and Discussion}{30}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Parameter Studies on the CMRxRecon Dataset}{30}{section.6.1}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{30}{section*.41}%
-\contentsline {subsection}{Starting Channel Size}{31}{section*.43}%
-\contentsline {subsection}{Quantitative Comparison with NiftyReg}{31}{section*.45}%
-\contentsline {section}{\numberline {6.2}Further Tests on the ACDC Dataset}{32}{section.6.2}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{32}{section*.48}%
-\contentsline {subsection}{Starting Channel Size}{34}{section*.50}%
-\contentsline {subsection}{Fourier-Transform Crop Size}{34}{section*.52}%
-\contentsline {subsection}{Comparison with VoxelMorph}{35}{section*.54}%
-\contentsline {subsection}{Dense Displacement on Accelerated Data}{36}{section*.57}%
-\contentsline {subsection}{Comparison on Subsampled Data}{37}{section*.61}%
-\contentsline {chapter}{\numberline {7}Conclusion}{40}{chapter.7}%
-\contentsline {chapter}{Bibliography}{41}{chapter*.63}%
+\contentsline {subsection}{Supervised Registration}{7}{section*.7}%
+\contentsline {subsection}{Unsupervised Registration}{7}{section*.9}%
+\contentsline {subsection}{Evaluation Metrics}{8}{section*.12}%
+\contentsline {section}{\numberline {2.5}MRI Motion Reconstruction}{9}{section.2.5}%
+\contentsline {chapter}{\numberline {3}Data}{11}{chapter.3}%
+\contentsline {section}{\numberline {3.1}OASIS}{11}{section.3.1}%
+\contentsline {section}{\numberline {3.2}CMRxRecon}{11}{section.3.2}%
+\contentsline {subsection}{Image Reconstruction}{12}{section*.14}%
+\contentsline {subsection}{Pre-Processing}{13}{section*.17}%
+\contentsline {section}{\numberline {3.3}ACDC}{14}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Network Architectures}{16}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Fourier-Net}{16}{section.4.1}%
+\contentsline {subsection}{Encoder}{16}{section*.21}%
+\contentsline {subsection}{Decoder}{19}{section*.23}%
+\contentsline {subsection}{Diffeomorphic Transforms}{20}{section*.25}%
+\contentsline {subsection}{Spatial Transformer}{21}{section*.26}%
+\contentsline {subsection}{Loss Function}{22}{section*.28}%
+\contentsline {section}{\numberline {4.2}Fourier Net+}{23}{section.4.2}%
+\contentsline {subsection}{Changes to the Encoder}{23}{section*.30}%
+\contentsline {subsection}{Effects of Cascading}{24}{section*.33}%
+\contentsline {chapter}{\numberline {5}Experiments}{26}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Parameter Studies on the CMRxRecon Dataset}{26}{section.5.1}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{26}{section*.35}%
+\contentsline {subsection}{Starting Channel Size}{27}{section*.36}%
+\contentsline {subsection}{Quantitative Comparison with NiftyReg}{27}{section*.37}%
+\contentsline {section}{\numberline {5.2}Parameter Tests on the ACDC Dataset}{27}{section.5.2}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{27}{section*.38}%
+\contentsline {subsection}{Starting Channel Size}{28}{section*.39}%
+\contentsline {subsection}{Fourier-Transform Crop Size}{28}{section*.40}%
+\contentsline {subsection}{Comparison with VoxelMorph}{29}{section*.41}%
+\contentsline {subsection}{Dense Displacement on Accelerated Data}{29}{section*.42}%
+\contentsline {subsection}{Comparison on Subsampled Data}{29}{section*.43}%
+\contentsline {section}{\numberline {5.3}Data Consistency Experiments}{30}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{30}{section.5.4}%
+\contentsline {subsection}{General Reconstruction Pipeline}{31}{section*.44}%
+\contentsline {chapter}{\numberline {6}Results and Discussion}{32}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Parameter Studies on the CMRxRecon Dataset}{32}{section.6.1}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{32}{section*.46}%
+\contentsline {subsection}{Starting Channel Size}{33}{section*.48}%
+\contentsline {subsection}{Quantitative Comparison with NiftyReg}{33}{section*.50}%
+\contentsline {section}{\numberline {6.2}Further Tests on the ACDC Dataset}{34}{section.6.2}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{34}{section*.53}%
+\contentsline {subsection}{Starting Channel Size}{37}{section*.55}%
+\contentsline {subsection}{Fourier-Transform Crop Size}{37}{section*.57}%
+\contentsline {subsection}{Comparison with VoxelMorph}{39}{section*.59}%
+\contentsline {subsection}{Dense Displacement on Accelerated Data}{40}{section*.61}%
+\contentsline {subsection}{Comparison on Subsampled Data}{40}{section*.65}%
+\contentsline {chapter}{\numberline {7}Conclusion}{45}{chapter.7}%
+\contentsline {chapter}{Bibliography}{46}{chapter*.68}%
