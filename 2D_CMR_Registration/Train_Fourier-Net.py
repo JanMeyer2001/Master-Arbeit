@@ -176,8 +176,7 @@ def main():
     # choose the loss function for similarity
     assert choose_loss >= 0 and choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or L1 (3), but got: {choose_loss}"
     if choose_loss == 1:
-        loss_similarity = RelativeL2Loss()
-        #MSE().loss
+        loss_similarity = MSE().loss
     elif choose_loss == 0:
         loss_similarity = SAD().loss
     elif choose_loss == 2:
@@ -214,19 +213,19 @@ def main():
     if dataset == 'ACDC':
         # load ACDC data
         train_set = TrainDatasetACDC('/home/ziad/storage/students/janmeyer_711878/data/ACDC', mode) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetACDC('/home/ziad/storage/students/janmeyer_711878/data/ACDC', mode) 
-        validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
+        validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     elif dataset == 'CMRxRecon':
         # load CMRxRecon data
         train_set = TrainDatasetCMRxRecon('/home/ziad/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetCMRxRecon('/home/ziad/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
-        validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
+        validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     elif dataset == 'OASIS':
         # path for OASIS dataset
         train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
         validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=2)
     else:
