@@ -65,7 +65,7 @@ class RelativeL2Loss(nn.Module):
 def main():
     parser = ArgumentParser()
     parser.add_argument("--learning_rate", type=float,
-                        dest="learning_rate", default=1e-4, help="learning rate")
+                        dest="learning_rate", default=1e-3, help="learning rate")
     parser.add_argument("--epochs", type=int,
                         dest="epochs", default=15,
                         help="number of epochs")
