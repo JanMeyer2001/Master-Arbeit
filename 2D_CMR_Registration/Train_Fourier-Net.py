@@ -213,19 +213,19 @@ def main():
     if dataset == 'ACDC':
         # load ACDC data
         train_set = TrainDatasetACDC('/home/ziad/storage/students/janmeyer_711878/data/ACDC', mode) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetACDC('/home/ziad/storage/students/janmeyer_711878/data/ACDC', mode) 
         validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     elif dataset == 'CMRxRecon':
         # load CMRxRecon data
         train_set = TrainDatasetCMRxRecon('/home/ziad/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetCMRxRecon('/home/ziad/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
         validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     elif dataset == 'OASIS':
         # path for OASIS dataset
         train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
-        training_generator = Data.DataLoader(dataset=train_set, batch_size=4, shuffle=True, num_workers=4)
+        training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
         validation_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
         validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=2)
     else:
@@ -306,7 +306,7 @@ def main():
                 fix_img_kspace   = apply_mask(fix_img_kspace.cpu(), mask)
                 warped_mov_kspace = apply_mask(warped_mov_kspace.cpu(), mask)
                 # compute similarity loss in k-space
-                loss1 = loss_similarity(warped_mov_kspace, fix_img_kspace)
+                loss1 = loss_similarity(torch.view_as_real(fix_img_kspace), torch.view_as_real(warped_mov_kspace))
             loss2 = loss_smooth(Df_xy)
             
             loss = loss1 + smooth * loss2
