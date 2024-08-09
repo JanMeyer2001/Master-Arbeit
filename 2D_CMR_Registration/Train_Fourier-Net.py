@@ -28,45 +28,11 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
 
 
-@torch.no_grad()
-def apply_mask(
-    data: torch.Tensor,
-    mask,
-    offset: Optional[int] = None,
-    seed: Optional[Union[int, Tuple[int, ...]]] = None,
-) -> torch.Tensor:
-    """
-    Subsample given k-space by multiplying with a mask.
-
-    Args:
-        data: The input k-space data. This should have at least 3 dimensions,
-            where dimensions -3 and -2 are the spatial dimensions, and the
-            final dimension has size 2 (for complex values).
-        mask_func: A function that takes a shape (tuple of ints) and a random
-            number seed and returns a mask.
-        seed: Seed for the random number generator.
-        padding: Padding value to apply for mask.
-
-    Returns:
-        tuple containing:
-            masked data: Subsampled k-space data.
-            mask: The generated mask.
-            num_low_frequencies: The number of low-resolution frequency samples
-                in the mask.
-    """
-    shape = (1,) * len(data.shape[:-3]) + tuple(data.shape[-3:])
-    
-    print(f"mask shape: {mask.shape}")
-    print(f"data shape: {data.shape}")
-    masked_data = data[mask.repeat(1,1,1,data.shape[-1]).bool()]
-
-    return masked_data
 class RelativeL2Loss(nn.Module):
     def __init__(self, sigma=1.0, reg_weight=0):
         super(RelativeL2Loss, self).__init__()
@@ -104,7 +70,7 @@ def main():
                         dest="epochs", default=15,
                         help="number of epochs")
     parser.add_argument("--lambda", type=float,
-                        dest="smth_lambda", default=0.01,
+                        dest="smth_lambda", default=10,
                         help="lambda loss: suggested range 0.1 to 10")
     parser.add_argument("--start_channel", type=int,
                         dest="start_channel", default=16,
@@ -176,7 +142,7 @@ def main():
     # choose the loss function for similarity
     assert choose_loss >= 0 and choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or L1 (3), but got: {choose_loss}"
     if choose_loss == 1:
-        loss_similarity = MSE().loss
+        loss_similarity = nn.HuberLoss()
     elif choose_loss == 0:
         loss_similarity = SAD().loss
     elif choose_loss == 2:
@@ -199,16 +165,19 @@ def main():
         mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4])
         shape = (1, 1, 216, 256)   
         mask, _ = mask_func(shape)
+        mask = mask.repeat(1,1,1,shape[-1])
     elif mode == 2:
         # get Acc8 mask
         mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8])  
         shape = (1, 1, 216, 256)   
         mask, _ = mask_func(shape)
+        mask = mask.repeat(1,1,1,shape[-1])
     elif mode == 3:
         # get Acc10 mask
         mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10])  
         shape = (1, 1, 216, 256)   
-        mask, _ = mask_func(shape)       
+        mask, _ = mask_func(shape)     
+        mask = mask.repeat(1,1,1,shape[-1])  
 
     if dataset == 'ACDC':
         # load ACDC data
@@ -303,10 +272,8 @@ def main():
                 warped_mov_kspace  = FFT(warped_mov)
                 #torch.fft.fftn(warped_mov)
                 # multply with subsampling masks 
-                fix_img_kspace   = apply_mask(fix_img_kspace.cpu(), mask)
-                warped_mov_kspace = apply_mask(warped_mov_kspace.cpu(), mask)
                 # compute similarity loss in k-space
-                loss1 = loss_similarity(torch.view_as_real(fix_img_kspace), torch.view_as_real(warped_mov_kspace))
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace[mask.bool()]), torch.view_as_real(fix_img_kspace[mask.bool()]))
             loss2 = loss_smooth(Df_xy)
             
             loss = loss1 + smooth * loss2
