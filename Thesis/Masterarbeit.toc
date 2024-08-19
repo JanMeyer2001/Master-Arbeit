@@ -67,6 +67,6 @@
 \contentsline {subsection}{Fourier-Transform Crop Size}{37}{section*.57}%
 \contentsline {subsection}{Comparison with VoxelMorph}{39}{section*.59}%
 \contentsline {subsection}{Dense Displacement on Accelerated Data}{40}{section*.61}%
-\contentsline {subsection}{Comparison on Subsampled Data}{40}{section*.65}%
+\contentsline {subsection}{Comparison on Subsampled Data}{41}{section*.65}%
 \contentsline {chapter}{\numberline {7}Conclusion}{45}{chapter.7}%
 \contentsline {chapter}{Bibliography}{46}{chapter*.68}%

@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  7 AUG 2024 17:40
+This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  19 AUG 2024 14:26
  restricted system commands enabled.
 **Masterarbeit.tex
 (./Masterarbeit.tex
@@ -3240,6 +3240,13 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 [38] [39]
+Overfull \hbox (13.28703pt too wide) in paragraph at lines 1003--1008
+\TU/Alegreya(0)/m/it/12 Fourier-Net \TU/Alegreya(0)/m/n/12 com-pared to the dens
+e ver-sion, while the band-limited \TU/Alegreya(0)/m/it/12 Fourier-Net+ \TU/Ale
+greya(0)/m/n/12 and \TU/Alegreya(0)/m/it/12 󰋐xFourier-
+ []
+
+[40]
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
@@ -3249,19 +3256,16 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-
-LaTeX Warning: `h' float specifier changed to `ht'.
-
-<images/Boxplot_DiceScores_FullySampled.png, id=727, 722.7pt x 433.62pt>
+<images/Boxplot_DiceScores_FullySampled.png, id=736, 722.7pt x 433.62pt>
 File: images/Boxplot_DiceScores_FullySampled.png Graphic file (type png)
 <use images/Boxplot_DiceScores_FullySampled.png>
 Package luatex.def Info: images/Boxplot_DiceScores_FullySampled.png  used on in
-put line 1179.
+put line 1183.
 (luatex.def)             Requested size: 426.79135pt x 256.07838pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[40] [41] [42] [43] [44<./images/Boxplot_DiceScores_FullySampled.png>]
+[41] [42] [43] [44<./images/Boxplot_DiceScores_FullySampled.png>]
 Chapter 7.
 [45
 
@@ -3272,24 +3276,24 @@ Package biblatex Warning: Name format 'last-first' deprecated.
 (biblatex)                Using 'family-given' now.
 
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/sc' will be
-(Font)              scaled to size 12.0pt on input line 1192.
+(Font)              scaled to size 12.0pt on input line 1196.
 [46
 
 ] [47]
-Underfull \hbox (badness 1661) in paragraph at lines 1192--1192
+Underfull \hbox (badness 1661) in paragraph at lines 1196--1196
 \TU/Alegreya(0)/m/it/12 Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 . Springer In-t
 er-na-tional Pub-lish-ing, 󰋇󰋅󰋆󰋍, pp. 󰋌󰋇󰋎–󰋌󰋈󰋍. \
 TU/Alegreya(0)/m/sc/12 󰁳󰃑󰀹󰂘\TU/Alegreya(0)/m/n/12 :
  []
 
 [48]
-Underfull \hbox (badness 1635) in paragraph at lines 1192--1192
+Underfull \hbox (badness 1635) in paragraph at lines 1196--1196
 \TU/Alegreya(0)/m/n/12 work for Statis-tics on Dif-feo-mor-phisms. In: \TU/Aleg
 reya(0)/m/it/12 Lec-ture Notes in Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 .
  []
 
 
-Underfull \hbox (badness 2970) in paragraph at lines 1192--1192
+Underfull \hbox (badness 2970) in paragraph at lines 1196--1196
 []\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
 ukcuoglu, K.  Spa-tial
  []
@@ -3320,14 +3324,14 @@ Package logreq Info: Writing requests to 'Masterarbeit.run.xml'.
 
 Here is how much of LuaTeX's memory you used:
  44916 strings out of 477259
- 156270,2373549 words of node,token memory allocated
+ 125009,2373549 words of node,token memory allocated
  1036 words of node memory still in use:
    7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 130 attribute, 71 glue_spe
 c, 67 attribute_list, 2 write, 9 pdf_action nodes
-   avail lists: 1:5,2:4678,3:549,4:216,5:1194,6:85,7:13398,8:73,9:1079,10:16,11:
-974
+   avail lists: 1:5,2:4090,3:549,4:216,5:1194,6:85,7:12245,8:73,9:982,10:16,11:9
+74
  64929 multiletter control sequences out of 65536+600000
- 253 fonts using 76135803 bytes
+ 253 fonts using 76136035 bytes
  102i,13n,128p,2846b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Program Files/MiKTeX/fonts/opentype/public/lm/lmmonoprop10-regular.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf>
@@ -3343,7 +3347,7 @@ otf><C:/Program Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Regular.otf
 /Program Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
-Output written on Masterarbeit.pdf (55 pages, 3299648 bytes).
+Output written on Masterarbeit.pdf (55 pages, 3302626 bytes).
 
 PDF statistics: 926 PDF objects out of 1000 (max. 8388607)
  212 named destinations out of 1000 (max. 131072)
