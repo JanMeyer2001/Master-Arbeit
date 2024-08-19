@@ -503,6 +503,41 @@
     \field{year}{2023}
   \endentry
 
+  \entry{Serai2021}{article}{}
+    \name{author}{1}{}{%
+      {{hash=SSD}{%
+         family={Serai},
+         familyi={S\bibinitperiod},
+         given={Suraj\bibnamedelima D.},
+         giveni={S\bibinitperiod\bibinitdelim D\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Springer Science}%
+      {Business Media LLC}%
+    }
+    \strng{namehash}{SSD1}
+    \strng{fullhash}{SSD1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1007/s00247-021-05042-7
+    \endverb
+    \field{issn}{1432-1998}
+    \field{number}{2}
+    \field{pages}{217\bibrangedash 227}
+    \field{title}{Basics of magnetic resonance imaging and quantitative
+  parameters T1, T2, T2*, T1rho and diffusion-weighted imaging}
+    \field{volume}{52}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Pediatric Body MRI.pdf:PDF
+    \endverb
+    \field{journaltitle}{Pediatric Radiology}
+    \field{month}{04}
+    \field{year}{2021}
+  \endentry
+
   \entry{Tam2016}{article}{}
     \name{author}{14}{}{%
       {{hash=TAL}{%
@@ -1018,6 +1053,95 @@
     \field{year}{2019}
   \endentry
 
+  \entry{LAPNet}{article}{}
+    \name{author}{10}{}{%
+      {{hash=KT}{%
+         family={Küstner},
+         familyi={K\bibinitperiod},
+         given={Thomas},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=PJ}{%
+         family={Pan},
+         familyi={P\bibinitperiod},
+         given={Jiazhen},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=QH}{%
+         family={Qi},
+         familyi={Q\bibinitperiod},
+         given={Haikun},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=CG}{%
+         family={Cruz},
+         familyi={C\bibinitperiod},
+         given={Gastao},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=GC}{%
+         family={Gilliam},
+         familyi={G\bibinitperiod},
+         given={Christopher},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=BT}{%
+         family={Blu},
+         familyi={B\bibinitperiod},
+         given={Thierry},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=YB}{%
+         family={Yang},
+         familyi={Y\bibinitperiod},
+         given={Bin},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=GS}{%
+         family={Gatidis},
+         familyi={G\bibinitperiod},
+         given={Sergios},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=BR}{%
+         family={Botnar},
+         familyi={B\bibinitperiod},
+         given={Rene},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=PC}{%
+         family={Prieto},
+         familyi={P\bibinitperiod},
+         given={Claudia},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{KT+1}
+    \strng{fullhash}{KTPJQHCGGCBTYBGSBRPC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2021.3096131
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{12}
+    \field{pages}{3686\bibrangedash 3697}
+    \field{title}{LAPNet: Non-Rigid Registration Derived in k-Space for
+  Magnetic Resonance Imaging}
+    \field{volume}{40}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/LapNet.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{12}
+    \field{year}{2021}
+  \endentry
+
   \entry{IC-Net}{misc}{}
     \name{author}{1}{}{%
       {{hash=ZJ}{%
@@ -1148,6 +1272,82 @@
     \endverb
     \field{month}{06}
     \field{year}{2020}
+  \endentry
+
+  \entry{NiftiReg}{article}{}
+    \name{author}{8}{}{%
+      {{hash=MM}{%
+         family={Modat},
+         familyi={M\bibinitperiod},
+         given={Marc},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=RGR}{%
+         family={Ridgway},
+         familyi={R\bibinitperiod},
+         given={Gerard\bibnamedelima R.},
+         giveni={G\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+      {{hash=TZA}{%
+         family={Taylor},
+         familyi={T\bibinitperiod},
+         given={Zeike\bibnamedelima A.},
+         giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Lehmann},
+         familyi={L\bibinitperiod},
+         given={Manja},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Barnes},
+         familyi={B\bibinitperiod},
+         given={Josephine},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=HDJ}{%
+         family={Hawkes},
+         familyi={H\bibinitperiod},
+         given={David\bibnamedelima J.},
+         giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+      {{hash=FNC}{%
+         family={Fox},
+         familyi={F\bibinitperiod},
+         given={Nick\bibnamedelima C.},
+         giveni={N\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=OS}{%
+         family={Ourselin},
+         familyi={O\bibinitperiod},
+         given={Sébastien},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{MM+1}
+    \strng{fullhash}{MMRGRTZALMBJHDJFNCOS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.cmpb.2009.09.002
+    \endverb
+    \field{issn}{0169-2607}
+    \field{number}{3}
+    \field{pages}{278\bibrangedash 284}
+    \field{title}{Fast free-form deformation using graphics processing units}
+    \field{volume}{98}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Fast Free-Form Defomation using GPUs.pdf:P
+    \verb DF
+    \endverb
+    \field{journaltitle}{Computer Methods and Programs in Biomedicine}
+    \field{month}{06}
+    \field{year}{2010}
   \endentry
 
   \entry{GRICS}{article}{}
@@ -2475,95 +2675,6 @@
     \field{year}{2018}
   \endentry
 
-  \entry{LAPNet}{article}{}
-    \name{author}{10}{}{%
-      {{hash=KT}{%
-         family={Küstner},
-         familyi={K\bibinitperiod},
-         given={Thomas},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=PJ}{%
-         family={Pan},
-         familyi={P\bibinitperiod},
-         given={Jiazhen},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=QH}{%
-         family={Qi},
-         familyi={Q\bibinitperiod},
-         given={Haikun},
-         giveni={H\bibinitperiod},
-      }}%
-      {{hash=CG}{%
-         family={Cruz},
-         familyi={C\bibinitperiod},
-         given={Gastao},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=GC}{%
-         family={Gilliam},
-         familyi={G\bibinitperiod},
-         given={Christopher},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=BT}{%
-         family={Blu},
-         familyi={B\bibinitperiod},
-         given={Thierry},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=YB}{%
-         family={Yang},
-         familyi={Y\bibinitperiod},
-         given={Bin},
-         giveni={B\bibinitperiod},
-      }}%
-      {{hash=GS}{%
-         family={Gatidis},
-         familyi={G\bibinitperiod},
-         given={Sergios},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=BR}{%
-         family={Botnar},
-         familyi={B\bibinitperiod},
-         given={Rene},
-         giveni={R\bibinitperiod},
-      }}%
-      {{hash=PC}{%
-         family={Prieto},
-         familyi={P\bibinitperiod},
-         given={Claudia},
-         giveni={C\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{2}{%
-      {Institute of Electrical}%
-      {Electronics Engineers (IEEE)}%
-    }
-    \strng{namehash}{KT+1}
-    \strng{fullhash}{KTPJQHCGGCBTYBGSBRPC1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1109/tmi.2021.3096131
-    \endverb
-    \field{issn}{1558-254X}
-    \field{number}{12}
-    \field{pages}{3686\bibrangedash 3697}
-    \field{title}{LAPNet: Non-Rigid Registration Derived in k-Space for
-  Magnetic Resonance Imaging}
-    \field{volume}{40}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/LapNet.pdf:PDF
-    \endverb
-    \field{journaltitle}{IEEE Transactions on Medical Imaging}
-    \field{month}{12}
-    \field{year}{2021}
-  \endentry
-
   \entry{Dalca2018}{inbook}{}
     \name{author}{4}{}{%
       {{hash=DAV}{%
@@ -2866,82 +2977,6 @@
     \endverb
     \field{journaltitle}{ArXiv}
     \field{year}{2015}
-  \endentry
-
-  \entry{NiftiReg}{article}{}
-    \name{author}{8}{}{%
-      {{hash=MM}{%
-         family={Modat},
-         familyi={M\bibinitperiod},
-         given={Marc},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=RGR}{%
-         family={Ridgway},
-         familyi={R\bibinitperiod},
-         given={Gerard\bibnamedelima R.},
-         giveni={G\bibinitperiod\bibinitdelim R\bibinitperiod},
-      }}%
-      {{hash=TZA}{%
-         family={Taylor},
-         familyi={T\bibinitperiod},
-         given={Zeike\bibnamedelima A.},
-         giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
-      }}%
-      {{hash=LM}{%
-         family={Lehmann},
-         familyi={L\bibinitperiod},
-         given={Manja},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=BJ}{%
-         family={Barnes},
-         familyi={B\bibinitperiod},
-         given={Josephine},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=HDJ}{%
-         family={Hawkes},
-         familyi={H\bibinitperiod},
-         given={David\bibnamedelima J.},
-         giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod},
-      }}%
-      {{hash=FNC}{%
-         family={Fox},
-         familyi={F\bibinitperiod},
-         given={Nick\bibnamedelima C.},
-         giveni={N\bibinitperiod\bibinitdelim C\bibinitperiod},
-      }}%
-      {{hash=OS}{%
-         family={Ourselin},
-         familyi={O\bibinitperiod},
-         given={Sébastien},
-         giveni={S\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Elsevier BV}%
-    }
-    \strng{namehash}{MM+1}
-    \strng{fullhash}{MMRGRTZALMBJHDJFNCOS1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1016/j.cmpb.2009.09.002
-    \endverb
-    \field{issn}{0169-2607}
-    \field{number}{3}
-    \field{pages}{278\bibrangedash 284}
-    \field{title}{Fast free-form deformation using graphics processing units}
-    \field{volume}{98}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Fast Free-Form Defomation using GPUs.pdf:P
-    \verb DF
-    \endverb
-    \field{journaltitle}{Computer Methods and Programs in Biomedicine}
-    \field{month}{06}
-    \field{year}{2010}
   \endentry
 \enddatalist
 \endinput
