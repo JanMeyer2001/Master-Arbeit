@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  19 AUG 2024 20:11
+This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  21 AUG 2024 17:09
  restricted system commands enabled.
 **Masterarbeit.tex
 (./Masterarbeit.tex
@@ -3280,16 +3280,29 @@ Underfull \hbox (badness 10000) in paragraph at lines 1166--1169
 
  []
 
-<images/Boxplot_DiceScores_FullySampled.png, id=775, 722.7pt x 433.62pt>
-File: images/Boxplot_DiceScores_FullySampled.png Graphic file (type png)
-<use images/Boxplot_DiceScores_FullySampled.png>
-Package luatex.def Info: images/Boxplot_DiceScores_FullySampled.png  used on in
-put line 1224.
-(luatex.def)             Requested size: 426.79135pt x 256.07838pt.
+<images/Boxplot_DiceScores_LV-Cavity.png, id=775, 867.24pt x 433.62pt>
+File: images/Boxplot_DiceScores_LV-Cavity.png Graphic file (type png)
+<use images/Boxplot_DiceScores_LV-Cavity.png>
+Package luatex.def Info: images/Boxplot_DiceScores_LV-Cavity.png  used on input
+ line 1224.
+(luatex.def)             Requested size: 341.43437pt x 170.71892pt.
+<images/Boxplot_DiceScores_Myocardium.png, id=776, 867.24pt x 433.62pt>
+File: images/Boxplot_DiceScores_Myocardium.png Graphic file (type png)
+<use images/Boxplot_DiceScores_Myocardium.png>
+Package luatex.def Info: images/Boxplot_DiceScores_Myocardium.png  used on inpu
+t line 1230.
+(luatex.def)             Requested size: 341.43437pt x 170.71892pt.
+<images/Boxplot_DiceScores_RV-Cavity.png, id=777, 867.24pt x 433.62pt>
+File: images/Boxplot_DiceScores_RV-Cavity.png Graphic file (type png)
+<use images/Boxplot_DiceScores_RV-Cavity.png>
+Package luatex.def Info: images/Boxplot_DiceScores_RV-Cavity.png  used on input
+ line 1236.
+(luatex.def)             Requested size: 341.43437pt x 170.71892pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[46] [47<./images/Boxplot_DiceScores_FullySampled.png>]
+[46] [47<./images/Boxplot_DiceScores_LV-Cavity.png><./images/Boxplot_DiceScores_
+Myocardium.png><./images/Boxplot_DiceScores_RV-Cavity.png>]
 Chapter 7.
 [48
 
@@ -3300,24 +3313,24 @@ Package biblatex Warning: Name format 'last-first' deprecated.
 (biblatex)                Using 'family-given' now.
 
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/sc' will be
-(Font)              scaled to size 12.0pt on input line 1237.
+(Font)              scaled to size 12.0pt on input line 1294.
 [49
 
 ] [50]
-Underfull \hbox (badness 1661) in paragraph at lines 1237--1237
+Underfull \hbox (badness 1661) in paragraph at lines 1294--1294
 \TU/Alegreya(0)/m/it/12 Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 . Springer In-t
 er-na-tional Pub-lish-ing, 󰋇󰋅󰋆󰋍, pp. 󰋌󰋇󰋎–󰋌󰋈󰋍. \
 TU/Alegreya(0)/m/sc/12 󰁳󰃑󰀹󰂘\TU/Alegreya(0)/m/n/12 :
  []
 
 [51]
-Underfull \hbox (badness 1635) in paragraph at lines 1237--1237
+Underfull \hbox (badness 1635) in paragraph at lines 1294--1294
 \TU/Alegreya(0)/m/n/12 work for Statis-tics on Dif-feo-mor-phisms. In: \TU/Aleg
 reya(0)/m/it/12 Lec-ture Notes in Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 .
  []
 
 
-Underfull \hbox (badness 2970) in paragraph at lines 1237--1237
+Underfull \hbox (badness 2970) in paragraph at lines 1294--1294
 []\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
 ukcuoglu, K.  Spa-tial
  []
@@ -3347,15 +3360,15 @@ Package logreq Info: Writing requests to 'Masterarbeit.run.xml'.
 )
 
 Here is how much of LuaTeX's memory you used:
- 44946 strings out of 477259
+ 44976 strings out of 477259
  125007,2373549 words of node,token memory allocated
  1078 words of node memory still in use:
    7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 144 attribute, 71 glue_spe
 c, 74 attribute_list, 2 write, 9 pdf_action nodes
-   avail lists: 1:4,2:2318,3:541,4:220,5:1194,6:86,7:11246,8:73,9:724,10:22,11:9
+   avail lists: 1:4,2:2318,3:541,4:226,5:1194,6:86,7:11246,8:73,9:724,10:22,11:9
 44
- 64946 multiletter control sequences out of 65536+600000
- 254 fonts using 76477439 bytes
+ 64970 multiletter control sequences out of 65536+600000
+ 254 fonts using 76477207 bytes
  102i,13n,128p,2924b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Program Files/MiKTeX/fonts/opentype/public/lm/lmmonoprop10-regular.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf>
@@ -3372,9 +3385,9 @@ rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.otf><C:/Progr
 am Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C:/Program
  Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C:/Program
  Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
-Output written on Masterarbeit.pdf (58 pages, 3442584 bytes).
+Output written on Masterarbeit.pdf (58 pages, 3492892 bytes).
 
-PDF statistics: 964 PDF objects out of 1000 (max. 8388607)
+PDF statistics: 968 PDF objects out of 1000 (max. 8388607)
  222 named destinations out of 1000 (max. 131072)
  232 words of extra memory for PDF output out of 10000 (max. 100000000)
 

@@ -1217,14 +1217,71 @@ All times are computed on CPU due to \emph{NiftyReg} only working on the CPU as 
 	\end{tabular}
 \end{table}
 
-
 \begin{figure}[h] %tpb
 	\centering
 	\graphicspath{{images/}{\main/images/}}
-	\includegraphics[width=\linewidth]{Boxplot_DiceScores_FullySampled.png} 
-	\caption{Boxplot of the Dice scores for all models sorted by label (excluding the background) on the fully sampled \emph{ACDC} test data.}
-	\label{fig:Boxplot_DiceScores}
+	\begin{subfigure}{0.8\textwidth}
+    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_LV-Cavity.png}
+    		\caption{Boxplot of the Dice scores for the left-ventricle cavity.} %on the fully sampled \emph{ACDC} test data
+    		\label{fig:Boxplot_DiceScores_LV-Cavity}
+	\end{subfigure}
+	\\
+	\begin{subfigure}{0.8\textwidth}
+    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_Myocardium.png}
+    		\caption{Boxplot of the Dice scores for the myocardium.} %on the Acc4 \emph{ACDC} test data
+    		\label{fig:Boxplot_DiceScores_Myocardium}
+	\end{subfigure}
+	\\
+	\begin{subfigure}{0.8\textwidth}
+    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_RV-Cavity.png}
+    		\caption{Boxplot of the Dice scores for right-ventricle cavity.} %on the Acc8 \emph{ACDC} test data
+    		\label{fig:Boxplot_DiceScores_RV-Cavity}
+	\end{subfigure}
+	\caption{Boxplots of Dice scores (split by label excluding the background) for all models on fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph{ACDC} test data.}
+	\label{fig:Boxplots_DiceScores}
 \end{figure}
+
+
+% Too small!!!
+
+%\begin{figure}[h] %tpb
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\begin{subfigure}{0.5\textwidth}
+%    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_FullySampled.png}
+%    		\caption{Boxplot of the Dice scores for $R=0$.} %on the fully sampled \emph{ACDC} test data
+%    		\label{fig:}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.5\textwidth}
+%    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_Acc4.png}
+%    		\caption{Boxplot of the Dice scores for $R=4$.} %on the Acc4 \emph{ACDC} test data
+%    		\label{fig:Boxplot_DiceScores_Acc4}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.5\textwidth}
+%    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_Acc8.png}
+%    		\caption{Boxplot of the Dice scores for $R=8$.} %on the Acc8 \emph{ACDC} test data
+%    		\label{fig:Boxplot_DiceScores_Acc8}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{0.5\textwidth}
+%    		\includegraphics[width=\textwidth]{Boxplot_DiceScores_Acc10.png}
+%    		\caption{Boxplot of the Dice scores for $R=10$.} %on the Acc10 \emph{ACDC} test data
+%    		\label{fig:Boxplot_DiceScores_Acc10}
+%	\end{subfigure}
+%	\caption{Boxplots of Dice scores (split by label excluding the background) for all models on the \emph{ACDC} test data.}
+%	\label{fig:Boxplots_DiceScores}
+%\end{figure}
+
+
+%\begin{figure}[h] %tpb
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\includegraphics[width=\linewidth]{Boxplot_DiceScores_FullySampled.png} 
+%	\caption{Boxplot of the Dice scores for all models sorted by label (excluding the background) on the fully sampled \emph{ACDC} test data.}
+%	\label{fig:Boxplot_DiceScores}
+%\end{figure}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
