@@ -51,7 +51,16 @@ else:
     width = 0.19
 
 # create path to save the boxplot to
-save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_FullySampled.png'
+path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_'
+
+if mode == 0:
+    save_path = path + 'FullySampled.png'
+elif mode == 1:
+    save_path = path + 'Acc4.png'    
+elif mode == 2:
+    save_path = path + 'Acc8.png'    
+elif mode == 3:
+    save_path = path + 'Acc10.png'    
 
 # create boxplot for Dice scores (without background)
 create_boxplot(savename=save_path, data=DICE_test[:,1:4,:], labels=labels, legend=legend, figure_size=(10, 6), offsets=offsets, width=width)
