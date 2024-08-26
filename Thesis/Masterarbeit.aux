@@ -523,77 +523,79 @@
 \newlabel{SubSec:DenseDisplacementAcc}{{5.2}{32}{Dense Displacement on Accelerated Data}{section*.45}{}}
 \@writefile{toc}{\contentsline {subsection}{Comparison on Subsampled Data}{32}{section*.46}\protected@file@percent }
 \newlabel{SubSec:ComparisonSubsampling}{{5.2}{32}{Comparison on Subsampled Data}{section*.46}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.3}Data Consistency Experiments}{33}{section.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{33}{section.5.4}\protected@file@percent }
-\newlabel{Sec:IntegrationMotion-CorrectedReconstructionPipeline}{{5.4}{33}{Integration into a Motion-Corrected Reconstruction Pipeline}{section.5.4}{}}
-\@writefile{toc}{\contentsline {subsection}{General Reconstruction Pipeline}{34}{section*.47}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Overview of the general reconstruction pipeline using \emph  {Fourier-Net+} as a registration network.}}{34}{figure.caption.48}\protected@file@percent }
-\newlabel{fig:ReconstructionPipeline}{{5.1}{34}{Overview of the general reconstruction pipeline using \emph {Fourier-Net+} as a registration network}{figure.caption.48}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Data Consistency Experiments and Network Changes}{33}{section.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Data Consistency Loss}{33}{section*.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Changes to the Network Architecture}{34}{section*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{34}{section.5.4}\protected@file@percent }
+\newlabel{Sec:IntegrationMotion-CorrectedReconstructionPipeline}{{5.4}{34}{Integration into a Motion-Corrected Reconstruction Pipeline}{section.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{General Reconstruction Pipeline}{34}{section*.49}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Overview of the general reconstruction pipeline using \emph  {Fourier-Net+} as a registration network.}}{34}{figure.caption.50}\protected@file@percent }
+\newlabel{fig:ReconstructionPipeline}{{5.1}{34}{Overview of the general reconstruction pipeline using \emph {Fourier-Net+} as a registration network}{figure.caption.50}{}}
 \@writefile{toc}{\contentsline {chapter}{\numberline {6}Results and Discussion}{35}{chapter.6}\protected@file@percent }
 \newlabel{Ch:ResultsDiscussion}{{6}{35}{Results and Discussion}{chapter.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {6.1}Parameter Studies on the CMRxRecon Dataset}{35}{section.6.1}\protected@file@percent }
 \newlabel{Sec:ParameterStudies}{{6.1}{35}{Parameter Studies on the CMRxRecon Dataset}{section.6.1}{}}
-\@writefile{toc}{\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{35}{section*.49}\protected@file@percent }
-\newlabel{SubSec:ResultsFourier-NetvsFourier-Net+CMRxRecon}{{6.1}{35}{Fourier-Net versus Fourier-Net+}{section*.49}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Results for \emph  {Fourier-Net} and \emph  {Fourier-Net+} on the fully sampled \emph  {CMRxRecon} test data with a diffeomorphic transform.}}{36}{table.caption.50}\protected@file@percent }
-\newlabel{tab:Fourier-NetvsFourier-Net+CMRxRecon}{{6.1}{36}{Results for \emph {Fourier-Net} and \emph {Fourier-Net+} on the fully sampled \emph {CMRxRecon} test data with a diffeomorphic transform}{table.caption.50}{}}
-\@writefile{toc}{\contentsline {subsection}{Starting Channel Size}{36}{section*.51}\protected@file@percent }
-\newlabel{SubSec:ResultsStartingChannelsCMRxRecon}{{6.1}{36}{Starting Channel Size}{section*.51}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Results for three different starting channel sizes of \emph  {Fourier-Net+} on the fully sampled \emph  {CMRxRecon} test data.}}{36}{table.caption.52}\protected@file@percent }
-\newlabel{tab:StartingChannelsFourierNet+CMRxRecon}{{6.2}{36}{Results for three different starting channel sizes of \emph {Fourier-Net+} on the fully sampled \emph {CMRxRecon} test data}{table.caption.52}{}}
-\@writefile{toc}{\contentsline {subsection}{Quantitative Comparison with NiftyReg}{36}{section*.53}\protected@file@percent }
-\newlabel{SubSec:ResultsQuantitativeComparisonNiftyReg}{{6.1}{36}{Quantitative Comparison with NiftyReg}{section*.53}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Benchmark results for \emph  {Fourier-Net+} and \emph  {NiftiReg} on the \emph  {CMRxRecon} test data.}}{37}{table.caption.54}\protected@file@percent }
-\newlabel{tab:BenchmarkNiftyReg}{{6.3}{37}{Benchmark results for \emph {Fourier-Net+} and \emph {NiftiReg} on the \emph {CMRxRecon} test data}{table.caption.54}{}}
-\newlabel{fig:TestBenchmark_MSE_Boxplots}{{6.4a}{37}{Boxplot of MSE results}{figure.caption.55}{}}
-\newlabel{sub@fig:TestBenchmark_MSE_Boxplots}{{a}{37}{Boxplot of MSE results}{figure.caption.55}{}}
-\newlabel{fig:TestBenchmark_SSIM_Boxplots}{{6.4b}{37}{Boxplot of SSIM results}{figure.caption.55}{}}
-\newlabel{sub@fig:TestBenchmark_SSIM_Boxplots}{{b}{37}{Boxplot of SSIM results}{figure.caption.55}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph  {Fourier-Net+} and \emph  {NiftyReg}.}}{37}{figure.caption.55}\protected@file@percent }
-\newlabel{fig:TestBenchmark_Boxplots}{{6.4}{37}{Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph {Fourier-Net+} and \emph {NiftyReg}}{figure.caption.55}{}}
+\@writefile{toc}{\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{35}{section*.51}\protected@file@percent }
+\newlabel{SubSec:ResultsFourier-NetvsFourier-Net+CMRxRecon}{{6.1}{35}{Fourier-Net versus Fourier-Net+}{section*.51}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Results for \emph  {Fourier-Net} and \emph  {Fourier-Net+} on the fully sampled \emph  {CMRxRecon} test data with a diffeomorphic transform.}}{36}{table.caption.52}\protected@file@percent }
+\newlabel{tab:Fourier-NetvsFourier-Net+CMRxRecon}{{6.1}{36}{Results for \emph {Fourier-Net} and \emph {Fourier-Net+} on the fully sampled \emph {CMRxRecon} test data with a diffeomorphic transform}{table.caption.52}{}}
+\@writefile{toc}{\contentsline {subsection}{Starting Channel Size}{36}{section*.53}\protected@file@percent }
+\newlabel{SubSec:ResultsStartingChannelsCMRxRecon}{{6.1}{36}{Starting Channel Size}{section*.53}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Results for three different starting channel sizes of \emph  {Fourier-Net+} on the fully sampled \emph  {CMRxRecon} test data.}}{36}{table.caption.54}\protected@file@percent }
+\newlabel{tab:StartingChannelsFourierNet+CMRxRecon}{{6.2}{36}{Results for three different starting channel sizes of \emph {Fourier-Net+} on the fully sampled \emph {CMRxRecon} test data}{table.caption.54}{}}
+\@writefile{toc}{\contentsline {subsection}{Quantitative Comparison with NiftyReg}{36}{section*.55}\protected@file@percent }
+\newlabel{SubSec:ResultsQuantitativeComparisonNiftyReg}{{6.1}{36}{Quantitative Comparison with NiftyReg}{section*.55}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Benchmark results for \emph  {Fourier-Net+} and \emph  {NiftiReg} on the \emph  {CMRxRecon} test data.}}{37}{table.caption.56}\protected@file@percent }
+\newlabel{tab:BenchmarkNiftyReg}{{6.3}{37}{Benchmark results for \emph {Fourier-Net+} and \emph {NiftiReg} on the \emph {CMRxRecon} test data}{table.caption.56}{}}
+\newlabel{fig:TestBenchmark_MSE_Boxplots}{{6.4a}{37}{Boxplot of MSE results}{figure.caption.57}{}}
+\newlabel{sub@fig:TestBenchmark_MSE_Boxplots}{{a}{37}{Boxplot of MSE results}{figure.caption.57}{}}
+\newlabel{fig:TestBenchmark_SSIM_Boxplots}{{6.4b}{37}{Boxplot of SSIM results}{figure.caption.57}{}}
+\newlabel{sub@fig:TestBenchmark_SSIM_Boxplots}{{b}{37}{Boxplot of SSIM results}{figure.caption.57}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.4}{\ignorespaces Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph  {Fourier-Net+} and \emph  {NiftyReg}.}}{37}{figure.caption.57}\protected@file@percent }
+\newlabel{fig:TestBenchmark_Boxplots}{{6.4}{37}{Boxplots for MSE and SSIM results of the test set for fully sampled and subsampled (Acc4, Acc8, Acc10) data for both \emph {Fourier-Net+} and \emph {NiftyReg}}{figure.caption.57}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {6.2}Further Tests on the ACDC Dataset}{37}{section.6.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{37}{section*.56}\protected@file@percent }
-\newlabel{SubSec:ResultsFourier-NetvsFourier-Net+ACDC}{{6.2}{37}{Fourier-Net versus Fourier-Net+}{section*.56}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields as well as diffeomorphic transforms on the fully sampled \emph  {ACDC} test data.}}{39}{table.caption.57}\protected@file@percent }
-\newlabel{tab:Fourier-NetvsFourier-Net+ACDC}{{6.5}{39}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields as well as diffeomorphic transforms on the fully sampled \emph {ACDC} test data}{table.caption.57}{}}
-\@writefile{toc}{\contentsline {subsection}{Starting Channel Size}{40}{section*.58}\protected@file@percent }
-\newlabel{SubSec:ResultsStartingChannelsACDC}{{6.2}{40}{Starting Channel Size}{section*.58}{}}
-\@writefile{toc}{\contentsline {subsection}{Fourier-Transform Crop Size}{40}{section*.60}\protected@file@percent }
-\newlabel{SubSec:ResultsFTCropSize}{{6.2}{40}{Fourier-Transform Crop Size}{section*.60}{}}
+\@writefile{toc}{\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{37}{section*.58}\protected@file@percent }
+\newlabel{SubSec:ResultsFourier-NetvsFourier-Net+ACDC}{{6.2}{37}{Fourier-Net versus Fourier-Net+}{section*.58}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields as well as diffeomorphic transforms on the fully sampled \emph  {ACDC} test data.}}{39}{table.caption.59}\protected@file@percent }
+\newlabel{tab:Fourier-NetvsFourier-Net+ACDC}{{6.5}{39}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields as well as diffeomorphic transforms on the fully sampled \emph {ACDC} test data}{table.caption.59}{}}
+\@writefile{toc}{\contentsline {subsection}{Starting Channel Size}{40}{section*.60}\protected@file@percent }
+\newlabel{SubSec:ResultsStartingChannelsACDC}{{6.2}{40}{Starting Channel Size}{section*.60}{}}
+\@writefile{toc}{\contentsline {subsection}{Fourier-Transform Crop Size}{40}{section*.62}\protected@file@percent }
+\newlabel{SubSec:ResultsFTCropSize}{{6.2}{40}{Fourier-Transform Crop Size}{section*.62}{}}
 \citation{Voxelmorph}
 \abx@aux@cite{0}{Voxelmorph}
 \abx@aux@segm{0}{0}{Voxelmorph}
-\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Results for different starting channel sizes of \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} on the fully sampled \emph  {ACDC} test data.}}{41}{table.caption.59}\protected@file@percent }
-\newlabel{tab:StartingChannelsFourierNet+ACDC}{{6.6}{41}{Results for different starting channel sizes of \emph {Fourier-Net+} and \emph {4xFourier-Net+} on the fully sampled \emph {ACDC} test data}{table.caption.59}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Results for four different FT crop sizes for \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} examined on the fully sampled \emph  {ACDC} test data.}}{42}{table.caption.61}\protected@file@percent }
-\newlabel{tab:FTCropSize}{{6.7}{42}{Results for four different FT crop sizes for \emph {Fourier-Net+} and \emph {4xFourier-Net+} examined on the fully sampled \emph {ACDC} test data}{table.caption.61}{}}
-\@writefile{toc}{\contentsline {subsection}{Comparison with VoxelMorph}{42}{section*.62}\protected@file@percent }
-\newlabel{SubSec:ResultsComparisonVoxelMorph}{{6.2}{42}{Comparison with VoxelMorph}{section*.62}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Comparison of \emph  {Fourier-Net}, \emph  {Fourier-Net+}, \emph  {4xFourier-Net+} and \emph  {VoxelMorph} with similarity metrics and memory consumption on the fully sampled \emph  {ACDC} test data.}}{43}{table.caption.63}\protected@file@percent }
-\newlabel{tab:CompareVoxelMorph}{{6.8}{43}{Comparison of \emph {Fourier-Net}, \emph {Fourier-Net+}, \emph {4xFourier-Net+} and \emph {VoxelMorph} with similarity metrics and memory consumption on the fully sampled \emph {ACDC} test data}{table.caption.63}{}}
-\@writefile{toc}{\contentsline {subsection}{Dense Displacement on Accelerated Data}{43}{section*.64}\protected@file@percent }
-\newlabel{SubSec:DenseDisplacementAcc}{{6.2}{43}{Dense Displacement on Accelerated Data}{section*.64}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc4 \emph  {ACDC} test data.}}{44}{table.caption.65}\protected@file@percent }
-\newlabel{tab:DenseDisplacementAcc4}{{6.9}{44}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc4 \emph {ACDC} test data}{table.caption.65}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc8 \emph  {ACDC} test data.}}{45}{table.caption.66}\protected@file@percent }
-\newlabel{tab:DenseDisplacementAcc8}{{6.10}{45}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc8 \emph {ACDC} test data}{table.caption.66}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.11}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc10 \emph  {ACDC} test data.}}{45}{table.caption.67}\protected@file@percent }
-\newlabel{tab:DenseDisplacementAcc10}{{6.11}{45}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc10 \emph {ACDC} test data}{table.caption.67}{}}
-\@writefile{toc}{\contentsline {subsection}{Comparison on Subsampled Data}{46}{section*.68}\protected@file@percent }
-\newlabel{SubSec:ResultsComparisonSubsampling}{{6.2}{46}{Comparison on Subsampled Data}{section*.68}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6.12}{\ignorespaces Test results for \emph  {NiftiReg}, \emph  {VoxelMorph}, \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} on the \emph  {ACDC} test data with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red.}}{46}{table.caption.69}\protected@file@percent }
-\newlabel{tab:ComparisonSubsamplingACDC}{{6.12}{46}{Test results for \emph {NiftiReg}, \emph {VoxelMorph}, \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} on the \emph {ACDC} test data with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red}{table.caption.69}{}}
-\newlabel{fig:Boxplot_DiceScores_LV-Cavity}{{6.13a}{47}{Boxplot of the Dice scores for the left-ventricle cavity}{figure.caption.70}{}}
-\newlabel{sub@fig:Boxplot_DiceScores_LV-Cavity}{{a}{47}{Boxplot of the Dice scores for the left-ventricle cavity}{figure.caption.70}{}}
-\newlabel{fig:Boxplot_DiceScores_Myocardium}{{6.13b}{47}{Boxplot of the Dice scores for the myocardium}{figure.caption.70}{}}
-\newlabel{sub@fig:Boxplot_DiceScores_Myocardium}{{b}{47}{Boxplot of the Dice scores for the myocardium}{figure.caption.70}{}}
-\newlabel{fig:Boxplot_DiceScores_RV-Cavity}{{6.13c}{47}{Boxplot of the Dice scores for right-ventricle cavity}{figure.caption.70}{}}
-\newlabel{sub@fig:Boxplot_DiceScores_RV-Cavity}{{c}{47}{Boxplot of the Dice scores for right-ventricle cavity}{figure.caption.70}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6.13}{\ignorespaces Boxplots of Dice scores (split by label excluding the background) for all models on fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph  {ACDC} test data.}}{47}{figure.caption.70}\protected@file@percent }
-\newlabel{fig:Boxplots_DiceScores}{{6.13}{47}{Boxplots of Dice scores (split by label excluding the background) for all models on fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph {ACDC} test data}{figure.caption.70}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{48}{chapter.7}\protected@file@percent }
-\newlabel{Ch:Conclusion}{{7}{48}{Conclusion}{chapter.7}{}}
-\@writefile{toc}{\contentsline {chapter}{Bibliography}{49}{chapter*.71}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Results for different starting channel sizes of \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} on the fully sampled \emph  {ACDC} test data.}}{41}{table.caption.61}\protected@file@percent }
+\newlabel{tab:StartingChannelsFourierNet+ACDC}{{6.6}{41}{Results for different starting channel sizes of \emph {Fourier-Net+} and \emph {4xFourier-Net+} on the fully sampled \emph {ACDC} test data}{table.caption.61}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces Results for four different FT crop sizes for \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} examined on the fully sampled \emph  {ACDC} test data.}}{42}{table.caption.63}\protected@file@percent }
+\newlabel{tab:FTCropSize}{{6.7}{42}{Results for four different FT crop sizes for \emph {Fourier-Net+} and \emph {4xFourier-Net+} examined on the fully sampled \emph {ACDC} test data}{table.caption.63}{}}
+\@writefile{toc}{\contentsline {subsection}{Comparison with VoxelMorph}{42}{section*.64}\protected@file@percent }
+\newlabel{SubSec:ResultsComparisonVoxelMorph}{{6.2}{42}{Comparison with VoxelMorph}{section*.64}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Comparison of \emph  {Fourier-Net}, \emph  {Fourier-Net+}, \emph  {4xFourier-Net+} and \emph  {VoxelMorph} with similarity metrics and memory consumption on the fully sampled \emph  {ACDC} test data.}}{43}{table.caption.65}\protected@file@percent }
+\newlabel{tab:CompareVoxelMorph}{{6.8}{43}{Comparison of \emph {Fourier-Net}, \emph {Fourier-Net+}, \emph {4xFourier-Net+} and \emph {VoxelMorph} with similarity metrics and memory consumption on the fully sampled \emph {ACDC} test data}{table.caption.65}{}}
+\@writefile{toc}{\contentsline {subsection}{Dense Displacement on Accelerated Data}{43}{section*.66}\protected@file@percent }
+\newlabel{SubSec:DenseDisplacementAcc}{{6.2}{43}{Dense Displacement on Accelerated Data}{section*.66}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc4 \emph  {ACDC} test data.}}{44}{table.caption.67}\protected@file@percent }
+\newlabel{tab:DenseDisplacementAcc4}{{6.9}{44}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc4 \emph {ACDC} test data}{table.caption.67}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc8 \emph  {ACDC} test data.}}{45}{table.caption.68}\protected@file@percent }
+\newlabel{tab:DenseDisplacementAcc8}{{6.10}{45}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc8 \emph {ACDC} test data}{table.caption.68}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.11}{\ignorespaces Results for \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc10 \emph  {ACDC} test data.}}{45}{table.caption.69}\protected@file@percent }
+\newlabel{tab:DenseDisplacementAcc10}{{6.11}{45}{Results for \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} with both dense and band-limited displacement fields on the Acc10 \emph {ACDC} test data}{table.caption.69}{}}
+\@writefile{toc}{\contentsline {subsection}{Comparison on Subsampled Data}{46}{section*.70}\protected@file@percent }
+\newlabel{SubSec:ResultsComparisonSubsampling}{{6.2}{46}{Comparison on Subsampled Data}{section*.70}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.12}{\ignorespaces Test results for \emph  {NiftiReg}, \emph  {VoxelMorph}, \emph  {Fourier-Net}, \emph  {Fourier-Net+} and \emph  {4xFourier-Net+} on the \emph  {ACDC} test data with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red.}}{48}{table.caption.71}\protected@file@percent }
+\newlabel{tab:ComparisonSubsamplingACDC}{{6.12}{48}{Test results for \emph {NiftiReg}, \emph {VoxelMorph}, \emph {Fourier-Net}, \emph {Fourier-Net+} and \emph {4xFourier-Net+} on the \emph {ACDC} test data with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red}{table.caption.71}{}}
+\newlabel{fig:Boxplot_DiceScores_LV-Cavity}{{6.13a}{49}{Boxplot of the Dice scores for the left ventricle cavity}{figure.caption.72}{}}
+\newlabel{sub@fig:Boxplot_DiceScores_LV-Cavity}{{a}{49}{Boxplot of the Dice scores for the left ventricle cavity}{figure.caption.72}{}}
+\newlabel{fig:Boxplot_DiceScores_Myocardium}{{6.13b}{49}{Boxplot of the Dice scores for the myocardium}{figure.caption.72}{}}
+\newlabel{sub@fig:Boxplot_DiceScores_Myocardium}{{b}{49}{Boxplot of the Dice scores for the myocardium}{figure.caption.72}{}}
+\newlabel{fig:Boxplot_DiceScores_RV-Cavity}{{6.13c}{49}{Boxplot of the Dice scores for right ventricle cavity}{figure.caption.72}{}}
+\newlabel{sub@fig:Boxplot_DiceScores_RV-Cavity}{{c}{49}{Boxplot of the Dice scores for right ventricle cavity}{figure.caption.72}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6.13}{\ignorespaces Boxplots of Dice scores (split by label excluding the background) for all models on fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph  {ACDC} test data.}}{49}{figure.caption.72}\protected@file@percent }
+\newlabel{fig:Boxplots_DiceScores}{{6.13}{49}{Boxplots of Dice scores (split by label excluding the background) for all models on fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph {ACDC} test data}{figure.caption.72}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusion}{50}{chapter.7}\protected@file@percent }
+\newlabel{Ch:Conclusion}{{7}{50}{Conclusion}{chapter.7}{}}
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{51}{chapter*.73}\protected@file@percent }
 \abx@aux@read@bbl@mdfivesum{AA1B6C2F391AAEA34A33966C02060BB6}
 \abx@aux@defaultrefcontext{0}{Chen2020}{none/global//global/global}
 \abx@aux@defaultrefcontext{0}{Haskins2020}{none/global//global/global}
@@ -675,4 +677,4 @@
 \abx@aux@defaultlabelprefix{0}{DARTEL}{}
 \abx@aux@defaultlabelprefix{0}{ScaleAndSquare}{}
 \abx@aux@defaultlabelprefix{0}{SpatialTransformer}{}
-\gdef \@abspage@last{58}
+\gdef \@abspage@last{60}

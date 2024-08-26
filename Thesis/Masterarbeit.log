@@ -1,4 +1,4 @@
-This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  21 AUG 2024 17:09
+This is LuaHBTeX, Version 1.17.0 (MiKTeX 23.10) (format=lualatex 2024.4.12)  26 AUG 2024 15:11
  restricted system commands enabled.
 **Masterarbeit.tex
 (./Masterarbeit.tex
@@ -3204,49 +3204,55 @@ Overfull \hbox (1.48141pt too wide) in paragraph at lines 705--707
 0)/m/n/12 and \TU/Alegreya(0)/m/it/12 󰋐xFourier-Net+\TU/Alegreya(0)/m/n/12 , which were all trained
  []
 
-[32]
-<images/ReconstructionPipelineCompact.png, id=674, 625.58719pt x 355.3275pt>
+
+Overfull \hbox (2.80876pt too wide) in paragraph at lines 709--713
+\TU/Alegreya(0)/m/n/12 is-tra-tion net-work work-ing in the im-age do-main and 
+a an-other dense net-work which works
+ []
+
+[32] [33]
+<images/ReconstructionPipelineCompact.png, id=683, 625.58719pt x 355.3275pt>
 File: images/ReconstructionPipelineCompact.png Graphic file (type png)
 <use images/ReconstructionPipelineCompact.png>
 Package luatex.def Info: images/ReconstructionPipelineCompact.png  used on inpu
-t line 727.
+t line 735.
 (luatex.def)             Requested size: 426.79135pt x 242.42192pt.
- [33] [34<./images/ReconstructionPipelineCompact.png>]
+ [34<./images/ReconstructionPipelineCompact.png>]
 Chapter 6.
 
-Overfull \hbox (15.31511pt too wide) in paragraph at lines 748--750
+Overfull \hbox (15.31511pt too wide) in paragraph at lines 756--758
 \TU/Alegreya(0)/m/n/12 First, the base-line net-work \TU/Alegreya(0)/m/it/12 Fou
 rier-Net \TU/Alegreya(0)/m/n/12 was com-pared to its more ef-fi-cient suc-ces-so
 r \TU/Alegreya(0)/m/it/12 󰋐xFourier-
  []
 
-LaTeX Font Info:    Calculating math sizes for size <10.9> on input line 756.
+LaTeX Font Info:    Calculating math sizes for size <10.9> on input line 764.
 LaTeX Font Info:    Font shape `TU/Alegreya(1)/m/n' will be
-(Font)              scaled to size 10.9pt on input line 756.
+(Font)              scaled to size 10.9pt on input line 764.
 LaTeX Font Info:    Font shape `TU/Alegreya(1)/m/n' will be
-(Font)              scaled to size 7.62996pt on input line 756.
+(Font)              scaled to size 7.62996pt on input line 764.
 LaTeX Font Info:    Font shape `TU/Alegreya(1)/m/n' will be
-(Font)              scaled to size 5.45pt on input line 756.
+(Font)              scaled to size 5.45pt on input line 764.
 LaTeX Font Info:    Font shape `TU/TeXGyreChorus(0)/m/n' will be
-(Font)              scaled to size 11.99005pt on input line 756.
+(Font)              scaled to size 11.99005pt on input line 764.
 LaTeX Font Info:    Font shape `TU/TeXGyreChorus(0)/m/n' will be
-(Font)              scaled to size 8.39299pt on input line 756.
+(Font)              scaled to size 8.39299pt on input line 764.
 LaTeX Font Info:    Font shape `TU/TeXGyreChorus(0)/m/n' will be
-(Font)              scaled to size 5.99503pt on input line 756.
+(Font)              scaled to size 5.99503pt on input line 764.
 [35
 
 ]
-<images/TestBenchmark_MSE_Boxplots.png, id=699, 722.7pt x 433.62pt>
+<images/TestBenchmark_MSE_Boxplots.png, id=705, 722.7pt x 433.62pt>
 File: images/TestBenchmark_MSE_Boxplots.png Graphic file (type png)
 <use images/TestBenchmark_MSE_Boxplots.png>
 Package luatex.def Info: images/TestBenchmark_MSE_Boxplots.png  used on input l
-ine 842.
+ine 850.
 (luatex.def)             Requested size: 211.25963pt x 126.75229pt.
-<images/TestBenchmark_SSIM_Boxplots.png, id=700, 722.7pt x 433.62pt>
+<images/TestBenchmark_SSIM_Boxplots.png, id=706, 722.7pt x 433.62pt>
 File: images/TestBenchmark_SSIM_Boxplots.png Graphic file (type png)
 <use images/TestBenchmark_SSIM_Boxplots.png>
 Package luatex.def Info: images/TestBenchmark_SSIM_Boxplots.png  used on input 
-line 848.
+line 856.
 (luatex.def)             Requested size: 211.25963pt x 126.75229pt.
 
 
@@ -3254,7 +3260,7 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 
 [36] [37<./images/TestBenchmark_MSE_Boxplots.png><./images/TestBenchmark_SSIM_Bo
 xplots.png>] [38]
-Overfull \hbox (9.29347pt too wide) in paragraph at lines 927--930
+Overfull \hbox (9.29347pt too wide) in paragraph at lines 935--938
 \TU/Alegreya(0)/m/n/12 Next, the im-pact of the start-ing chan-nels was ex-am-in
 ed. For this, \TU/Alegreya(0)/m/it/12 Fourier-Net+ \TU/Alegreya(0)/m/n/12 and \
 TU/Alegreya(0)/m/it/12 󰋐xFourier-
@@ -3269,42 +3275,48 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 [41] [42]
-Overfull \hbox (13.28703pt too wide) in paragraph at lines 1041--1046
+Overfull \hbox (13.28703pt too wide) in paragraph at lines 1049--1054
 \TU/Alegreya(0)/m/it/12 Fourier-Net \TU/Alegreya(0)/m/n/12 com-pared to the dens
 e ver-sion, while the band-limited \TU/Alegreya(0)/m/it/12 Fourier-Net+ \TU/Ale
 greya(0)/m/n/12 and \TU/Alegreya(0)/m/it/12 󰋐xFourier-
  []
 
 [43] [44] [45]
-Underfull \hbox (badness 10000) in paragraph at lines 1166--1169
-
+Overfull \hbox (4.68071pt too wide) in paragraph at lines 1174--1184
+\TU/Alegreya(0)/m/n/12 only \TU/Alegreya(0)/m/it/12 󰋐xFourier-Net+ \TU/Alegr
+eya(0)/m/n/12 per-form-ing worse than the base-line. \TU/Alegreya(0)/m/it/12 Ni
+󰀗tyReg \TU/Alegreya(0)/m/n/12 is again the worst method
  []
 
-<images/Boxplot_DiceScores_LV-Cavity.png, id=775, 867.24pt x 433.62pt>
+[46]
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<images/Boxplot_DiceScores_LV-Cavity.png, id=791, 867.24pt x 433.62pt>
 File: images/Boxplot_DiceScores_LV-Cavity.png Graphic file (type png)
 <use images/Boxplot_DiceScores_LV-Cavity.png>
 Package luatex.def Info: images/Boxplot_DiceScores_LV-Cavity.png  used on input
- line 1224.
+ line 1238.
 (luatex.def)             Requested size: 341.43437pt x 170.71892pt.
-<images/Boxplot_DiceScores_Myocardium.png, id=776, 867.24pt x 433.62pt>
+<images/Boxplot_DiceScores_Myocardium.png, id=792, 867.24pt x 433.62pt>
 File: images/Boxplot_DiceScores_Myocardium.png Graphic file (type png)
 <use images/Boxplot_DiceScores_Myocardium.png>
 Package luatex.def Info: images/Boxplot_DiceScores_Myocardium.png  used on inpu
-t line 1230.
+t line 1244.
 (luatex.def)             Requested size: 341.43437pt x 170.71892pt.
-<images/Boxplot_DiceScores_RV-Cavity.png, id=777, 867.24pt x 433.62pt>
+<images/Boxplot_DiceScores_RV-Cavity.png, id=793, 867.24pt x 433.62pt>
 File: images/Boxplot_DiceScores_RV-Cavity.png Graphic file (type png)
 <use images/Boxplot_DiceScores_RV-Cavity.png>
 Package luatex.def Info: images/Boxplot_DiceScores_RV-Cavity.png  used on input
- line 1236.
+ line 1250.
 (luatex.def)             Requested size: 341.43437pt x 170.71892pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
-[46] [47<./images/Boxplot_DiceScores_LV-Cavity.png><./images/Boxplot_DiceScores_
-Myocardium.png><./images/Boxplot_DiceScores_RV-Cavity.png>]
+[47] [48] [49<./images/Boxplot_DiceScores_LV-Cavity.png><./images/Boxplot_DiceSc
+ores_Myocardium.png><./images/Boxplot_DiceScores_RV-Cavity.png>]
 Chapter 7.
-[48
+[50
 
 ]
 
@@ -3313,29 +3325,29 @@ Package biblatex Warning: Name format 'last-first' deprecated.
 (biblatex)                Using 'family-given' now.
 
 LaTeX Font Info:    Font shape `TU/Alegreya(0)/m/sc' will be
-(Font)              scaled to size 12.0pt on input line 1294.
-[49
+(Font)              scaled to size 12.0pt on input line 1308.
+[51
 
-] [50]
-Underfull \hbox (badness 1661) in paragraph at lines 1294--1294
+] [52]
+Underfull \hbox (badness 1661) in paragraph at lines 1308--1308
 \TU/Alegreya(0)/m/it/12 Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 . Springer In-t
 er-na-tional Pub-lish-ing, 󰋇󰋅󰋆󰋍, pp. 󰋌󰋇󰋎–󰋌󰋈󰋍. \
 TU/Alegreya(0)/m/sc/12 󰁳󰃑󰀹󰂘\TU/Alegreya(0)/m/n/12 :
  []
 
-[51]
-Underfull \hbox (badness 1635) in paragraph at lines 1294--1294
+[53]
+Underfull \hbox (badness 1635) in paragraph at lines 1308--1308
 \TU/Alegreya(0)/m/n/12 work for Statis-tics on Dif-feo-mor-phisms. In: \TU/Aleg
 reya(0)/m/it/12 Lec-ture Notes in Com-puter Sci-ence\TU/Alegreya(0)/m/n/12 .
  []
 
 
-Underfull \hbox (badness 2970) in paragraph at lines 1294--1294
+Underfull \hbox (badness 2970) in paragraph at lines 1308--1308
 []\TU/Alegreya(0)/m/n/12 Jader-berg, M., Si-monyan, K., Zis-ser-man, A., and Kav
 ukcuoglu, K.  Spa-tial
  []
 
-[52] (./Masterarbeit.aux)
+[54] (./Masterarbeit.aux)
  ***********
 LaTeX2e <2023-06-01> patch level 1
 L3 programming layer <2023-08-29>
@@ -3348,7 +3360,7 @@ LaTeX Warning: There were undefined references.
 LaTeX Warning: There were multiply-defined labels.
 
 Package rerunfilecheck Info: File `Masterarbeit.out' has not changed.
-(rerunfilecheck)             Checksum: 0F8DD6752A50E9ECE01CAE44F457455C;5081.
+(rerunfilecheck)             Checksum: 646E8AE208F8B13A1AAFB00DF441037E;5190.
 
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
 (biblatex)                Masterarbeit
@@ -3360,15 +3372,15 @@ Package logreq Info: Writing requests to 'Masterarbeit.run.xml'.
 )
 
 Here is how much of LuaTeX's memory you used:
- 44976 strings out of 477259
+ 44980 strings out of 477259
  125007,2373549 words of node,token memory allocated
  1078 words of node memory still in use:
    7 hlist, 2 vlist, 2 rule, 5 glue, 4 kern, 1 glyph, 144 attribute, 71 glue_spe
 c, 74 attribute_list, 2 write, 9 pdf_action nodes
-   avail lists: 1:4,2:2318,3:541,4:226,5:1194,6:86,7:11246,8:73,9:724,10:22,11:9
+   avail lists: 1:4,2:2318,3:541,4:222,5:1390,6:86,7:11246,8:73,9:724,10:22,11:9
 44
  64970 multiletter control sequences out of 65536+600000
- 254 fonts using 76477207 bytes
+ 254 fonts using 76477091 bytes
  102i,13n,128p,2924b,2944s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Program Files/MiKTeX/fonts/opentype/public/lm/lmmonoprop10-regular.otf><C:/P
 rogram Files/MiKTeX/fonts/opentype/public/tex-gyre-math/texgyrepagella-math.otf>
@@ -3385,9 +3397,9 @@ rogram Files/MiKTeX/fonts/opentype/huerta/alegreya/Alegreya-Italic.otf><C:/Progr
 am Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Bold.otf><C:/Program
  Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Italic.otf><C:/Program
  Files/MiKTeX/fonts/opentype/huerta/alegreya/AlegreyaSans-Regular.otf>
-Output written on Masterarbeit.pdf (58 pages, 3492892 bytes).
+Output written on Masterarbeit.pdf (60 pages, 3502061 bytes).
 
-PDF statistics: 968 PDF objects out of 1000 (max. 8388607)
- 222 named destinations out of 1000 (max. 131072)
+PDF statistics: 987 PDF objects out of 1000 (max. 8388607)
+ 226 named destinations out of 1000 (max. 131072)
  232 words of extra memory for PDF output out of 10000 (max. 100000000)
 

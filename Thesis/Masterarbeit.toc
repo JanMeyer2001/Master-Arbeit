@@ -55,20 +55,22 @@
 \contentsline {subsection}{Comparison with VoxelMorph}{32}{section*.44}%
 \contentsline {subsection}{Dense Displacement on Accelerated Data}{32}{section*.45}%
 \contentsline {subsection}{Comparison on Subsampled Data}{32}{section*.46}%
-\contentsline {section}{\numberline {5.3}Data Consistency Experiments}{33}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{33}{section.5.4}%
-\contentsline {subsection}{General Reconstruction Pipeline}{34}{section*.47}%
+\contentsline {section}{\numberline {5.3}Data Consistency Experiments and Network Changes}{33}{section.5.3}%
+\contentsline {subsection}{Data Consistency Loss}{33}{section*.47}%
+\contentsline {subsection}{Changes to the Network Architecture}{34}{section*.48}%
+\contentsline {section}{\numberline {5.4}Integration into a Motion-Corrected Reconstruction Pipeline}{34}{section.5.4}%
+\contentsline {subsection}{General Reconstruction Pipeline}{34}{section*.49}%
 \contentsline {chapter}{\numberline {6}Results and Discussion}{35}{chapter.6}%
 \contentsline {section}{\numberline {6.1}Parameter Studies on the CMRxRecon Dataset}{35}{section.6.1}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{35}{section*.49}%
-\contentsline {subsection}{Starting Channel Size}{36}{section*.51}%
-\contentsline {subsection}{Quantitative Comparison with NiftyReg}{36}{section*.53}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{35}{section*.51}%
+\contentsline {subsection}{Starting Channel Size}{36}{section*.53}%
+\contentsline {subsection}{Quantitative Comparison with NiftyReg}{36}{section*.55}%
 \contentsline {section}{\numberline {6.2}Further Tests on the ACDC Dataset}{37}{section.6.2}%
-\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{37}{section*.56}%
-\contentsline {subsection}{Starting Channel Size}{40}{section*.58}%
-\contentsline {subsection}{Fourier-Transform Crop Size}{40}{section*.60}%
-\contentsline {subsection}{Comparison with VoxelMorph}{42}{section*.62}%
-\contentsline {subsection}{Dense Displacement on Accelerated Data}{43}{section*.64}%
-\contentsline {subsection}{Comparison on Subsampled Data}{46}{section*.68}%
-\contentsline {chapter}{\numberline {7}Conclusion}{48}{chapter.7}%
-\contentsline {chapter}{Bibliography}{49}{chapter*.71}%
+\contentsline {subsection}{Fourier-Net versus Fourier-Net+}{37}{section*.58}%
+\contentsline {subsection}{Starting Channel Size}{40}{section*.60}%
+\contentsline {subsection}{Fourier-Transform Crop Size}{40}{section*.62}%
+\contentsline {subsection}{Comparison with VoxelMorph}{42}{section*.64}%
+\contentsline {subsection}{Dense Displacement on Accelerated Data}{43}{section*.66}%
+\contentsline {subsection}{Comparison on Subsampled Data}{46}{section*.70}%
+\contentsline {chapter}{\numberline {7}Conclusion}{50}{chapter.7}%
+\contentsline {chapter}{Bibliography}{51}{chapter*.73}%
