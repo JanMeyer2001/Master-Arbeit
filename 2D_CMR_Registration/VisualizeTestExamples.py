@@ -205,7 +205,7 @@ for i in range(len(titles)):
 plt.axis('off')
 #plt.tight_layout(pad=-3)
 plt.subplots_adjust(wspace=-0.75, hspace=0.05) # make subplots tighter
-plt.savefig(save_path+'TestExamples.png', bbox_inches="tight") 
+plt.savefig(save_path+'TestExamples_Mode{}.png'.format(mode), bbox_inches="tight") 
 plt.close()
 
 """
