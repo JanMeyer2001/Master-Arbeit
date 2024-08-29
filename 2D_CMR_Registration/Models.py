@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore")
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,6 +9,12 @@ import matplotlib.pyplot as plt
 import inspect
 import functools
 import math
+import tensorflow as tf
+import tensorflow.python.keras as keras
+from tensorflow.python.keras.initializers import VarianceScaling
+from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, LeakyReLU, Lambda, Input, AveragePooling2D, Layer
+from tensorflow.python.keras.optimizers import adam_v2
+from tensorflow.python.keras.regularizers import l2
 from  Functions import *
 
 class SYMNet_dense(nn.Module):
@@ -125,11 +133,10 @@ class SYMNet_dense(nn.Module):
 
 class Fourier_Net_dense(nn.Module):
     """ Version of Fourier-Net that gives back a dense displacement field """
-    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo):
         self.in_channel = in_channel
         self.n_classes = n_classes
         self.start_channel = start_channel
-        self.offset = offset
         self.diffeo = diffeo
 
         super(Fourier_Net_dense, self).__init__()
@@ -360,6 +367,311 @@ class Cascade_dense(nn.Module):
         else:
             Df_xy = fxy_4_
         
+        return Df_xy
+
+class Fourier_Net_kSpace(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.diffeo = diffeo
+
+        super(Fourier_Net_kSpace, self).__init__()
+        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.view_as_real(torch.fft.fftn(Moving))
+        F_temp_fourier_all = torch.view_as_real(torch.fft.fftn(Fixed))
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_concat = torch.cat([M_temp_fourier_all[:,:,:,:,0],M_temp_fourier_all[:,:,:,:,1]],1)
+        F_temp_fourier_concat = torch.cat([F_temp_fourier_all[:,:,:,:,0],F_temp_fourier_all[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.model(M_temp_fourier_concat, F_temp_fourier_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # calculate padding for x and y axis
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+
+        # pad band-limited displacement
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+
+        # concatenate displacements
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
+        return Df_xy
+
+class Fourier_Net_plus_kSpace(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
+
+        super(Fourier_Net_plus_kSpace, self).__init__()
+        self.model = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
+        
+        # center-crop the k-space
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_low_concat = torch.cat([torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        F_temp_fourier_low_concat = torch.cat([torch.view_as_real(F_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(F_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.model(M_temp_fourier_low_concat, F_temp_fourier_low_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # pad band-limited displacement
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
+        return Df_xy
+
+class Cascade_kSpace(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.offset = offset
+        self.diffeo = diffeo
+
+        super(Cascade_kSpace, self).__init__()
+        self.net1 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        self.net2 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        self.net3 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        self.net4 = Net_1_4(self.in_channel, self.n_classes, self.start_channel)
+        self.warp = SpatialTransform()
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        M_temp = Moving.squeeze().squeeze()
+        F_temp = Fixed.squeeze().squeeze()
+        
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        F_temp_fourier_all = torch.fft.fftn(F_temp)
+        
+        # center-crop the k-space
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        F_temp_fourier_low = torch.fft.fftshift(F_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_low_concat = torch.cat([torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        F_temp_fourier_low_concat = torch.cat([torch.view_as_real(F_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(F_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.net1(M_temp_fourier_low_concat, F_temp_fourier_low_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # pad band-limited displacement
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+        fxy_1 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+         
+        __, Moving = self.warp(Moving, fxy_1.permute(0, 2, 3, 1))
+                
+        M_temp = Moving.squeeze().squeeze()        
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        # center-crop the k-space
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_low_concat = torch.cat([torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.net2(M_temp_fourier_low_concat, F_temp_fourier_low_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # pad band-limited displacement
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+        fxy_2 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+                  
+        __, fxy_2_ = self.warp(fxy_1, fxy_2.permute(0, 2, 3, 1))
+        
+        fxy_2_ = fxy_2_ + fxy_2
+                
+        __, Moving = self.warp(Moving, fxy_2_.permute(0, 2, 3, 1))
+                
+        M_temp = Moving.squeeze().squeeze()        
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        # center-crop the k-space
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_low_concat = torch.cat([torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.net3(M_temp_fourier_low_concat, F_temp_fourier_low_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # pad band-limited displacement
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+        fxy_3 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+           
+        __, fxy_3_ = self.warp(fxy_2_, fxy_3.permute(0, 2, 3, 1))
+        fxy_3_ = fxy_3_ + fxy_3
+        
+        __, Moving = self.warp(Moving, fxy_3_.permute(0, 2, 3, 1))
+        
+        M_temp = Moving.squeeze().squeeze()        
+        # FFT to get to k-space domain
+        M_temp_fourier_all = torch.fft.fftn(M_temp)
+        # center-crop the k-space
+        centerx = int((M_temp_fourier_all.shape[0])/2)
+        centery = int((M_temp_fourier_all.shape[1])/2)
+        [offsetx, offsety] = self.offset
+        M_temp_fourier_low = torch.fft.fftshift(M_temp_fourier_all)[(centerx-offsetx):(centerx+offsetx),(centery-offsety):(centery+offsety)]
+        
+        # concatenate real and imaginary parts of the k-space into two channels
+        M_temp_fourier_low_concat = torch.cat([torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,0],torch.view_as_real(M_temp_fourier_low).unsqueeze(0).unsqueeze(0)[:,:,:,:,1]],1)
+        
+        # get band-limited displacement
+        out_1, out_2 = self.net4(M_temp_fourier_low_concat, F_temp_fourier_low_concat)
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        
+        # pad band-limited displacement
+        padx = int((Moving.shape[2]-out_1.shape[0])/2) 
+        pady = int((Moving.shape[3]-out_1.shape[1])/2) 
+        padxy = (pady, pady, padx, padx) 
+        out_1 = F.pad(out_1, padxy, "constant", 0)
+        out_2 = F.pad(out_2, padxy, "constant", 0)
+        
+        # iDFT to get the displacement in the image domain 
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_2)))
+        fxy_4 = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+           
+        __, fxy_4_ = self.warp(fxy_3_, fxy_4.permute(0, 2, 3, 1))
+        fxy_4_ = fxy_4_ + fxy_4
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(fxy_4_)
+        else:
+            Df_xy = fxy_4_
+        
+        return Df_xy
+
+class Fourier_Net(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
+        self.diffeo = diffeo
+
+        super(Fourier_Net, self).__init__()
+        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
+        if self.diffeo == 1:
+            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
+        
+    def forward(self, Moving, Fixed):
+        out_1, out_2 = self.model(Moving, Fixed)#.squeeze().squeeze()
+
+        out_1 = out_1.squeeze().squeeze()
+        out_2 = out_2.squeeze().squeeze()
+        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
+        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
+        
+        padx = int((Moving.shape[2]-out_ifft1.shape[0])/2) #calculate padding for x axis
+        pady = int((Moving.shape[3]-out_ifft1.shape[1])/2) #calculate padding for x axis
+        padxy = (pady, pady, padx, padx) # adaptive padding
+        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
+        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
+        
+        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
+        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
+        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+
+        if self.diffeo == 1:
+            Df_xy = self.diff_transform(f_xy)
+        else:
+            Df_xy = f_xy
+         
         return Df_xy
 
 class Fourier_Net_plus(nn.Module):
@@ -814,43 +1126,6 @@ class Net_1_4(nn.Module):
 
         return f_xy[:,0:1,:,:], f_xy[:,1:2,:,:]
 
-class Fourier_Net(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel, diffeo):
-        self.in_channel = in_channel
-        self.n_classes = n_classes
-        self.start_channel = start_channel
-        self.diffeo = diffeo
-
-        super(Fourier_Net, self).__init__()
-        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
-        if self.diffeo == 1:
-            self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
-        
-    def forward(self, Moving, Fixed):
-        out_1, out_2 = self.model(Moving, Fixed)#.squeeze().squeeze()
-
-        out_1 = out_1.squeeze().squeeze()
-        out_2 = out_2.squeeze().squeeze()
-        out_ifft1 = torch.fft.fftshift(torch.fft.fftn(out_1))
-        out_ifft2 = torch.fft.fftshift(torch.fft.fftn(out_2))
-        
-        padx = int((Moving.shape[2]-out_ifft1.shape[0])/2) #calculate padding for x axis
-        pady = int((Moving.shape[3]-out_ifft1.shape[1])/2) #calculate padding for x axis
-        padxy = (pady, pady, padx, padx) # adaptive padding
-        out_ifft1 = F.pad(out_ifft1, padxy, "constant", 0)
-        out_ifft2 = F.pad(out_ifft2, padxy, "constant", 0)
-        
-        disp_mf_1 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft1)))
-        disp_mf_2 = torch.real(torch.fft.ifftn(torch.fft.ifftshift(out_ifft2)))
-        f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
-
-        if self.diffeo == 1:
-            Df_xy = self.diff_transform(f_xy)
-        else:
-            Df_xy = f_xy
-         
-        return Df_xy
-
 class SYMNet(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):
         self.in_channel = in_channel
@@ -1134,6 +1409,30 @@ class SAD:
     def loss(self, y_true, y_pred):
         return torch.mean(torch.abs(y_true - y_pred))
 
+class RelativeL2Loss(nn.Module):
+    def __init__(self, sigma=1.0, reg_weight=0):
+        super(RelativeL2Loss, self).__init__()
+        self.epsilon = 1e-5
+        self.sigma = sigma
+        self.reg_weight = reg_weight
+    
+    def forward(self, input, target):
+        if input.dtype == torch.float:
+            input = torch.view_as_complex(input) 
+        if target.dtype == torch.float:
+            target = torch.view_as_complex(target)
+        target = target / target.abs().max()
+        input = input / input.abs().max()
+        loss = 0
+        for x, y in zip([input.real, input.imag], [target.real, target.imag]):
+            magnitude = x.clone().detach()**2
+            scaler = magnitude+self.epsilon
+            squared_loss = (x - y)**2
+            loss_add = (squared_loss / scaler).mean() 
+            if not math.isnan(loss_add):
+                loss = loss + loss_add
+    
+        return loss
 
 ################
 ## Voxelmorph ##
@@ -1739,3 +2038,366 @@ class vxm_Grad:
 
         return grad.mean()
         
+
+################
+#### LAPNet ####
+################
+
+# Create the 2D model
+def buildLAPNet_model_2D(inshape): #crop_size=33
+    #input_shape = (crop_size, crop_size, 4)
+    input_shape = (inshape[0], inshape[1], 4)
+    inputs = Input(shape=input_shape)
+    model = keras.Sequential()
+    initializer = VarianceScaling(scale=2.0)
+    model.add(inputs)
+    model.add(Conv2D(filters=64,
+                     kernel_size=3,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv1"))
+    # model.add(Activation(leaky_relu, name='act1'))
+    model.add(LeakyReLU(alpha=0.1, name='act1'))
+    model.add(Conv2D(filters=128,
+                     kernel_size=3,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv2"))
+    # model.add(Activation(leaky_relu, name='act2'))
+    model.add(LeakyReLU(alpha=0.1, name='act2'))
+    model.add(Conv2D(filters=256,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv2_1"))
+    # model.add(Activation(leaky_relu, name='act2_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act2_1'))
+    model.add(Conv2D(filters=512,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv3_1"))
+    # model.add(Activation(leaky_relu, name='act3_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act3_1'))
+    model.add(Conv2D(filters=1024,
+                     kernel_size=3,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv4"))
+    # model.add(Activation(leaky_relu, name='act4'))
+    model.add(LeakyReLU(alpha=0.1, name='act4'))
+    model.add(Conv2D(filters=1024,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv4_1"))
+    # model.add(Activation(leaky_relu, name='act4_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act4_1'))
+    model.add(MaxPooling2D(pool_size=5, name='pool'))
+    model.add(Conv2D(2, [1, 1], name="fc2"))
+    model.add(Lambda(squeeze_func, name="fc8/squeezed"))
+    return model
+
+
+# Model with descendent kernel sizes
+def buildLAPNet_model_2D_old(crop_size=33):
+    input_shape = (crop_size, crop_size, 4)
+    inputs = Input(shape=input_shape, )
+    model = keras.Sequential()
+    initializer = VarianceScaling(scale=2.0)
+    model.add(inputs, name="input")
+    model.add(Conv2D(filters=64,
+                     kernel_size=7,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv1"))
+    # model.add(Activation(leaky_relu, name='act1'))
+    model.add(LeakyReLU(alpha=0.1, name='act1'))
+    model.add(Conv2D(filters=128,
+                     kernel_size=5,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv2"))
+    # model.add(Activation(leaky_relu, name='act2'))
+    model.add(LeakyReLU(alpha=0.1, name='act2'))
+    model.add(Conv2D(filters=256,
+                     kernel_size=5,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv2_1"))
+    # model.add(Activation(leaky_relu, name='act2_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act2_1'))
+    model.add(Conv2D(filters=512,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv3_1"))
+    # model.add(Activation(leaky_relu, name='act3_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act3_1'))
+    model.add(Conv2D(filters=1024,
+                     kernel_size=3,
+                     strides=2,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv4"))
+    # model.add(Activation(leaky_relu, name='act4'))
+    model.add(LeakyReLU(alpha=0.1, name='act4'))
+    model.add(Conv2D(filters=1024,
+                     kernel_size=3,
+                     strides=1,
+                     padding='same',
+                     kernel_regularizer=l2(0.0004),
+                     kernel_initializer=initializer,
+                     name="conv4_1"))
+    # model.add(Activation(leaky_relu, name='act4_1'))
+    model.add(LeakyReLU(alpha=0.1, name='act4_1'))
+    model.add(MaxPooling2D(pool_size=5, name='pool'))
+    model.add(Conv2D(2, [1, 1], name="fc2"))
+    model.add(Lambda(squeeze_func, name="fc8/squeezed"))
+    return model
+
+
+# design the 3D model
+def buildLAPNet_model_3D():
+    initializer = VarianceScaling(scale=2.0)
+
+    input_shape = (33, 33, 4)
+    coronal_input = Input(shape=input_shape, name="coronal")
+    sagital_input = Input(shape=input_shape, name="sagital")
+
+    coronal_features = Conv2D(filters=64,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv1")(coronal_input)
+    coronal_features = LeakyReLU(alpha=0.1, name='c_act1')(coronal_features)
+    coronal_features = Conv2D(filters=128,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv2")(coronal_features)
+    coronal_features = LeakyReLU(alpha=0.1, name='c_act2')(coronal_features)
+    coronal_features = Conv2D(filters=256,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv2_1")(coronal_features)
+    coronal_features = Conv2D(filters=512,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv3_1")(coronal_features)
+    coronal_features = LeakyReLU(alpha=0.1, name='c_act3_1')(coronal_features)
+    coronal_features = Conv2D(filters=1024,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv4")(coronal_features)
+    coronal_features = LeakyReLU(alpha=0.1, name='c_act4')(coronal_features)
+    coronal_features = Conv2D(filters=1024,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="c_conv4_1")(coronal_features)
+    coronal_features = LeakyReLU(alpha=0.1, name='c_act4_1')(coronal_features)
+    coronal_features = AveragePooling2D(pool_size=5, name='pool_c')(coronal_features)
+    coronal_features = Conv2D(2, [1, 1], name="c_fc3")(coronal_features)
+
+    sagital_features = Conv2D(filters=64,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv1")(sagital_input)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act1')(sagital_features)
+    sagital_features = Conv2D(filters=128,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv2")(sagital_features)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act2')(sagital_features)
+    sagital_features = Conv2D(filters=256,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv2_1")(sagital_features)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act2_1')(sagital_features)
+    sagital_features = Conv2D(filters=512,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv3_1")(sagital_features)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act3_1')(sagital_features)
+    sagital_features = Conv2D(filters=1024,
+                              kernel_size=3,
+                              strides=2,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv4")(sagital_features)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act4')(sagital_features)
+    sagital_features = Conv2D(filters=1024,
+                              kernel_size=3,
+                              strides=1,
+                              padding='same',
+                              kernel_regularizer=l2(0.0004),
+                              kernel_initializer=initializer,
+                              name="s_conv4_1")(sagital_features)
+    sagital_features = LeakyReLU(alpha=0.1, name='s_act4_1')(sagital_features)
+    sagital_features = AveragePooling2D(pool_size=5, name='pool_s')(sagital_features)
+    sagital_features = Conv2D(2, [1, 1], name="s_fc3")(sagital_features)
+
+    final_flow_c = Lambda(squeeze_func, name="fc8/squeezed_c")(coronal_features)
+    final_flow_s = Lambda(squeeze_func, name="fc8/squeezed_s")(sagital_features)
+
+    final_flow = WeightedSum(name='final_flow_weighted')([final_flow_c, final_flow_s])
+    final_flow = Lambda(squeeze_func, name="squeezed_flow")(final_flow)
+
+    model = keras.Model(
+        inputs=[coronal_input, sagital_input],
+        outputs=[final_flow],
+    )
+
+    return model
+
+
+# Removes dimensions of size 1 from the shape of the input tensor
+def squeeze_func(x):
+    try:
+        return tf.squeeze(x, axis=[1, 2])
+    except:
+        try:
+            return tf.squeeze(x, axis=[1])
+        except Exception as e:
+            print(e)
+
+
+# load checkpoints of trained models in tensorflow 1
+def load_tf1_LAPNet_cropping_ckpt(
+        checkpoint_path_old='/mnt/data/projects/MoCo/LAPNet/UnFlow/log/ex/resp/srx424_drUS_1603/model.ckpt'):
+    model = buildLAPNet_model_2D_old()
+    model.compile(optimizer=adam_v2(beta_1=0.9, beta_2=0.999, lr=0.0),
+                  loss=[modified_EPE],
+                  metrics=['accuracy'])
+    reader = tf.compat.v1.train.NewCheckpointReader(checkpoint_path_old)
+    layers_name = ['conv1', 'conv2', 'conv2_1', 'conv3_1', 'conv4', 'conv4_1', 'fc2']
+    for i in range(len(layers_name)):
+        weights_key = 'flownet_s/' + layers_name[i] + '/weights'
+        bias_key = 'flownet_s/' + layers_name[i] + '/biases'
+        weights = reader.get_tensor(weights_key)
+        biases = reader.get_tensor(bias_key)
+        model.get_layer(layers_name[i]).set_weights([weights, biases])  # name the layers
+    return model
+
+
+class WeightedSum(Layer):
+    """A custom keras layer to learn a weighted sum of tensors"""
+
+    def __init__(self, **kwargs):
+        super(WeightedSum, self).__init__(**kwargs)
+
+    def build(self, input_shape=1):
+        self.a = self.add_weight(name='weighted',
+                                 shape=(1),
+                                 initializer=tf.keras.initializers.Constant(0.5),
+                                 dtype='float32',
+                                 trainable=True,
+                                 constraint=tf.keras.constraints.min_max_norm(max_value=1, min_value=0))
+        super(WeightedSum, self).build(input_shape)
+
+    def call(self, model_outputs):
+        return tf.stack((self.a * tf.gather(model_outputs[0], [0], axis=1) + (1 - self.a) * tf.gather(model_outputs[1],
+                                                                                                      [0], axis=1),
+                         tf.gather(model_outputs[0], [1], axis=1),
+                         tf.gather(model_outputs[1], [1], axis=1)), axis=-1)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape[0]
+
+def step_decay(epoch):
+    initial_lr = 2.5e-04
+    drop = 0.5
+    epochs_drop = 2
+    lr = initial_lr * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+    return lr
+
+
+# EPE function modified
+def modified_EPE(y_true, y_pred):
+    squared_difference = tf.square(y_true - y_pred)
+    final_loss = tf.reduce_mean(squared_difference)
+    return final_loss
+
+
+def EPE(flows_gt, flows):
+    # Given ground truth and estimated flow must be unscaled
+    return tf.reduce_mean(tf.norm(flows_gt - flows, ord=2, axis=0))
+
+
+def EAE(y_true, y_pred):
+    final_loss = tf.math.real(tf.math.acos((1 + tf.reduce_sum(tf.math.multiply(y_true, y_pred))) /
+                                           (tf.math.sqrt(1 + tf.reduce_sum(tf.math.pow(y_pred, 2))) *
+                                            tf.math.sqrt(1 + tf.reduce_sum(tf.math.pow(y_true, 2))))))
+    return final_loss
+
+
+def LAP_loss_function(y_true, y_pred):
+    w_1 = 0.8
+    w_2 = 0.2
+    return tf.add(w_1 * modified_EPE(y_true, y_pred), w_2 * EAE(y_true, y_pred))
+
+
+def loss1(y_true, y_pred):
+    w = 0.5
+    y1 = LAP_loss_function(y_true[0], y_pred[0])
+    y2 = w * LAP_loss_function(y_true[1], y_pred[1])
+    squared_difference = tf.stack([y1, y2], axis=-1)
+    return squared_difference
+
+
+def loss2(y_true, y_pred):
+    w = 0.5
+    y1 = w * LAP_loss_function(y_true[0], y_pred[0])
+    y2 = LAP_loss_function(y_true[1], y_pred[1])
+    squared_difference = tf.stack([y1, y2], axis=-1)
+    return squared_difference
