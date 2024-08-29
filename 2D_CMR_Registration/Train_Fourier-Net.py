@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore")
 from argparse import ArgumentParser
 import numpy as np
 import torch
@@ -6,20 +8,18 @@ from Functions import *
 import torch.utils.data as Data
 import csv
 import time
-from skimage.metrics import structural_similarity, mean_squared_error, normalized_mutual_information
-import warnings
-warnings.filterwarnings("ignore")
-from pytorch_msssim import MS_SSIM
+from skimage.metrics import structural_similarity, mean_squared_error
+from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import sys
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
-                    dest="learning_rate", default=1e-4, help="learning rate")
+                    dest="learning_rate", default=1e-3, help="learning rate")
 parser.add_argument("--epochs", type=int,
                     dest="epochs", default=15,
                     help="number of epochs")
 parser.add_argument("--lambda", type=float,
-                    dest="smth_lambda", default=0.01,
+                    dest="smth_lambda", default=10,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=16,
@@ -29,13 +29,13 @@ parser.add_argument("--dataset", type=str,
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,
-                    help="choose similarity loss: SAD (0), MSE (1), NCC (2) or L1 (3)")
+                    help="choose similarity loss: SAD (0), MSE (1), NCC (2), L1 (3) or L2 (4)")
 parser.add_argument("--mode", type=int,
                     dest="mode", default=1,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--model", type=int,
                     dest="model_num", default=0, 
-                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1) or cascaded Fourier-Net (2) as the model")
+                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense Fourier-Net (3), dense Fourier-Net+ (4), dense cascaded Fourier-Net+ (5), k-space Fourier-Net (6), k-space Fourier-Net+ (7) or cascaded k-space Fourier-Net+ (8) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
                     help="choose whether to use a diffeomorphic transform (1) or not (0)")
@@ -49,7 +49,7 @@ parser.add_argument("--earlyStop", type=int,
                     dest="earlyStop", default=3,
                     help="choose after how many epochs early stopping is applied")
 parser.add_argument("--domain_sim", type=int,
-                    dest="domain_sim", default=1,
+                    dest="domain_sim", default=0,
                     help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 opt = parser.parse_args()
 
@@ -67,9 +67,10 @@ earlyStop = opt.earlyStop
 domain_sim = opt.domain_sim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.autograd.set_detect_anomaly(True)
 
 # choose the model
-assert model_num >= 0 or model_num <= 5, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {model_num}"
+assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
@@ -80,16 +81,24 @@ elif model_num == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
 elif model_num == 3:
-    model = Fourier_Net_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo).to(device) 
 elif model_num == 4:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
 elif model_num == 5:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
+elif model_num == 6:
+    model = Fourier_Net_kSpace(4, 2, start_channel, diffeo).to(device) 
+elif model_num == 7:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 8:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
 
 # choose the loss function for similarity
-assert choose_loss >= 0 and choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or L1 (3), but got: {choose_loss}"
+assert choose_loss >= 0 and choose_loss <= 4, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3) or L2 (4), but got: {choose_loss}"
 if choose_loss == 1:
     loss_similarity = MSE().loss
 elif choose_loss == 0:
@@ -98,6 +107,8 @@ elif choose_loss == 2:
     loss_similarity = NCC(win=9)
 elif choose_loss == 3:
     loss_similarity = torch.nn.L1Loss()    
+elif choose_loss == 4:
+    loss_similarity = RelativeL2Loss()
 loss_smooth = smoothloss
 
 transform = SpatialTransform().to(device)
@@ -109,36 +120,48 @@ for param in transform.parameters():
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
-if mode == 1:
-    # get Acc4 mask
-    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4])
-elif mode == 2:
-    # get Acc8 mask
-    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8])  
-elif mode == 3:
-    # get Acc10 mask
-    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10])         
 
 if dataset == 'ACDC':
     # load ACDC data
     train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
-    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
     train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
-    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=True, num_workers=4)
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'OASIS':
     # path for OASIS dataset
     train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS')
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=2)
+    input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
+
+if mode == 1:
+    # get Acc4 masking function
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4])
+elif mode == 2:
+    # get Acc8 masking function
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8])  
+elif mode == 3:
+    # get Acc10 masking function
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10])  
+elif mode == 0:
+    # get fully sampled masking function
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[0]) 
+
+if mode != 0:
+    # create and repeat mask
+    mask, _ = mask_func(input_shape)
+    mask = mask.repeat(1,1,1,input_shape[-1])        
 
 model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
 model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Png/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
@@ -153,7 +176,7 @@ csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
-        fnames = ['Epoch','MSE','SSIM'] #'Dice',
+        fnames = ['Epoch','MSE','SSIM'] 
     else:
         fnames = ['Epoch','Dice','MSE','SSIM']
     writer = csv.DictWriter(f, fieldnames=fnames)
@@ -191,25 +214,32 @@ for epoch in range(epochs):
             loss1 = loss_similarity(fix_img, warped_mov) 
         elif domain_sim == 1:  
             # convert images to k-space
-            fix_img_kspace     = torch.fft.fftn(fix_img)
-            warped_mov_kspace  = torch.fft.fftn(warped_mov)
-            # multply with subsampling masks 
-            fix_img_kspace, mask, _    = T.apply_mask(fix_img_kspace.cpu(), mask_func)
-            warped_mov_kspace, mask, _ = T.apply_mask(warped_mov_kspace.cpu(), mask_func)
-            # compute similarity loss in k-space
-            loss1 = torch.real(loss_similarity(fix_img_kspace, warped_mov_kspace))
+            fix_img_kspace     = FFT(fix_img)
+            warped_mov_kspace  = FFT(warped_mov)
+            if mode != 0:
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace[mask.bool()]), torch.view_as_real(fix_img_kspace[mask.bool()]))
+            else:    
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace), torch.view_as_real(fix_img_kspace))
         loss2 = loss_smooth(Df_xy)
         
         loss = loss1 + smooth * loss2
         losses[i] = loss
 
         #"""
-        sys.stdout.write("\r" + 'epoch {}/{} -> training loss {:.4f} - sim {:.4f} -smo {:.4f}'.format(epoch+1, epochs, loss.item(),loss1.item(),loss2.item()))
+        sys.stdout.write("\r" + 'epoch {}/{} -> training loss {:.4f} - sim {:.4f} -smo {:.4f}'.format(epoch+1,epochs,loss,loss1,loss2))
         sys.stdout.flush()
         #"""
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+    # plot losses 
+    plt.subplots(figsize=(7, 4))
+    plt.subplot(1,1,1)
+    plt.plot(losses)
+    plt.title('Loss Epoch {}'.format(epoch+1))
+    sample_path = join(model_dir_png, 'Losses_Epoch_{:04d}.jpg'.format(epoch+1))
+    plt.savefig(sample_path)  
 
     ################
     ## Validation ##

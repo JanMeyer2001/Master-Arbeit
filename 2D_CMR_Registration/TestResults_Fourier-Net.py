@@ -28,7 +28,7 @@ parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--model", type=int,
                     dest="model_num", default=1, 
-                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1) or cascaded Fourier-Net (2) as the model")
+                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense Fourier-Net (3), dense Fourier-Net+ (4), dense cascaded Fourier-Net+ (5), k-space Fourier-Net (6), k-space Fourier-Net+ (7) or cascaded k-space Fourier-Net+ (8) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
                     help="choose whether to use a diffeomorphic transform (1) or not (0)")
@@ -38,6 +38,9 @@ parser.add_argument("--FT_size_x", type=int,
 parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
+parser.add_argument("--domain_sim", type=int,
+                    dest="domain_sim", default=0,
+                    help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -49,30 +52,41 @@ mode = opt.mode
 model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
+domain_sim = opt.domain_sim
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # choose the model
-assert model_num >= 0 or model_num <= 5, f"Expected number for model to be either 0, 1 or 2, but got: {model_num}"
+assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
-    model = Fourier_Net(2, 2, start_channel, diffeo).cuda() 
+    model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
 elif model_num == 1:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).cuda() 
+    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).to(device) 
 elif model_num == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade(2, 2, start_channel, diffeo, FT_size).cuda() 
+    model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
 elif model_num == 3:
-    model = Fourier_Net_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo).to(device) 
 elif model_num == 4:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
 elif model_num == 5:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).cuda() 
+    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
+elif model_num == 6:
+    model = Fourier_Net_kSpace(4, 2, start_channel, diffeo).to(device) 
+elif model_num == 7:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 8:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
 
-transform = SpatialTransform().cuda()
+transform = SpatialTransform().to(device)
 
-path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
 
 """
 # choose best model
@@ -83,7 +97,7 @@ modelpath = path + natsorted(os.listdir(path))[model_idx]
 """
 
 # choose model after certain epoch of training
-modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0004') == -1)][0]
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
 print('Best model: {}'.format(basename(modelpath)))
 
 bs = 1
@@ -117,7 +131,7 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
