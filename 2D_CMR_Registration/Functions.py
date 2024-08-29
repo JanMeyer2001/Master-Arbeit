@@ -17,7 +17,6 @@ import glob
 import h5py
 import fastmri
 from fastmri.data import transforms as T
-from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import torch.nn.functional as F
 from skimage.io import imread
 import time
@@ -25,8 +24,9 @@ from skimage.metrics import structural_similarity, mean_squared_error
 import csv
 from os import mkdir
 from os.path import isdir
-from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 from matplotlib.pyplot import cm
+from torch.fft import fftn, ifftn, fftshift, ifftshift
+from typing import Optional, Tuple, Union
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -117,6 +117,61 @@ def load_image_pair_ACDC(pathname1, pathname2):
     seg2 = F.interpolate(seg2.unsqueeze(0).unsqueeze(0), (216,256), mode='nearest').squeeze(0)
     
     return image1, image2, seg1, seg2
+
+def load_image_pair_ACDC_train_kSpace(pathname1, pathname2):
+    """ expects paths for files and loads the corresponding image pair"""
+    # read in images 
+    image1 = imread(pathname1, as_gray=True)/255
+    image2 = imread(pathname2, as_gray=True)/255
+    # convert to tensors and add singleton dimension for the correct size
+    image1 = torch.from_numpy(image1)
+    image2 = torch.from_numpy(image2)
+    # interpolate all images to the same size
+    image1 = F.interpolate(image1.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    image2 = F.interpolate(image2.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0)
+    # convert to k-space domain
+    k_space1 = FFT(image1)
+    k_space2 = FFT(image2)
+    # convert to real tensors with 2 extra dimensions for real and imaginary parts
+    k_space1 = torch.view_as_real(k_space1)
+    k_space2 = torch.view_as_real(k_space2)
+    # get ground truth flow between images
+    flow = ''
+
+    return k_space1, k_space2, flow
+
+class TrainDatasetACDC_kSpace(Data.Dataset):
+  'Training dataset for ACDC data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        super(TrainDatasetACDC_kSpace, self).__init__()
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC training dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08'
+        elif mode == 3:
+            subfolder = 'AccFactor10'  
+        # get paths of training data
+        self.data_path = data_path
+        self.paths = get_image_pairs_ACDC(subset='Training', data_path=data_path, subfolder=subfolder)
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        k_space1, k_space2, flow = load_image_pair_ACDC_train_kSpace(self.paths[index][0], self.paths[index][1])
+        k_space = torch.zeros_like(k_space1)
+        # concat real parts
+        k_space[0,0,:,:] = torch.cat((k_space1[:,:,:,:,0], k_space2[:,:,:,:,0]),1)
+        # and imaginary parts
+        k_space[0,1,:,:] = torch.cat((k_space1[:,:,:,:,1], k_space2[:,:,:,:,1]),1)
+        return k_space, flow
 
 class TrainDatasetACDC(Data.Dataset):
   'Training dataset for ACDC data'
@@ -1058,9 +1113,9 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         # draw temporary lines and use them to create a legend
         plt.plot([], c=color[i], label=legend[i])
     
-    plt.legend()
+    plt.legend() #bbox_to_anchor=[0.22, 0.125],loc='center'
     plt.xticks(range(0, len(labels)*2, 2), labels)
-    plt.xlim(-1.5, len(labels)*1.65)
+    plt.xlim(-1.5, len(labels)*1.65) 
     plt.tight_layout()
     
     if title is not None:
@@ -1070,3 +1125,9 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         plt.savefig('boxplot.png')   
     else:
         plt.savefig(savename)            
+
+def FFT(image):
+    return fftshift(fftn(ifftshift(image, dim=[-2, -1]), dim=[-2, -1]), dim=[-2, -1])
+
+def IFFT(kspace):
+    return fftshift(ifftn(ifftshift(kspace, dim=[-2, -1]), dim=[-2, -1]), dim=[-2, -1])   
