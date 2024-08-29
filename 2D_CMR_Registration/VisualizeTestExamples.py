@@ -204,7 +204,7 @@ for i in range(len(titles)):
     im_ax = ax.imshow(segmentations[i].data.cpu().numpy()[0, 0, ...])
 plt.axis('off')
 #plt.tight_layout(pad=-3)
-plt.subplots_adjust(wspace=-0.75, hspace=0) # make subplots tighter
+plt.subplots_adjust(wspace=-0.75, hspace=0.05) # make subplots tighter
 plt.savefig(save_path+'TestExamples.png', bbox_inches="tight") 
 plt.close()
 
