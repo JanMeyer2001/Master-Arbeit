@@ -10,6 +10,7 @@ import time
 from Functions import *
 import nibabel as nib
 from mri.operators import FFT
+from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 
 parser = ArgumentParser()
 

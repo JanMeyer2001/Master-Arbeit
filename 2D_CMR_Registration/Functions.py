@@ -27,6 +27,7 @@ from os.path import isdir
 from matplotlib.pyplot import cm
 from torch.fft import fftn, ifftn, fftshift, ifftshift
 from typing import Optional, Tuple, Union
+from skimage.util import view_as_windows
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -71,12 +72,28 @@ def get_image_pairs_ACDC(subset, data_path, subfolder):
         for slice in slices:
             # get all frames for each slice
             frames = [f.path for f in scandir(join(data_path, subfolder, subset, patient, slice)) if isfile(join(data_path, subfolder, subset, patient, slice, f)) and f.name.startswith('Image_Frame')]
+            """
             if subset == 'Training':
                 # add all combinations of the frames to a list 
                 image_pairs = image_pairs + list(itertools.combinations(frames, 2)) 
-            else:    
-                # add pairs of the frames to a list 
-                image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
+            else:  
+            """      
+            # add pairs of the frames to a list 
+            image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
+    return image_pairs
+
+def get_image_pairs_ACDC_kSpace(subset, data_path, subfolder):
+    """ get the corresponding paths of k-space pairs for the ACDC dataset """
+    image_pairs = []  
+    # get folder names
+    pairs = [basename(f.path) for f in scandir(join(data_path, subfolder, subset)) if f.is_dir() and not (f.name.find('ImagePair') == -1)]
+    for pair in pairs:
+        # get moving image crops
+        mov_crops = [basename(f.path) for f in scandir(join(data_path, subfolder, subset, pair)) if f.is_dir() and f.name.startswith('MovingImage')]
+        # get fixed image crops
+        fix_crops = [basename(f.path) for f in scandir(join(data_path, subfolder, subset, pair)) if f.is_dir() and f.name.startswith('FixedImage')]
+        # sort all crops?
+        image_pairs = image_pairs + zip(mov_crops,fix_crops)
     return image_pairs
 
 def load_image_pair_ACDC_train(pathname1, pathname2):
@@ -118,7 +135,7 @@ def load_image_pair_ACDC(pathname1, pathname2):
     
     return image1, image2, seg1, seg2
 
-def load_image_pair_ACDC_train_kSpace(pathname1, pathname2):
+def load_image_pair_ACDC_train_LAPNet(pathname1, pathname2):
     """ expects paths for files and loads the corresponding image pair"""
     # read in images 
     image1 = imread(pathname1, as_gray=True)/255
@@ -141,7 +158,7 @@ def load_image_pair_ACDC_train_kSpace(pathname1, pathname2):
     return k_space1, k_space2, flow
 
 class TrainDatasetACDC_kSpace(Data.Dataset):
-  'Training dataset for ACDC data'
+  'Training dataset for k-space ACDC data'
   def __init__(self, data_path, mode):
         'Initialization'
         super(TrainDatasetACDC_kSpace, self).__init__()
@@ -157,7 +174,7 @@ class TrainDatasetACDC_kSpace(Data.Dataset):
             subfolder = 'AccFactor10'  
         # get paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs_ACDC(subset='Training', data_path=data_path, subfolder=subfolder)
+        self.paths = get_image_pairs_ACDC_kSpace(subset='Training', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -165,13 +182,9 @@ class TrainDatasetACDC_kSpace(Data.Dataset):
 
   def __getitem__(self, index):
         'Generates one sample of data'
-        k_space1, k_space2, flow = load_image_pair_ACDC_train_kSpace(self.paths[index][0], self.paths[index][1])
-        k_space = torch.zeros_like(k_space1)
-        # concat real parts
-        k_space[0,0,:,:] = torch.cat((k_space1[:,:,:,:,0], k_space2[:,:,:,:,0]),1)
-        # and imaginary parts
-        k_space[0,1,:,:] = torch.cat((k_space1[:,:,:,:,1], k_space2[:,:,:,:,1]),1)
-        return k_space, flow
+        k_space1 = torch.load(self.paths[index][0])
+        k_space2 = torch.load(self.paths[index][1])
+        return k_space1, k_space2
 
 class TrainDatasetACDC(Data.Dataset):
   'Training dataset for ACDC data'
@@ -200,6 +213,33 @@ class TrainDatasetACDC(Data.Dataset):
         'Generates one sample of data'
         mov_img, fix_img = load_image_pair_ACDC_train(self.paths[index][0], self.paths[index][1])
         return  mov_img, fix_img
+
+class ValidationDatasetACDC_kSpace(Data.Dataset):
+  'Validation dataset for k-space ACDC data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        assert mode >= 0 and mode <= 3, f"Expected mode for ACDC validation dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 0:
+            subfolder = 'FullySampled'
+        elif mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        self.data_path = data_path
+        self.paths = get_image_pairs_ACDC(subset='Validation', data_path=data_path, subfolder=subfolder)
+            
+  def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.paths)
+
+  def __getitem__(self, index):
+        'Generates one sample of data'
+        mov_img, fix_img, mov_seg, fix_seg = load_image_pair_ACDC(self.paths[index][0], self.paths[index][1])
+        return  mov_img, fix_img, mov_seg, fix_seg
 
 class ValidationDatasetACDC(Data.Dataset):
   'Validation dataset for ACDC data'
@@ -1131,3 +1171,30 @@ def FFT(image):
 
 def IFFT(kspace):
     return fftshift(ifftn(ifftshift(kspace, dim=[-2, -1]), dim=[-2, -1]), dim=[-2, -1])   
+
+def crop2D(mov, fix, u, pos, crop_size):
+    """crop a given array in spatial domain"""
+    x_pos = pos[0]
+    y_pos = pos[1]
+    window_size = (crop_size, crop_size)
+    # if arrays are numpy
+    if isinstance(fix, np.ndarray) and isinstance(mov, np.ndarray):
+        fix_tmp = view_as_windows(fix, window_size)[x_pos, y_pos]
+        mov_tmp = view_as_windows(mov, window_size)[x_pos, y_pos]
+    # if they are torch.tensors
+    else:
+        fix = fix.squeeze().cpu().numpy()
+        mov = mov.squeeze().cpu().numpy()
+        fix_tmp_0 = view_as_windows(fix[0,:,:], window_size)[x_pos, y_pos]
+        fix_tmp_1 = view_as_windows(fix[1,:,:], window_size)[x_pos, y_pos]
+        mov_tmp_0 = view_as_windows(mov[0,:,:], window_size)[x_pos, y_pos]
+        mov_tmp_1 = view_as_windows(mov[1,:,:], window_size)[x_pos, y_pos]
+        fix_tmp_0 = torch.from_numpy(fix_tmp_0).unsqueeze(0).unsqueeze(0)
+        fix_tmp_1 = torch.from_numpy(fix_tmp_1).unsqueeze(0).unsqueeze(0)
+        mov_tmp_0 = torch.from_numpy(mov_tmp_0).unsqueeze(0).unsqueeze(0)
+        mov_tmp_1 = torch.from_numpy(mov_tmp_1).unsqueeze(0).unsqueeze(0)
+        fix = torch.cat([fix_tmp_0,fix_tmp_1], dim = 1)
+        mov = torch.cat([mov_tmp_0,mov_tmp_1], dim = 1)
+    #ref_mov = np.stack((ref_tmp, mov_tmp), axis=-1)
+    #flow_out = flowCrop(u, x_pos, y_pos, crop_size)
+    return mov, fix #ref_mov, flow_out
