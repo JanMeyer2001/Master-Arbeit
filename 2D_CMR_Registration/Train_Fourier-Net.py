@@ -48,9 +48,6 @@ parser.add_argument("--FT_size_y", type=int,
 parser.add_argument("--earlyStop", type=int,
                     dest="earlyStop", default=3,
                     help="choose after how many epochs early stopping is applied")
-parser.add_argument("--domain_sim", type=int,
-                    dest="domain_sim", default=0,
-                    help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -64,7 +61,6 @@ model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 earlyStop = opt.earlyStop
-domain_sim = opt.domain_sim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.autograd.set_detect_anomaly(True)
@@ -169,8 +165,8 @@ if mode != 0:
     mask, _ = mask_func(input_shape)
     mask = mask.repeat(1,1,1,input_shape[-1])        
 
-model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
-model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Png/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
+model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+model_dir_png = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Png/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 
 if not isdir(model_dir_png):
     mkdir(model_dir_png)
@@ -178,7 +174,7 @@ if not isdir(model_dir_png):
 if not isdir(model_dir):
     mkdir(model_dir)
 
-csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}.csv'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode, domain_sim)
+csv_name = model_dir_png + 'Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
@@ -215,17 +211,8 @@ for epoch in range(epochs):
         Df_xy = model(mov_img, fix_img)
         grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
         
-        if domain_sim == 0:
-            # compute similarity loss in the image space
-            loss1 = loss_similarity(fix_img, warped_mov) 
-        elif domain_sim == 1:  
-            # convert images to k-space
-            fix_img_kspace     = FFT(fix_img)
-            warped_mov_kspace  = FFT(warped_mov)
-            if mode != 0:
-                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace[mask.bool()]), torch.view_as_real(fix_img_kspace[mask.bool()]))
-            else:    
-                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace), torch.view_as_real(fix_img_kspace))
+        # compute similarity loss in the image space
+        loss1 = loss_similarity(fix_img, warped_mov) 
         loss2 = loss_smooth(Df_xy)
         
         loss = loss1 + smooth * loss2

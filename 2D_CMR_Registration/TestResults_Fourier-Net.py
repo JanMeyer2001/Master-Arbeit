@@ -38,9 +38,6 @@ parser.add_argument("--FT_size_x", type=int,
 parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
-parser.add_argument("--domain_sim", type=int,
-                    dest="domain_sim", default=0,
-                    help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -52,7 +49,6 @@ mode = opt.mode
 model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
-domain_sim = opt.domain_sim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -86,7 +82,7 @@ elif model_num == 8:
 
 transform = SpatialTransform().to(device)
 
-path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
+path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 
 """
 # choose best model
@@ -131,7 +127,7 @@ elif dataset == 'OASIS':
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
-csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth, learning_rate, mode, domain_sim)
+csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
