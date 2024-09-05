@@ -538,6 +538,68 @@
     \field{year}{2021}
   \endentry
 
+  \entry{SamplingStrategies}{article}{}
+    \name{author}{1}{}{%
+      {{hash=HJ}{%
+         family={Hennig},
+         familyi={H\bibinitperiod},
+         given={J.},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Springer Science}%
+      {Business Media LLC}%
+    }
+    \strng{namehash}{HJ1}
+    \strng{fullhash}{HJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1007/s003300050788
+    \endverb
+    \field{issn}{1432-1084}
+    \field{number}{6}
+    \field{pages}{1020\bibrangedash 1031}
+    \field{title}{K-space sampling strategies}
+    \field{volume}{9}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/K-space Sampling strategies.pdf:PDF
+    \endverb
+    \field{journaltitle}{European Radiology}
+    \field{month}{07}
+    \field{year}{1999}
+  \endentry
+
+  \entry{EPI}{article}{}
+    \name{author}{1}{}{%
+      {{hash=MP}{%
+         family={Mansfield},
+         familyi={M\bibinitperiod},
+         given={P},
+         giveni={P},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Oxford University Press (OUP)}%
+    }
+    \strng{namehash}{MP1}
+    \strng{fullhash}{MP1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1093/oxfordjournals.bmb.a071970
+    \endverb
+    \field{issn}{0007-1420}
+    \field{number}{2}
+    \field{pages}{187\bibrangedash 190}
+    \field{title}{Real-Time Echo-Planar Imaging By NMR}
+    \field{volume}{40}
+    \field{journaltitle}{British Medical Bulletin}
+    \field{year}{1984}
+  \endentry
+
   \entry{Tam2016}{article}{}
     \name{author}{14}{}{%
       {{hash=TAL}{%
@@ -2386,40 +2448,6 @@
     \endverb
     \field{journaltitle}{Magnetic Resonance in Medicine}
     \field{month}{11}
-    \field{year}{1999}
-  \endentry
-
-  \entry{SubsamplingStrategies}{article}{}
-    \name{author}{1}{}{%
-      {{hash=HJ}{%
-         family={Hennig},
-         familyi={H\bibinitperiod},
-         given={J.},
-         giveni={J\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{2}{%
-      {Springer Science}%
-      {Business Media LLC}%
-    }
-    \strng{namehash}{HJ1}
-    \strng{fullhash}{HJ1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1007/s003300050788
-    \endverb
-    \field{issn}{1432-1084}
-    \field{number}{6}
-    \field{pages}{1020\bibrangedash 1031}
-    \field{title}{K-space sampling strategies}
-    \field{volume}{9}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/K-space Sampling strategies.pdf:PDF
-    \endverb
-    \field{journaltitle}{European Radiology}
-    \field{month}{07}
     \field{year}{1999}
   \endentry
 
