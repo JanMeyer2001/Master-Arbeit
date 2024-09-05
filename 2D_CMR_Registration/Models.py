@@ -370,31 +370,40 @@ class Cascade_dense(nn.Module):
         return Df_xy
 
 class Fourier_Net_kSpace(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel, diffeo):
-        self.in_channel = in_channel
-        self.n_classes = n_classes
-        self.start_channel = start_channel
+    def __init__(self, in_shape, diffeo):
+        self.in_shape = in_shape
         self.diffeo = diffeo
 
         super(Fourier_Net_kSpace, self).__init__()
-        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
+        self.model = LAPNet_PyTorch_2D(self.in_shape)
+        #self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
         if self.diffeo == 1:
             self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
     def forward(self, Moving, Fixed):
-        # FFT to get to k-space domain
-        M_temp_fourier_all = torch.view_as_real(torch.fft.fftn(Moving))
-        F_temp_fourier_all = torch.view_as_real(torch.fft.fftn(Fixed))
-        
-        # concatenate real and imaginary parts of the k-space into two channels
-        M_temp_fourier_concat = torch.cat([M_temp_fourier_all[:,:,:,:,0],M_temp_fourier_all[:,:,:,:,1]],1)
-        F_temp_fourier_concat = torch.cat([F_temp_fourier_all[:,:,:,:,0],F_temp_fourier_all[:,:,:,:,1]],1)
-        
-        # get band-limited displacement
-        out_1, out_2 = self.model(M_temp_fourier_concat, F_temp_fourier_concat)
-        out_1 = out_1.squeeze().squeeze()
-        out_2 = out_2.squeeze().squeeze()
-        
+        # get sizes of the image
+        x = self.in_shape[2]
+        y = self.in_shape[3]
+
+        # create placeholders for the displacements
+        disp_1 = torch.zeros([x,y])
+        disp_2 = torch.zeros([x,y])
+
+        for i in range(216*256):
+            # select correct crops
+            M_temp_fourier_crop = Moving[i,:,:,:]
+            F_temp_fourier_crop = Fixed[i,:,:,:]
+
+            # get image space displacement of center pixel from LAPNet
+            out_1, out_2 = self.model(M_temp_fourier_crop.cuda(), F_temp_fourier_crop.cuda())
+            out_1 = out_1.squeeze().squeeze()
+            out_2 = out_2.squeeze().squeeze()
+
+            # add to the displacements
+            disp_1[int(i/256),i%256] = out_1
+            disp_2[int(i/256),i%256] = out_2
+
+        """
         # calculate padding for x and y axis
         padx = int((Moving.shape[2]-out_1.shape[0])/2) 
         pady = int((Moving.shape[3]-out_1.shape[1])/2) 
@@ -410,6 +419,9 @@ class Fourier_Net_kSpace(nn.Module):
 
         # concatenate displacements
         f_xy = torch.cat([disp_mf_1.unsqueeze(0).unsqueeze(0), disp_mf_2.unsqueeze(0).unsqueeze(0)], dim = 1)
+        """
+        # concatenate displacements
+        f_xy = torch.cat([disp_1.unsqueeze(0).unsqueeze(0), disp_2.unsqueeze(0).unsqueeze(0)], dim = 1)
 
         if self.diffeo == 1:
             Df_xy = self.diff_transform(f_xy)
@@ -1241,6 +1253,43 @@ class SYMNet(nn.Module):
         
         return f_r[:,0:1,:,:], f_r[:,1:2,:,:]
 
+class LAPNet_PyTorch_2D(nn.Module): 
+    def __init__(self, inshape):
+        self.input_shape = (inshape[2], inshape[3], 4)
+        
+        super(LAPNet_PyTorch_2D, self).__init__()
+        # down-scaling layers
+        self.down1 = nn.Conv2d(in_channels=4, out_channels=64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.down2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1, bias=False)
+        self.down3 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False)
+        self.down4 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False)
+        self.down5 = nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, stride=2, padding=1, bias=False)
+        self.down6 = nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, stride=1, padding=1, bias=False)
+        
+        # output layers convert displacement to image space 
+        self.output = nn.Conv2d(in_channels=1024, out_channels=2, kernel_size=(1, 1))
+        self.ReLU    = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+        self.MaxPool = nn.MaxPool2d(kernel_size=5)
+
+        # up-scaling layers convert displacements back to original size
+        self.up1 = nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, stride=1, padding=1, bias=False)
+        self.up2 = nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=2, padding=1,  output_padding=1, bias=False)
+        self.up3 = nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1, bias=False)
+        self.up4 = nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, stride=2, padding=1,  output_padding=1, bias=False)
+        self.up5 = nn.ConvTranspose2d(in_channels=64, out_channels=4, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False)
+
+    def forward(self, x, y):
+        x = self.ReLU(self.down1(torch.cat((x, y), 1)))
+        x = self.ReLU(self.down2(x))
+        x = self.ReLU(self.down3(x))
+        x = self.ReLU(self.down4(x))
+        x = self.ReLU(self.down5(x))
+        x = self.ReLU(self.down6(x))
+        x = self.MaxPool(x)
+        x = self.output(x)
+
+        return x[:,0:1,:,:], x[:,1:2,:,:]
+
 class SpatialTransform(nn.Module):
     def __init__(self):
         super(SpatialTransform, self).__init__()
@@ -2046,7 +2095,7 @@ class vxm_Grad:
 # Create the 2D model
 def buildLAPNet_model_2D(inshape): #crop_size=33
     #input_shape = (crop_size, crop_size, 4)
-    input_shape = (inshape[0], inshape[1], 4)
+    input_shape = (inshape[2], inshape[3], 4)
     inputs = Input(shape=input_shape)
     model = keras.Sequential()
     initializer = VarianceScaling(scale=2.0)

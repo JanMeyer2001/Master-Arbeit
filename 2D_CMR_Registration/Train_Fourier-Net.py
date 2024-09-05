@@ -69,34 +69,6 @@ domain_sim = opt.domain_sim
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.autograd.set_detect_anomaly(True)
 
-# choose the model
-assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
-assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
-if model_num == 0:
-    model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
-elif model_num == 1:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 2:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 3:
-    model = Fourier_Net_dense(2, 2, start_channel, diffeo).to(device) 
-elif model_num == 4:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 5:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
-elif model_num == 6:
-    model = Fourier_Net_kSpace(4, 2, start_channel, diffeo).to(device) 
-elif model_num == 7:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 8:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
-
 # choose the loss function for similarity
 assert choose_loss >= 0 and choose_loss <= 4, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3) or L2 (4), but got: {choose_loss}"
 if choose_loss == 1:
@@ -117,17 +89,21 @@ for param in transform.parameters():
     param.requires_grad = False
     param.volatile = True
 
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
-
-if dataset == 'ACDC':
+if dataset == 'ACDC' and model_num < 6:
     # load ACDC data
     train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
+elif dataset == 'ACDC' and model_num >= 6:
+    # load k-space ACDC data
+    train_set = TrainDatasetACDC_kSpace('/home/jmeyer/storage/students/janmeyer_711878/data/kSpace/ACDC', mode) 
+    training_generator = Data.DataLoader(dataset=train_set, batch_size=216*256, shuffle=True, num_workers=4)
+    validation_set = ValidationDatasetACDC_kSpace('/home/jmeyer/storage/students/janmeyer_711878/data/kSpace/ACDC', mode) 
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=216*256, shuffle=False, num_workers=4)
+    input_shape = [216,256]    
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
     train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
@@ -144,6 +120,36 @@ elif dataset == 'OASIS':
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
+
+# choose the model
+assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
+assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
+if model_num == 0:
+    model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
+elif model_num == 1:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 2:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 3:
+    model = Fourier_Net_dense(2, 2, start_channel, diffeo).to(device) 
+elif model_num == 4:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 5:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
+elif model_num == 6:
+    model = Fourier_Net_kSpace(in_shape=input_shape, diffeo=diffeo).to(device) 
+elif model_num == 7:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Fourier_Net_plus_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 8:
+    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
+    model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
+
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 if mode == 1:
     # get Acc4 masking function
