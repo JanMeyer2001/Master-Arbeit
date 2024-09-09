@@ -25,6 +25,9 @@ path_origin = '/home/jmeyer/storage/datasets/ACDC'
 # path to save data to
 path_target = '/home/jmeyer/storage/students/janmeyer_711878/data/ACDC/'
 
+# shape of the frames
+input_shape = (1,1,216,256)
+
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
 if mode == 0:
     # target path for images
@@ -34,16 +37,25 @@ elif mode == 1:
     path_target = path_target + 'AccFactor04/'
     # get Acc4 mask
     mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[4]) 
+    # create and repeat mask
+    mask, _ = mask_func(input_shape)
+    mask = mask.repeat(1,1,1,input_shape[-1]) 
 elif mode == 2:
     # target path for images
     path_target = path_target + 'AccFactor08/'
     # get Acc8 mask
-    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8]) 
+    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[8])
+    # create and repeat mask
+    mask, _ = mask_func(input_shape)
+    mask = mask.repeat(1,1,1,input_shape[-1])  
 elif mode == 3:
     # target path for images
     path_target = path_target + 'AccFactor10/'
     # get Acc10 mask
     mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10]) 
+    # create and repeat mask
+    mask, _ = mask_func(input_shape)
+    mask = mask.repeat(1,1,1,input_shape[-1]) 
 else:
     print('Wrong input for mode!! Choose either fully sampled (0), 4x accelerated (1) or 8x accelerated (2)')    
 
@@ -100,16 +112,20 @@ for i, patient_path in enumerate(patients_folders):
                     
                     # manually subsample image for accelerated data
                     if mode != 0:
+                        # turn image into a float tensor
+                        image = torch.from_numpy(image/255).float()
+                        # interpolate all images to the same size
+                        image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0).squeeze(0)
                         # apply fft to get k-space
-                        k_space_fullysampled = torch.fft.fftn(torch.from_numpy(image))                             
+                        k_space_fullysampled = torch.fft.fftn(image)                             
                         # apply mask for subsampling
-                        k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
+                        k_space_subsampled = torch.view_as_real(k_space_fullysampled.unsqueeze(0).unsqueeze(0)[mask.bool()])
                         # use pySAP for reconstruction
                         fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
                         kspace_obs = fourier_op.op(image)
                         # Zero order solution
-                        image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:]
-                        image = np.array(image*255, dtype='uint8')   
+                        image = np.linalg.norm(fourier_op.adj_op(kspace_obs), axis=0)[0,:,:] 
+                        image = np.array(image*255, dtype='uint8') 
 
                     # save image to target dir as png and gt as nifti file
                     imsave(join(image_path, folder, subfolder) + '/Image_Frame{0:02d}.png'.format(frame), image, check_contrast=False) 
@@ -149,10 +165,12 @@ for i, patient_path in enumerate(patients_folders):
                     if mode != 0:
                         # turn image into a float tensor
                         image = torch.from_numpy(image/255).float()
+                        # interpolate all images to the same size
+                        image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (216,256), mode='bilinear').squeeze(0).squeeze(0)
                         # apply fft to get k-space
                         k_space_fullysampled = torch.fft.fftn(image)                             
                         # apply mask for subsampling
-                        k_space_subsampled, mask, _ = T.apply_mask(k_space_fullysampled.unsqueeze(0).unsqueeze(0), mask_func)     
+                        k_space_subsampled = torch.view_as_real(k_space_fullysampled.unsqueeze(0).unsqueeze(0)[mask.bool()])
                         # use pySAP for reconstruction
                         fourier_op = FFT(mask=mask, shape=image.shape, n_coils=1)
                         kspace_obs = fourier_op.op(image)
