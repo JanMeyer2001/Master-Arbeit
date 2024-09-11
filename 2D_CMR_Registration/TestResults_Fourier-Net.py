@@ -38,6 +38,9 @@ parser.add_argument("--FT_size_x", type=int,
 parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
+parser.add_argument("--gpu", type=int,
+                    dest="gpu", default=0, 
+                    help="choose whether to use the gpu (1) or not (0)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -49,8 +52,10 @@ mode = opt.mode
 model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
+gpu = opt.gpu
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if gpu==1 else "cpu")
 
 # choose the model
 assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
@@ -116,14 +121,17 @@ if dataset == 'ACDC':
     # load ACDC test data
     test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'CMRxRecon':
     # load CMRxRecon test data
     test_set = TestDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'OASIS':
     # path for OASIS test dataset
     test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
@@ -196,8 +204,9 @@ for i, image_pairs in enumerate(test_generator):
         V_xy[:,0,:,:] = V_xy[:,0,:,:] * hh / 2
         V_xy[:,1,:,:] = V_xy[:,1,:,:] * ww / 2
 
-        jac_det = jacobian_determinant_vxm(V_xy[0, :, :, :])
-        negJ = np.sum(jac_det <= 0) / 160 / 192 * 100
+        jac_det = jacobian_determinant_vxm(V_xy[0, :, :, :])    # get jacobian determinant
+        negJ = np.sum(jac_det <= 0)                             # get number of non positive values
+        negJ = negJ * 100 / (input_shape[2] * input_shape[3])   # get percentage over the whole image
         NegJ.append(negJ)
 
         # save test results to csv file

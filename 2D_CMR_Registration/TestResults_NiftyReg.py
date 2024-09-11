@@ -30,16 +30,19 @@ if dataset == 'ACDC':
     # load ACDC test data
     test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
     base_path = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC'
 elif dataset == 'CMRxRecon':
     # load CMRxRecon test data
     test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
     base_path = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/CMRxRecon'
 elif dataset == 'OASIS':
     # path for OASIS test dataset
     test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
     base_path = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/OASIS'
 else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
@@ -58,6 +61,7 @@ transform = SpatialTransform().cuda()
 
 MSE_test = []
 SSIM_test = []
+NegJ = []
 use_cuda = True
 device = torch.device("cuda" if use_cuda else "cpu")
 if dataset != 'CMRxRecon':
@@ -72,7 +76,7 @@ with f:
     elif dataset == 'OASIS':
         fnames = ['Image Pair','Dice','SSIM','MSE','Mean Dice','Mean SSIM','Mean MSE']
     elif dataset == 'ACDC':
-        fnames = ['Image Pair','Dice full','Dice no background','SSIM','MSE','Mean Dice full',' Mean Dice no background','Mean SSIM','Mean MSE']    
+        fnames = ['Image Pair','Dice full','Dice no background','SSIM','MSE','Mean Dice full',' Mean Dice no background','Mean SSIM','Mean MSE','Mean NegJ']    
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
 
@@ -83,9 +87,12 @@ for image_pair in image_pairs:
         # read in images from folder 
         warped_img  = nibabel.load(join(path, image_pair, 'WarpedImage.nii'))
         fix_img     = nibabel.load(join(path, image_pair, 'FixedImage.nii'))
+        # get jacobian determinants
+        jac_det     = nibabel.load(join(path, image_pair, 'JacobianDet.nii'))
         # convert to float array
         warped_img  = np.array(warped_img.get_fdata(), dtype='float32')
         fix_img     = np.array(fix_img.get_fdata(), dtype='float32')
+        jac_det     = np.array(jac_det.get_fdata(), dtype='float32')
     else:   
         # read in resampled warped image from the subsampled folder
         warped_fully_sampled = nibabel.load(join(path, image_pair, 'WarpedImage_FullySampled.nii'))
@@ -111,7 +118,11 @@ for image_pair in image_pairs:
     elif dataset == 'ACDC':
         dices_temp = dice_ACDC(warped_seg,fix_seg)
         csv_Dice_full = np.mean(dices_temp)
-        csv_Dice_noBackground = np.mean(dices_temp[1:3])   
+        csv_Dice_noBackground = np.mean(dices_temp[1:3]) 
+
+    negJ = np.sum(jac_det <= 0)                             # get number of non positive values
+    negJ = negJ * 100 / (input_shape[2] * input_shape[3])   # get percentage over the whole image
+    NegJ.append(negJ)      
 
     MSE_test.append(csv_MSE)
     SSIM_test.append(csv_SSIM)
@@ -146,6 +157,8 @@ elif dataset == 'ACDC':
     std_Dice_full = np.std(Dice_test_full)
     mean_Dice_noBackground = np.mean(Dice_test_noBackground)
     std_Dice_noBackground = np.std(Dice_test_noBackground)
+    mean_NegJ = np.mean(NegJ)
+    std_NegJ = np.std(NegJ)
 
 f = open(csv_name, 'a')
 with f:
@@ -155,11 +168,11 @@ with f:
     elif dataset == 'OASIS':
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_SSIM, mean_MSE])
     elif dataset == 'ACDC':
-        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE])
+        writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE, mean_NegJ])
 
 if dataset == 'CMRxRecon':
     print('% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'OASIS':
     print('% DICE: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
 elif dataset == 'ACDC':
-    print('% DICE full: {:.2f} \\pm {:.2f}\n% DICE no background: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))
+    print('% DICE full: {:.2f} \\pm {:.2f}\n% DICE no background: {:.2f} \\pm {:.2f}\n% SSIM: {:.2f} \\pm {:.2f}\nMSE (e-3): {:.2f} \\pm {:.2f}\n% DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))

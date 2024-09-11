@@ -25,6 +25,9 @@ parser.add_argument("--choose_loss", type=int, dest="choose_loss", default=1,
                     help="choose similarity loss: SAD (0), MSE (1), NCC (2), SSIM (3)")
 parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
+parser.add_argument("--gpu", type=int,
+                    dest="gpu", default=0, 
+                    help="choose whether to use the gpu (1) or not (0)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -32,6 +35,7 @@ smooth = opt.smth_lambda
 dataset = opt.dataset
 choose_loss = opt.choose_loss
 mode = opt.mode
+gpu = opt.gpu
 
 if dataset == 'ACDC':
     # load ACDC test data
@@ -65,7 +69,7 @@ modelpath = path + natsorted(os.listdir(path))[model_idx]
 """
 
 # choose model after certain epoch of training
-modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0004') == -1)][0]
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
 print('Best model: {}'.format(basename(modelpath)))
 bs = 1
 
@@ -75,8 +79,7 @@ model.eval()
 MSE_test = []
 SSIM_test = []
 NegJ = []
-use_cuda = True
-device = torch.device("cuda" if use_cuda else "cpu")
+device = torch.device("cuda" if gpu==1 else "cpu")
 times = []
 if dataset != 'CMRxRecon':
     Dice_test_full = []
@@ -142,8 +145,9 @@ for i, image_pairs in enumerate(test_generator):
         Df_xy[:,0,:,:] = Df_xy[:,0,:,:] * hh / 2
         Df_xy[:,1,:,:] = Df_xy[:,1,:,:] * ww / 2
 
-        jac_det = jacobian_determinant_vxm(Df_xy[0, :, :, :])
-        negJ = np.sum(jac_det <= 0) / 160 / 192 * 100
+        jac_det = jacobian_determinant_vxm(Df_xy[0, :, :, :])   # get jacobian determinant
+        negJ = np.sum(jac_det <= 0)                             # get number of non positive values
+        negJ = negJ * 100 / (input_shape[0] * input_shape[1])   # get percentage over the whole image
         NegJ.append(negJ)
 
         # save test results to csv file
