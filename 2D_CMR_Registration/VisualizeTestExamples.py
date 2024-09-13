@@ -13,6 +13,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import pystrum
 import nibabel
+import flow_vis
 
 parser = ArgumentParser()
 parser.add_argument("--start_channel", type=int, dest="start_channel", default=8,
@@ -58,6 +59,7 @@ pathname2 = '/home/jmeyer/storage/students/janmeyer_711878/data/ACDC/' + folder 
 pathname1_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/' + folder_nifti + '/ImagePair0003/WarpedImage.nii'
 pathname2_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/' + folder_nifti + '/ImagePair0003/WarpedSegmentation.nii'
 pathname3_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/' + folder_nifti + '/ImagePair0003/ControlPointGrid.nii'
+pathname4_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/' + folder_nifti + '/ImagePair0003/Displacement.nii'
 
 # path to save the plots to
 save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/'
@@ -78,9 +80,13 @@ fixed_seg = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/3
 warped_seg_nifti  = nibabel.load(pathname2_nifti)
 warped_seg_nifti  = np.array(warped_seg_nifti.get_fdata(), dtype='float32')
 
-# read in nifti images from folder 
+# read in nifti grids from folder 
 grid_nifti  = nibabel.load(pathname3_nifti)
-grid_nifti  = np.array(grid_nifti.get_fdata(), dtype='float32')
+grid_nifti  = np.squeeze(np.array(grid_nifti.get_fdata(), dtype='float32'))
+
+# read in nifti deformations from folder 
+displacement_nifti  = nibabel.load(pathname4_nifti)
+displacement_nifti  = np.squeeze(np.array(displacement_nifti.get_fdata(), dtype='float32'))
 
 # convert to tensors and add singleton dimension for the correct size
 moving_image        = torch.from_numpy(moving_image)
@@ -157,6 +163,18 @@ dices = []
 for seg in segmentations:
     dices.append(np.mean(dice_ACDC(fixed_seg.data.cpu().numpy()[0, 0, ...],seg.data.cpu().numpy()[0, 0, ...])))
 
+# create empty flow fields for moving and fixed image
+empty_flow = torch.zeros_like(V_f_net)
+
+# sort flows 
+flows = [empty_flow,empty_flow,displacement_nifti,V_voxelmorph,V_f_net,V_f_net_plus,V_f_net_plus_cascade] 
+# convert to flow images
+for i, flow in enumerate(flows):
+    if i == 2:
+        flows[i] = flow_vis.flow_to_color(flow, convert_to_bgr=False)
+    else:
+        flows[i] = flow_vis.flow_to_color(flow.data.cpu().squeeze().permute(1,2,0).numpy(), convert_to_bgr=False)
+
 # plot images and segmentations
 assert len(titles) == len(images), f"Every images needs a title!"
 """
@@ -187,17 +205,24 @@ plt.savefig('Segmentations.png') #save_path+
 plt.close()
 """
 
-fig, axs = plt.subplots(nrows=2, ncols=len(titles), figsize=(48, 8))  #, gridspec_kw = {'wspace':0, 'hspace':0}
+fig, axs = plt.subplots(nrows=3, ncols=len(titles), figsize=(48, 12))  #, gridspec_kw = {'wspace':0, 'hspace':0}
 # plot segmentations
 for i in range(len(titles)):
+    # first column with images
     ax = axs[0][i]
     ax.axis('off')
-    ax.set_title(titles[i], fontsize=28) # title only for the images
-    im_ax = ax.imshow(images[i].data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+    if mode == 0:
+        ax.set_title(titles[i], fontsize=28) # title only for the images
+    ax.imshow(images[i].data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
+    # second column with segmentations
     ax = axs[1][i]
     ax.axis('off')
     ax.set_title('Dice: {:.5f}'.format(dices[i]), fontsize=22, y=0.125, color='white') # display dice scores
-    im_ax = ax.imshow(segmentations[i].data.cpu().numpy()[0, 0, ...])
+    ax.imshow(segmentations[i].data.cpu().numpy()[0, 0, ...])
+    # third column with flows
+    ax = axs[2][i]
+    ax.axis('off')
+    ax.imshow(flows[i])
 if mode == 0:
     fig.supylabel('R=0',fontsize=40,x=0.22)
 elif mode == 1:
