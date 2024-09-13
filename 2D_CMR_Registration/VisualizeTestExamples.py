@@ -25,15 +25,11 @@ parser.add_argument("--FT_size_y", type=int,
                     help="choose size y of FT crop: Should be smaller than 84.")
 parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
-parser.add_argument("--domain_sim", type=int,
-                    dest="domain_sim", default=0,
-                    help="choose which domain the similarity loss should be applied: image space (0) or k-space (1)")
 opt = parser.parse_args()
 
 start_channel = opt.start_channel
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 mode = opt.mode
-domain_sim = opt.domain_sim
 
 dataset = 'ACDC'
 input_shape = [216,256]
@@ -118,17 +114,17 @@ modelpath_voxelmorph = path_voxelmorph + natsorted(listdir(path_voxelmorph))[-1]
 model_voxelmorph.load_state_dict(torch.load(modelpath_voxelmorph))
 model_voxelmorph.eval()
 
-path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,0,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0,domain_sim)
+path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
 modelpath_f_net = path_f_net + natsorted(listdir(path_f_net))[-1]
 model_f_net.load_state_dict(torch.load(modelpath_f_net))
 model_f_net.eval()
 
-path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,1,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0,domain_sim)
+path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
 modelpath_f_net_plus = path_f_net_plus + natsorted(listdir(path_f_net_plus))[-1]
 model_f_net_plus.load_state_dict(torch.load(modelpath_f_net_plus))
 model_f_net_plus.eval()
 
-path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Sim_{}_Pth/'.format(dataset,2,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0,domain_sim)
+path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
 modelpath_f_net_plus_cascade = path_f_net_plus_cascade + natsorted(listdir(path_f_net_plus_cascade))[-1]
 model_f_net_plus_cascade.load_state_dict(torch.load(modelpath_f_net_plus_cascade))
 model_f_net_plus_cascade.eval()
@@ -196,7 +192,7 @@ fig, axs = plt.subplots(nrows=2, ncols=len(titles), figsize=(48, 8))  #, gridspe
 for i in range(len(titles)):
     ax = axs[0][i]
     ax.axis('off')
-    ax.set_title(titles[i], fontsize=22) # title only for the images
+    ax.set_title(titles[i], fontsize=28) # title only for the images
     im_ax = ax.imshow(images[i].data.cpu().numpy()[0, 0, ...], cmap='gray', vmin=0, vmax = 1)
     ax = axs[1][i]
     ax.axis('off')

@@ -39,7 +39,7 @@ parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
 parser.add_argument("--gpu", type=int,
-                    dest="gpu", default=0, 
+                    dest="gpu", default=1, 
                     help="choose whether to use the gpu (1) or not (0)")
 opt = parser.parse_args()
 
@@ -110,8 +110,6 @@ transform.eval()
 MSE_test = []
 SSIM_test = []
 NegJ = []
-use_cuda = True
-device = torch.device("cuda" if use_cuda else "cpu")
 times = []
 if dataset != 'CMRxRecon':
     Dice_test_full = []

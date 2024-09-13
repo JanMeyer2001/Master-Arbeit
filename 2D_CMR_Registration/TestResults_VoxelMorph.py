@@ -37,6 +37,8 @@ choose_loss = opt.choose_loss
 mode = opt.mode
 gpu = opt.gpu
 
+device = torch.device("cuda" if gpu==1 else "cpu")
+
 if dataset == 'ACDC':
     # load ACDC test data
     test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
@@ -55,8 +57,8 @@ else:
 input_shape = test_set.__getitem__(0)[0].shape[1:3]
 
 # use dense voxelmorph
-model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda()  #, int_steps=7, int_downsize=2
-transform = SpatialTransformer(input_shape, mode = 'nearest').cuda()
+model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).to(device)  #, int_steps=7, int_downsize=2
+transform = SpatialTransformer(input_shape, mode = 'nearest').to(device)
 
 path = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smooth,learning_rate,mode)
 
@@ -79,7 +81,6 @@ model.eval()
 MSE_test = []
 SSIM_test = []
 NegJ = []
-device = torch.device("cuda" if gpu==1 else "cpu")
 times = []
 if dataset != 'CMRxRecon':
     Dice_test_full = []
@@ -99,28 +100,28 @@ with f:
 
 for i, image_pairs in enumerate(test_generator): 
     with torch.no_grad():
-        mov_img_fullySampled = image_pairs[0]
-        fix_img_fullySampled = image_pairs[1]
+        mov_img_fullySampled = image_pairs[0].float().to(device)
+        fix_img_fullySampled = image_pairs[1].float().to(device)
         if dataset == 'CMRxRecon':
-            mov_img_subSampled = image_pairs[2]
-            fix_img_subSampled = image_pairs[3]
+            mov_img_subSampled = image_pairs[2].float().to(device)
+            fix_img_subSampled = image_pairs[3].float().to(device)
         else:
-            mov_seg = image_pairs[2]
-            fix_seg = image_pairs[3]
+            mov_seg = image_pairs[2].float().to(device)
+            fix_seg = image_pairs[3].float().to(device)
 
         start = time.time()
         # calculate displacement on subsampled data
         if dataset == 'CMRxRecon':
-            warped_mov_img_fullySampled, Df_xy = model(mov_img_subSampled.float().to(device), fix_img_subSampled.float().to(device))
+            warped_mov_img_fullySampled, Df_xy = model(mov_img_subSampled, fix_img_subSampled)
         else:
-            warped_mov_img_fullySampled, Df_xy = model(mov_img_fullySampled.float().to(device), fix_img_fullySampled.float().to(device))
+            warped_mov_img_fullySampled, Df_xy = model(mov_img_fullySampled, fix_img_fullySampled)
         
         # get inference time
         inference_time = time.time()-start
         times.append(inference_time)
             
         if dataset != 'CMRxRecon':
-            warped_mov_seg = transform(mov_seg.float().to(device), Df_xy) #.permute(0, 2, 3, 1)
+            warped_mov_seg = transform(mov_seg, Df_xy) #.permute(0, 2, 3, 1)
             
         # calculate MSE, SSIM and Dice 
         if dataset == 'OASIS':

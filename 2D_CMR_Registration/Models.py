@@ -1,5 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore")
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # to shut tensorflow the fuck up
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
