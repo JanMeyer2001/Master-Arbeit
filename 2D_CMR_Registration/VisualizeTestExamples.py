@@ -198,6 +198,14 @@ for i in range(len(titles)):
     ax.axis('off')
     ax.set_title('Dice: {:.5f}'.format(dices[i]), fontsize=22, y=0.125, color='white') # display dice scores
     im_ax = ax.imshow(segmentations[i].data.cpu().numpy()[0, 0, ...])
+if mode == 0:
+    fig.supylabel('R=0',fontsize=40,x=0.22)
+elif mode == 1:
+    fig.supylabel('R=4',fontsize=40,x=0.22)  
+elif mode == 2:
+    fig.supylabel('R=8',fontsize=40,x=0.22)  
+elif mode == 3:
+    fig.supylabel('R=10',fontsize=40,x=0.22)    
 plt.axis('off')
 #plt.tight_layout(pad=-3)
 plt.subplots_adjust(wspace=-0.75, hspace=0.05) # make subplots tighter
