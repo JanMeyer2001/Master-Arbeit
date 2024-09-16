@@ -48,6 +48,7 @@ else:
     legend = ['Baseline','NiftyReg','VoxelMorph','Fourier-Net','Fourier-Net+','4xFourier-Net+']    
     offsets = np.arange(start=-0.65,stop=0.65,step=1.3/DICE_test.shape[0])
     width = 0.18
+    anchor_loc = [0.22, 0.125]      # coords for the legend to apprear
 
 # create path to save the boxplot to
 path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_'
@@ -63,4 +64,4 @@ for label in labels:
         data = DICE_test[:,:,3,:]
 
     # create boxplot for Dice scores (without background)
-    create_boxplot(savename=save_path, data=data, labels=['R=0', 'R=4', 'R=8', 'R=10'], legend=legend, figure_size=(12, 6), offsets=offsets, width=width)
+    create_boxplot(savename=save_path, data=data, labels=['R=0', 'R=4', 'R=8', 'R=10'], legend=legend, figure_size=(12, 6), offsets=offsets, width=width, anchor_loc=anchor_loc)

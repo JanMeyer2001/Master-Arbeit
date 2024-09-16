@@ -72,15 +72,36 @@ def get_image_pairs_ACDC(subset, data_path, subfolder):
         for slice in slices:
             # get all frames for each slice
             frames = [f.path for f in scandir(join(data_path, subfolder, subset, patient, slice)) if isfile(join(data_path, subfolder, subset, patient, slice, f)) and f.name.startswith('Image_Frame')]
-            """
             if subset == 'Training':
                 # add all combinations of the frames to a list 
                 image_pairs = image_pairs + list(itertools.combinations(frames, 2)) 
             else:  
-            """      
-            # add pairs of the frames to a list 
-            image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
+                # add pairs of the frames to a list 
+                image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
     return image_pairs
+
+def get_image_pairs_ACDC_ContrastiveLearning(subset, data_path, subfolder):
+    """ get the corresponding paths of image pairs for contrastive learning on the ACDC dataset """
+    image_pairs_fullySampled = []  
+    image_pairs_subSampled = []  
+    # get folder names for patients
+    patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, 'FullySampled', subset)) if f.is_dir() and not (f.name.find('patient') == -1)]
+    patients_subSampled = [basename(f.path) for f in scandir(join(data_path, subfolder, subset)) if f.is_dir() and not (f.name.find('patient') == -1)]
+    
+    for patient in patients_fullySampled:
+        if patient in patients_subSampled:
+            # get subfolder names for image slices
+            slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, 'FullySampled', subset, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+            slices_subSampled = [basename(f.path) for f in scandir(join(data_path, subfolder, subset, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+            for slice in slices_fullySampled:
+                if slice in slices_subSampled:
+                    # get all frames for each slice
+                    frames_fullySampled = [f.path for f in scandir(join(data_path, 'FullySampled', subset, patient, slice)) if isfile(join(data_path, 'FullySampled', subset, patient, slice, f)) and f.name.startswith('Image_Frame')]#[0:len(frames_subSampled)]
+                    frames_subSampled = [f.path for f in scandir(join(data_path, subfolder, subset, patient, slice)) if isfile(join(data_path, subfolder, subset, patient, slice, f)) and f.name.startswith('Image_Frame')]
+                    # add pairs of the frames to a list 
+                    image_pairs_fullySampled = image_pairs_fullySampled + list(itertools.combinations(frames_fullySampled, 2))
+                    image_pairs_subSampled = image_pairs_subSampled + list(itertools.combinations(frames_subSampled, 2))
+    return image_pairs_fullySampled, image_pairs_subSampled
 
 def get_image_pairs_ACDC_kSpace(subset, data_path, subfolder):
     """ get the corresponding paths of k-space pairs for the ACDC dataset """
@@ -156,6 +177,33 @@ def load_image_pair_ACDC_train_LAPNet(pathname1, pathname2):
     flow = ''
 
     return k_space1, k_space2, flow
+
+class TrainDatasetACDC_ContrastiveLearning(Data.Dataset):
+  'Training dataset for ACDC data'
+  def __init__(self, data_path, mode):
+        'Initialization'
+        super(TrainDatasetACDC_ContrastiveLearning, self).__init__()
+        # choose subfolder according to mode
+        assert mode >= 1 and mode <= 3, f"Expected mode for ACDC training dataset to be one of 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08'
+        elif mode == 3:
+            subfolder = 'AccFactor10'  
+        # get paths of training data
+        self.data_path = data_path
+        self.paths_fullySampled, self.paths_subSampled = get_image_pairs_ACDC_ContrastiveLearning(subset='Training', data_path=data_path, subfolder=subfolder)
+            
+  def __len__(self):
+        'total number of training samples'
+        return len(self.paths_fullySampled)
+
+  def __getitem__(self, index):
+        'Loads fully sampled and subsampled image pairs'
+        mov_img_fullySampled, fix_img_fullySampled  = load_image_pair_ACDC_train(self.paths_fullySampled[index][0], self.paths_fullySampled[index][1])
+        mov_img_subSampled, fix_img_subSampled      = load_image_pair_ACDC_train(self.paths_subSampled[index][0], self.paths_subSampled[index][1])
+        return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
 
 class TrainDatasetACDC_kSpace(Data.Dataset):
   'Training dataset for k-space ACDC data'
@@ -914,7 +962,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
     #############
     ## Testing ##
     #############
-    
+    """
     print('\nTesting started on ', time.ctime())
 
     csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
@@ -1025,7 +1073,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
         wandb.log({"Dice full": Mean_Dice_full, "Dice no background": Mean_Dice_noBackground, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
     
     print('Testing ended on ', time.ctime())
-    
+    """
     # Mark the run as finished
     wandb.finish()   
 
@@ -1118,7 +1166,7 @@ def create_AB_boxplot(savename=None, title=None, data_A=None, data_B=None, label
     else:
         plt.savefig(savename)    
 
-def create_boxplot(savename=None, title=None, data=None, labels=None, legend=None, figure_size=(10,4), offsets=None, width=0.5):
+def create_boxplot(savename=None, title=None, data=None, labels=None, legend=None, figure_size=(10,4), offsets=None, width=0.5, anchor_loc=None):
     ''' Create boxplots of any size with legend and labels on the x-axis  '''
     
     # set plot size
@@ -1153,9 +1201,12 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         # draw temporary lines and use them to create a legend
         plt.plot([], c=color[i], label=legend[i])
     
-    plt.legend() #bbox_to_anchor=[0.22, 0.125],loc='center'
+    if type(anchor_loc) == type(None):
+        plt.legend() 
+    else:    
+        plt.legend(bbox_to_anchor=anchor_loc,loc='center') 
     plt.xticks(range(0, len(labels)*2, 2), labels)
-    plt.xlim(-1.5, len(labels)*1.65) 
+    plt.xlim(-0.9, len(labels)*1.65) 
     plt.tight_layout()
     
     if title is not None:

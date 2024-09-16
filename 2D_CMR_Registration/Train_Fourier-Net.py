@@ -11,6 +11,8 @@ import time
 from skimage.metrics import structural_similarity, mean_squared_error
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
 import sys
+from info_nce import InfoNCE
+from natsort import natsorted
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
@@ -65,20 +67,6 @@ earlyStop = opt.earlyStop
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.autograd.set_detect_anomaly(True)
 
-# choose the loss function for similarity
-assert choose_loss >= 0 and choose_loss <= 4, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3) or L2 (4), but got: {choose_loss}"
-if choose_loss == 1:
-    loss_similarity = MSE().loss
-elif choose_loss == 0:
-    loss_similarity = SAD().loss
-elif choose_loss == 2:
-    loss_similarity = NCC(win=9)
-elif choose_loss == 3:
-    loss_similarity = torch.nn.L1Loss()    
-elif choose_loss == 4:
-    loss_similarity = RelativeL2Loss()
-loss_smooth = smoothloss
-
 transform = SpatialTransform().to(device)
 
 for param in transform.parameters():
@@ -86,13 +74,20 @@ for param in transform.parameters():
     param.volatile = True
 
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
-if dataset == 'ACDC' and model_num < 6:
+if dataset == 'ACDC' and model_num < 6 and choose_loss < 4:
     # load ACDC data
     train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
     validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
+elif dataset == 'ACDC' and model_num < 6 and choose_loss == 5 and mode > 0:
+    # load ACDC data for contrastive learning on subsampled data
+    train_set = TrainDatasetACDC_ContrastiveLearning('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
+    training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
+    validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
+    validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape    
 elif dataset == 'ACDC' and model_num >= 6:
     # load k-space ACDC data
     train_set = TrainDatasetACDC_kSpace('/home/jmeyer/storage/students/janmeyer_711878/data/kSpace/ACDC', mode) 
@@ -145,6 +140,29 @@ elif model_num == 8:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
 
+# choose the loss function for similarity
+assert choose_loss >= 0 and choose_loss <= 5, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3), L2 (4) or contrastive loss (5), but got: {choose_loss}"
+if choose_loss == 1:
+    loss_similarity = MSE().loss
+elif choose_loss == 0:
+    loss_similarity = SAD().loss
+elif choose_loss == 2:
+    loss_similarity = NCC(win=9)
+elif choose_loss == 3:
+    loss_similarity = torch.nn.L1Loss()    
+elif choose_loss == 4:
+    loss_similarity = RelativeL2Loss()  
+elif choose_loss == 5:
+    loss_similarity = MSE().loss
+    loss_contrastive = InfoNCE() # contrative learning loss
+    # load trained model for ground truth generation on fully sampled data
+    model_gt = model
+    path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,0)
+    print('GT-Model: {}'.format(natsorted(os.listdir(path))[-1]))
+    model_gt.load_state_dict(torch.load(path + natsorted(os.listdir(path))[-1]))
+    model_gt.eval()
+loss_smooth = smoothloss
+
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 if mode == 1:
@@ -156,9 +174,6 @@ elif mode == 2:
 elif mode == 3:
     # get Acc10 masking function
     mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[10])  
-elif mode == 0:
-    # get fully sampled masking function
-    mask_func = EquispacedMaskFractionFunc(center_fractions=[0.08], accelerations=[0]) 
 
 if mode != 0:
     # create and repeat mask
@@ -200,28 +215,49 @@ print('\nStarted training on ', time.ctime())
 for epoch in range(epochs):
     losses = np.zeros(training_generator.__len__())
     for i, image_pair in enumerate(training_generator):
-        mov_img = image_pair[0].to(device).float()
-        fix_img = image_pair[1].to(device).float()
+        if choose_loss != 5:
+            mov_img = image_pair[0].to(device).float()
+            fix_img = image_pair[1].to(device).float()
 
-        if model_num == 3:
-            # ensure that all images have the same size for dense F-Net
-            mov_img = F.interpolate(mov_img, [224,256], mode='nearest') 
-            fix_img = F.interpolate(fix_img, [224,256], mode='nearest')
-                
-        Df_xy = model(mov_img, fix_img)
-        grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-        
-        # compute similarity loss in the image space
-        loss1 = loss_similarity(fix_img, warped_mov) 
+            if model_num == 3:
+                # ensure that all images have the same size for dense F-Net
+                mov_img = F.interpolate(mov_img, [224,256], mode='nearest') 
+                fix_img = F.interpolate(fix_img, [224,256], mode='nearest')
+                            
+            Df_xy = model(mov_img, fix_img)
+            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            
+            # compute similarity loss in the image space
+            loss1 = loss_similarity(fix_img, warped_mov)    
+        else:
+            mov_img_fullySampled = image_pair[0].to(device).float()
+            fix_img_fullySampled = image_pair[1].to(device).float()
+            mov_img_subSampled   = image_pair[2].to(device).float()
+            fix_img_subSampled   = image_pair[3].to(device).float()                 
+            
+            with torch.no_grad():
+                # get result for fully sampled image pairs (do not back-propagate!!)
+                Df_xy_fullySampled = model_gt(mov_img_fullySampled, fix_img_fullySampled)
+                grid, warped_mov_fullySampled = transform(mov_img_fullySampled, Df_xy_fullySampled.permute(0, 2, 3, 1))
+            
+            # get result for subsampled image pairs
+            Df_xy = model(mov_img_subSampled, fix_img_subSampled)
+            grid, warped_mov_subSampled = transform(mov_img_subSampled, Df_xy.permute(0, 2, 3, 1))
+            
+            # compute contrastive loss between fully sampled and subsampled results
+            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) + loss_similarity(Df_xy.squeeze(),Df_xy.squeeze()) #loss_contrastive(torch.concat([Df_xy.squeeze()[0,:,:], Df_xy.squeeze()[1,:,:]], dim=1), torch.concat([Df_xy_fullySampled.squeeze()[0,:,:], Df_xy_fullySampled.squeeze()[1,:,:]], dim=1))
+            #loss1 = loss_similarity(fix_img_fullySampled, warped_mov_fullySampled, fix_img_subSampled, warped_mov_subSampled)
+
+        # compute smoothness loss
         loss2 = loss_smooth(Df_xy)
         
         loss = loss1 + smooth * loss2
         losses[i] = loss
 
-        #"""
+        """
         sys.stdout.write("\r" + 'epoch {}/{} -> training loss {:.4f} - sim {:.4f} -smo {:.4f}'.format(epoch+1,epochs,loss,loss1,loss2))
         sys.stdout.flush()
-        #"""
+        """
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
