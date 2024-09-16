@@ -205,24 +205,189 @@ sequentially. The observed spins evolve not only as a function of the gradients 
 	\label{fig:kSpaceTrajectories}
 \end{figure}
 
-\section{Rectilinear K-Space Sampling}
-Almost all MR imaging sequences used in clinical routine presently are based on rectilinear k-space sampling, i. e., the sampling points in k-space are placed on a rectangular grid. This reflects the ability to use a fast Fourier transform (FFT) for such a sampling strategy. It allows image reconstruction in considerably under 1~s. With special reconstruction processors, the reconstruction speed can be as high as 10 to 25 images per second. The general 2D FT for transformation of a comparable number of non-rectilinear grid points in comparison requires 5 to 50~min per image, using identical computer hardware~\cite{SamplingStrategies}. \\
-Using the two means of moving through the k-space, the basic techniques for rectilinear sampling can be divided into spin-echo-based techniques and gradient-echo-based techniques. In all rectilinear sampling techniques, the gradient which is used during signal acquisition is commonly called the readout gradient, whereas gradients used to bring the k-space trajectory to a certain starting point before data acquisition are called phase-encoding gradients. A gradient echo is formed using a reversal of the readout gradient. In conventional gradient-echo imaging, only the refocusing part of the k-space trajectory is measured, whereas the signal dephasing as well as phase encoding is performed prior to data acquisition (Fig. 8). The experiment is repeated after the recovery time TR, using different offsets of the phase-encoding gradient prior to each acquisition step. Using the k-space, it can be easily seen how gradient-echo imaging can be generalized to a faster technique, using less excitation periods by sampling more than one k-space line after each excitation. Repeating gradient reversal and the application of a phase-encoding gradient can be used to read out several k-lines per acquisition with a concordant reduction in total imaging time. In the extreme case, all k-space data can be read out following a single excitation. This is called the single-shot, echo-planar imaging (EPI) sequence~\cite{EPI}. \\
+\subsection{Rectilinear K-Space Sampling}
+Almost all MR imaging sequences 
+%used in clinical routine presently 
+are based on rectilinear k-space sampling, i. e., the sampling points 
+%in k-space 
+are placed on a rectangular grid. This 
+%reflects the ability to use a 
+allows the usage of the fast Fourier transform (FFT) 
+%for such a sampling strategy. It allows 
+which enables 
+image reconstruction in 
+%considerably under 1~s
+a very short time (under 1~s). 
+%With special reconstruction processors, the reconstruction speed can be as high as 10 to 25 images per second. 
+For comparison, using
+the 
+%general 
+2D FT 
+to transform a non-rectilinear grid can take about
+%for transformation of a comparable number of non-rectilinear grid points in comparison requires
+5 to 50~min per image~\cite{SamplingStrategies}.
+%, using identical computer hardware. \\
+Utilizing the two means of traversing the k-space, 
+%the basic techniques for 
+rectilinear sampling can be divided into spin-echo-based techniques and gradient-echo-based techniques. In all rectilinear sampling techniques, the gradient which is used during signal acquisition is commonly called the readout gradient, whereas gradients used to bring the k-space trajectory to a certain starting point before data acquisition are called phase-encoding gradients. \\
+A gradient echo is formed using a reversal of the readout gradient. In conventional gradient-echo imaging, only the refocusing part of the k-space trajectory is measured, whereas the signal dephasing as well as phase encoding is performed prior to data acquisition (Fig. 8). The experiment is repeated after the recovery time TR, using different offsets of the phase-encoding gradient prior to each acquisition step. Using the k-space, it can be easily seen how gradient-echo imaging can be generalized to a faster technique, using less excitation periods by sampling more than one k-space line after each excitation. Repeating gradient reversal and the application of a phase-encoding gradient can be used to read out several k-lines per acquisition with a concordant reduction in total imaging time. In the extreme case, all k-space data can be read out following a single excitation. This is called the single-shot, echo-planar imaging (EPI) sequence~\cite{EPI}. \\
 %Historically, the development took place the other way round: EPI was first invented by P. Mansfield, and gradient echoes followed several years later. The concept of the k-space was not widely known at that time, therefore, the intrinsic relationship between the two techniques has only been acknowledged gradually. 
-Despite the close conceptional similarity between EPI and gradient echo techniques with respect to their k-space trajectories, both types of sequences have vastly different imaging and hardware implications. This difference is caused by the sequential sampling of k-space points and the resulting influences on the signal of the mechanisms mentioned previously. As the signal decays with T2 the signal amplitude is reduced during data acquisition. For conventional gradient-echo imaging, even with moderate gradient strength (and thus longer acquisition times), this effect is inconsequential since the typical acquisition times of 5 to 10~ms are considerably shorter than the typical T2 of tissues. For EPI, however, the total acquisition time for n k-space lines is n times longer, even if the time necessary for gradient reversal and phase encoding is neglected. For the moderate acquisition times noted previously, this will lead to total acquisition times of 1~s or more, which exceeds most T2 values observed in human tissues. Dephasing of spins across the selected slice will lead to T2 of the order of 100~ms at most. For identical acquisition times, as in our gradient-echo example, the signal will have vanished long before the end of data acquisition. Depending on whether data acquisition has commenced at the center or in the outskirts of k-space, the resulting image will either be severely blurred or reveal merely contours without contrast. This illustrates that EPI absolutely requires very fast data acquisition in order to acquire all of the k-space data within not much more than 100~ms at most; otherwise, image quality will deteriorate significantly. In the given time range, state-of-the-art scanners can acquire 64 to 128 phase-encoding steps. Longer acquisition times allowing higher nominal resolution are of course technically feasible, but the T2-decay of the signal will prohibit realization of the nominal resolution. Since cerebral spinal fluid (CSF) has a long T2, EPI images of the head with long acquisition times can look deceptively sharp. It must be noted, however, that the perceived sharpness applies only to CSF-filled structures, whereas the true resolution of parenchyma with a T2 of approximately 60~ms is considerably worse. With even stronger and faster gradients it is of course feasible to acquire true high-resolution images with short acquisition times. The penalty in SNR for such applications is, however, severe and has prohibited its use for most forms of morphological imaging. The EPI technique has emerged, however, as an ideal vehicle for functional imaging either in BOLD-based fMRI, in first-pass perfusion measurements or in diffusion imaging, but it is not a viable technique for high-resolution morphological imaging~\cite{SamplingStrategies}.\\
-Even for short acquisition times, EPI suffers from severe problems regarding its imaging properties, which are caused by the phase-altering mechanisms mentioned previously. Chemical shift effects and susceptibility both lead to signal phase shifts which increase linearly with time. Since data acquisition along the readout gradient is fast, there is little effect in the readout direction. In the phase-encoding direction, however, the dwell time amounts to the acquisition time of one k-space line. For the acquisition of 64 k-space lines in 64~ms, the field of view in frequency units will be 1000~Hz. For a frequency shift of fat vs water of approximately 200~Hz at 1.5~T, this will mean that the signal of fatty tissue will be shifted by 20$\%$ of the image width. The resulting misregistration artifact necessitates the use of fat suppression for practically all EPI applications. Field inhomogeneity and susceptibility will lead to a similar shift. Since the resulting frequency shifts are not as discrete as chemical shift effects, the misregistration will vary continuously leading to highly non-linear image deformations. An additional problem in EPI relates to the fact that the k-space trajectory runs in opposite directions in every other k-space line due to the alternating polarity of the readout gradient. Any asymmetry in the acquired data will therefore lead to some slight perturbation in any other line. The final image will therefore be a superposition of the true image with an image representing the perturbation in every other k-space line. From this discussion of the k-space trajectory, it is easy to see that this perturbation will generate an image which is displaced by half the field of view in the phase-encoding direction. This is the so-called $180°$ artifact.
-All the confounding factors discussed herein will produce some such artifact. With appropriate post-processing routines based on reference signals, some of the sources of artifacts can be corrected for. In general, the $180°$ ghost will become stronger whenever any of the mechanisms mentioned previously become significant and will therefore deteriorate the image quality further. Motion can also cause phase-effects on the signal. With an alternating readout gradient, motion along this direction will be refocused in every even refocusing period. Consequently, a flow-dependent $180°$ ghost will occur. Motion along the phase-encoding direction will lead to a velocity-dependent increase in the signal phase and consequently to a velocity-dependent signal displacement. Signal from a round vessel with laminar flow will therefore appear as a boomerang-shaped artifact displaced from the vessel wall. Any vascular diagnosis based on EPI images therefore has to be made with the utmost care. The inherent artifact behavior limits the practical use of EPI to examinations of the head. Abdominal or thoracic EPI and even cardiac EPI have not been developed beyond a feasibility state. They require considerable efforts in region-selective shimming and even post-processing, using actual field maps of the patient such that the time advantage of EPI is lost. For the time being, EPI therefore has to be regarded as a brain-only technique where it serves as a vehicle for the fMRI applications, including diffusion and perfusion imaging.\\
-Conventional gradient-echo imaging suffers from no such effects and can therefore be applied all over the body with no or only mild susceptibility misregistration. Chemical shift effects will, however, influence the contrast of gradient-echo images by the chemical-shift-dependent dephasing of fat and water signals. Signals from fat and water protons located at the same position will periodically be in- and out of phase with each other in a time interval determined by their difference in Larmor frequencies. For 1.5~T the time difference between the two extreme conditions will be approximately 2.5~ms. Images acquired with TEs differing by 2.5~ms will look dramatically different due to this effect, although T2-dependent effects for such small TE differences will be negligible. As shown in Fig. 11, the out-of phase image will show a considerable reduction in signal amplitude in tissues containing both fat and water protons such as bone marrow. In addition, an artificial black line will appear at the interface between fatty and water tissues due to the zero crossing of the signal between these antiphasic images. When (im)properly used, this artifact can be used to beautify images, giving them a crisp and well-defined appearance. Care must be taken, however, not to mis-read this artifact as an anatomical structure. With respect to the total acquisition time, gradient-echo imaging is somewhat slower than EPI due to the necessity of repetitive application of excitation pulses. Gradient-echo sequences, which are optimized for speed, typically achieve imaging times of 200 to 400~ms, using gradient systems comparable to those of EPI. Due to the strong signal saturation caused by the very short repetition times, the intrinsic SNR is comparably low (but for many applications still satisfactory). The SNR can be optimized by using low-excitation flip angles and/or total signal refocusing (true FISP). In combination with bolus application of contrast agent, gradient-echo sequences allow the acquisition of MR angiograms especially of the thorax, abdomen, and the extremities with unprecedented image quality. This  relatively new application has led to whole new field of applications for gradient-echo imaging. \\
-In order to reach a compromise between the more efficient sampling of EPI and the much more benign artifact behavior of gradient echoes, segmented approaches have been developed. In these approaches, more than one excitation is used and several k-lines are sampled per excitation. Depending more on the perspective of their creators than on anything else, such approaches are called multi-echo gradient echo, multi-shot EPI, or segmented EPI. The optimum number of k-lines per excitation is strongly dependent on the particular application; it can range from 3 for MR angiography and some cardiac imaging applications to 64 or more for high-resolution head imaging.
+Despite the close conceptional similarity between EPI and gradient echo techniques 
+%with respect to their k-space trajectories
+, both types of sequences have vastly different imaging and hardware implications. This difference is caused by the sequential sampling of k-space points and the resulting influences on the signal of the mechanisms mentioned previously. As the signal decays with T2 the signal amplitude is reduced during data acquisition. For conventional gradient-echo imaging, even with moderate gradient strength (and thus longer acquisition times), this effect is inconsequential since the typical acquisition times of 5 to 10~ms are considerably shorter than the typical T2 of tissues. For EPI, however, the total acquisition time for n k-space lines is n times longer, even if the time necessary for gradient reversal and phase encoding is neglected. For the moderate acquisition times noted previously, this will lead to total acquisition times of 1~s or more, which exceeds most T2 values observed in human tissues. 
+%Dephasing of spins across the selected slice will lead to T2 of the order of 100~ms at most. 
+For identical acquisition times, as in our gradient-echo example, the signal will have vanished long before the end of data acquisition leading to information loss. 
+%Depending on whether data acquisition has commenced at the center or in the outskirts of k-space, the resulting image will either be severely blurred or reveal merely contours without contrast. This illustrates that 
+Thus EPI 
+%absolutely 
+requires very fast data acquisition in order to 
+%acquire 
+scan all of the k-space data within 
+%not much more than 100~ms at most; otherwise, 
+100~ms or else image quality will deteriorate significantly. In the given time range, state-of-the-art scanners can acquire 64 to 128 phase-encoding steps. Longer acquisition times allowing for higher 
+%nominal 
+resolution are of course technically feasible, but the T2-decay 
+%of the signal will 
+prohibits the realization of this 
+%nominal 
+resolution. 
+%Since cerebral spinal fluid (CSF) has a long T2, EPI images of the head with long acquisition times can look deceptively sharp. It must be noted, however, that the perceived sharpness applies only to CSF-filled structures, whereas the true resolution of parenchyma with a T2 of approximately 60~ms is considerably worse. 
+With even stronger and faster gradients it is 
+%of course feasible 
+possible to acquire true high-resolution images with short acquisition times, but the penalty in SNR for such applications is too severe and has prohibited its use for most forms of morphological imaging. The EPI technique has emerged, however, as an ideal vehicle for functional imaging either in BOLD-based fMRI, in first-pass perfusion measurements or in diffusion imaging, but it is not a viable technique for high-resolution morphological imaging~\cite{SamplingStrategies}.\\
+Even for short acquisition times, EPI suffers from severe problems regarding its imaging properties, which are caused by the phase-altering mechanisms mentioned previously. Chemical shift effects and susceptibility both lead to signal phase shifts which increase linearly with time. Since data acquisition along the readout gradient is fast, there is little effect in the readout direction. In the phase-encoding direction, however, the dwell time amounts to the acquisition time of one k-space line. 
+%For the acquisition of 64 k-space lines in 64~ms, the field of view in frequency units will be 1000~Hz. For a frequency shift of fat vs water of approximately 200~Hz at 1.5~T, this will mean that the signal of fatty tissue will be shifted by 20$\%$ of the image width. The resulting misregistration artifact necessitates the use of fat suppression for practically all EPI applications. 
+Field inhomogeneity and susceptibility will lead to a similar shift. Since the resulting frequency shifts are not as discrete as chemical shift effects, the misregistration will vary continuously leading to highly non-linear image deformations. An additional problem in EPI relates to the fact that the k-space trajectory runs in opposite directions in every other k-space line due to the alternating polarity of the readout gradient. Any asymmetry in the acquired data will therefore lead to some slight perturbation in any other line known as the $180°$ artifact.  
+%The final image will therefore be a superposition of the true image with an image representing the perturbation in every other k-space line. From this discussion of the k-space trajectory, it is easy to see that this perturbation will generate an image which is displaced by half the field of view in the phase-encoding direction. This is the so-called $180°$ artifact.
+\\All the confounding factors discussed will produce such artifact. With appropriate post-processing routines based on reference signals, some of the sources of artifacts can be corrected for. In general, the $180°$ ghost will become stronger whenever any of the mechanisms mentioned previously become significant and will therefore deteriorate the image quality further. Motion can also cause phase-effects on the signal. With an alternating readout gradient, motion along this direction will be refocused in every even refocusing period. Consequently, a flow-dependent $180°$ ghost will occur. Motion along the phase-encoding direction will lead to a velocity-dependent increase in the signal phase and consequently to a velocity-dependent signal displacement. 
+%Signal from a round vessel with laminar flow will therefore appear as a boomerang-shaped artifact displaced from the vessel wall. Any vascular diagnosis based on EPI images therefore has to be made with the utmost care. The inherent artifact behavior limits the practical use of EPI to examinations of the head. Abdominal or thoracic EPI and even cardiac EPI have not been developed beyond a feasibility state. They require considerable efforts in region-selective shimming and even post-processing, using actual field maps of the patient such that the time advantage of EPI is lost. 
+Thus, for the time being, EPI 
+%therefore has to be
+is regarded as a brain-only technique 
+%where it serves as a vehicle for the 
+for fMRI applications, including diffusion and perfusion imaging~\cite{SamplingStrategies}.\\
+Conventional gradient-echo imaging suffers from no such effects and can therefore be applied all over the body with no or only mild susceptibility misregistration. Chemical shift effects will, however, influence the contrast of gradient-echo images by the chemical-shift-dependent dephasing of fat and water signals. Signals from fat and water protons located at the same position will periodically be in- and out of phase with each other in a time interval determined by their difference in Larmor frequencies. 
+%For 1.5~T the time difference between the two extreme conditions will be approximately 2.5~ms. Images acquired with TEs differing by 2.5~ms will look dramatically different due to this effect, although T2-dependent effects for such small TE differences will be negligible. 
+As shown in Fig. 11, the out-of phase image will show a considerable reduction in signal amplitude in tissues containing both fat and water protons such as bone marrow. In addition, an artificial black line will appear at the interface between fatty and water tissues due to the zero crossing of the signal between these antiphasic images. When (im)properly used, this artifact can be used to beautify images, giving them a crisp and well-defined appearance. Care must be taken, however, not to mis-read this artifact as an anatomical structure. With respect to the total acquisition time, gradient-echo imaging is somewhat slower than EPI due to the necessity of repetitive application of excitation pulses. Gradient-echo sequences, which are optimized for speed, typically achieve imaging times of 200 to 400~ms, using gradient systems comparable to those of EPI. Due to the strong signal saturation caused by the very short repetition times, the intrinsic SNR is comparably low. \\
+%(but for many applications still satisfactory). 
+%The SNR can be optimized by using low-excitation flip angles and/or total signal refocusing (true FISP). In combination with bolus application of contrast agent, gradient-echo sequences allow the acquisition of MR angiograms especially of the thorax, abdomen, and the extremities with unprecedented image quality. This  relatively new application has led to whole new field of applications for gradient-echo imaging. \\
+In order to reach a compromise between the more efficient sampling of EPI and the much more benign artifact behavior of gradient echoes, 
+%segmented 
+mixed approaches have been developed. In these approaches, more than one excitation is used and several k-lines are sampled per excitation. 
+%Depending more on the perspective of their creators than on anything else, such approaches are called multi-echo gradient echo, multi-shot EPI, or segmented EPI. 
+The optimum number of k-lines per excitation is strongly dependent on the particular application
+%; it 
+and can range from 3 for MR angiography and cardiac imaging to 64 or more for high-resolution head imaging.
+
+\subsection{Spin-Echo Techniques}
+In spin-echo techniques, refocusing pulses are used in the construction of the k-space trajectory. Conventional spin-echo techniques acquiring one k-line per excitation are identical to gradient-echo techniques with respect to the k-space sampling strategy used. In rapid acquisition relation enhanced imaging (RARE, e. g., turbo spin echo and fast spin echo), multiple refocusing pulses are employed in order to sample more than one and, in the extreme case, all k-lines per excitation [15]. In order to suppress unwanted coherences, the k-space trajectory in RARE has to be brought to the identical position at the time of application of each refocusing pulse. This is achieved by using a phase-encoding rewinder after reading out each k-line (Fig. 12). Conceptionally, RARE is very similar to EPI, however,
+%and the possibility to build a spin-echo-based technique has already been mentioned in the original paper by Mansfield. 
+The spin-echo refocusing makes a huge difference with respect to the artifact behavior. For once it should be noted that the direction of data sampling is identical for all k-lines. Therefore, no $180°$ ghosts will occur. In addition, all phase changes caused by chemical shift, susceptibility, etc., are refocused. The phase effects therefore do not accumulate but re-start in each k-line just like in conventional spin-echo sequences. Motion effects are in principle similar to the ones discussed for EPI with a refocusing of flow in every even echo. Since for low flow the resulting $180°$ effect will be weak, and for high-flow velocity the signal will vanish from the image due to outflow during the echo train, the resulting flow artifact behavior of RARE is very benign. 
+%Slow-flow vessels (e. g. liver veins), which are black on conventional spin-echo imaging, appear very bright on T2-weighted RARE imaging due to this even echo refocusing effect.
+The insensitivity to other mechanisms leads to T1 and T2 as the basic contrast mechanism for RARE. From the discussion of the properties of k-space it follows that the T2-contrast is determined by the echo times of the acquisition of the k-lines with low phase encoding. The T2-contrast of a given implementation can thus be varied widely by changing the order of the phase-encoding gradient. By similar consideration, T2-relaxation along the echo train leads to a loss of resolution when the k-lines carrying the edge information are acquired at long echo times. For most diagnostic applications in high-resolution imaging, a segmented acquisition is therefore preferred with echo train lengths ranging between 8 and 35 for T2-weighted scans and 3 to 5 for T1-weighted scans. Nevertheless, single-shot variants are also being used~\cite{SamplingStrategies}. 
+%Especially single-shot RARE (or single-shot FSE) with very strong T2-contrast has been shown to be extremely useful for imaging of liquid-filled structures like in MR myelography [16], MR urography [17], or MR cholangio-pancreatography (MRCP) [18]. 
+Using half-Fourier phase encoding in half-Fourier acquired single-shot turbo spin echo (HASTE) [19], single-shot implementations with less T2-contrast are also feasible. It has been noted that signal from fat is significantly brighter in RARE compared with conventional spin-echo imaging at equal echo times [20]. This is due to so-called J coupling of protons in lipids, which leads to a periodic modulation of their resonances just like the modulations caused by two elastically coupled pendulums [21]. This modulation will not be refocused but continue despite the reversal of the phase by the 180 pulse (Fig. 13). At a time interval equal to 1/(2 J), the signals from such coupled spins will be opposed and therefore canceled. For typical coupling constants, this condition is reached at echo times of 80 to 140 ms typically used for T2-weighted imaging. The multiple refocusing in an echo train ensures that the phase of the signals from coupled spins stay together along the echo train; thereby, signal suppression is avoided and fat will appear bright. A similar cause is implied for a relative reduction in susceptibility contrast on RARE images (Fig. 14). Static susceptibility effect will be refocused on both spin-echo sequences. If spins move along strong local gradients as caused by hemorrhage, for example, the motion-dependent variation of their Larmor frequency cannot be refocused due to the random nature of the motion. Multiple refocusing pulses, however, will ensure that the spin phases stay together. Some such diffusion-dependent dynamic susceptibility effect is observed in most organs (nuclei in the brain and basal ganglia, liver, lung, etc.). Therefore, RARE images can look very different from conventional spin-echo images at identical echo times. Due to the repetitive use of refocusing pulses and the necessity for rewinding the phase-encoding gradient, RARE is inherently slower than EPI. The gradient performance of current scanners allows refocusing intervals as short as 4 ms or less. The high radio-frequency power inherent to a long train of $180°$ pulses limits, however, the range of applications for such fast echo trains. Even though this problem can be ameliorated by the use of lower refocusing flip angles, EPI with typical readout times of 1 ms or less will remain faster. The big advantage of spin-echo techniques remains, however, their lack of distorting artifacts which makes spin-echo techniques applicable all over the body. Even high-quality cardiac images with HASTE have been demonstrated as well as perfusion and ventilation imaging of the lung [22].
+
+\subsection{Non-Rectilinear K-Space Sampling}
+A common problem of all rectilinear sampling techniques is the very heterogeneous nature of the k-space trajectories used: Data are acquired along straight k-space lines under a constant gradient. Going around the corner of the trajectory requires very fast switching for a brief period. The combination of both modes of operation is very demanding on the gradient power amplifiers, which have to be able to alternate between the two modes. A more common load on the gradients is offered by the use of curved k-space trajectories. Especially spiral trajectories [23, 24] have won considerable interest due to their very efficient use of the gradient system (Fig. 15). For a given gradient system it is also possible to calculate the trajectory achieved by running the gradient system always under full load. In terms of the gradient performance, spirals therefore are considerably more efficient than rectilinear k-space trajectories. A practical problem relates to image reconstruction which requires algorithms not (yet) commonly available and which can take several seconds per image on a typical scanner. In order to make use of the very fast FFT algorithm, the typical approach to reconstruction of data sets acquired with spiral (or other non-rectilinear) trajectories is to first interpolate the data onto a rectilinear grid and then to use FFT for the reconstruction itself. With further developments of spirals, it is expected that reconstruction algorithms will become widely available. The ultimate success of spiral imaging will then be determined by its inherent imaging properties, which are significantly different from rectilinear scans. Firstly, it should be noted that spirals do not have a preferred orientation like the readout- and phase-encoding direction in rectilinear scans. Constant off-resonance effects, such as chemical shift, field inhomogeneity, and susceptibility, will therefore not lead to a displacement in the phase-encoding direction. It will instead lead to blurring of the corresponding structures [25]. In some respects this can be regarded as an advantage since the severe distortions of EPI images are avoided. On the other hand, some mild distortion in EPI images can be tolerable for most applications, whereas blurring artifacts are not. These artifacts can be avoided if the off-resonance frequency is known. The data can then be corrected and a sharp image will be produced. Consequently, for most applications of spiral imaging a field map is acquired prior to the scan in order to measure the local off-resonance effects. Another problem of spiral imaging is the fact that severe artifacts can arise when the k-space trajectory produced by the gradient system is not exactly identical to the trajectory used for image reconstruction. It is thus necessary to accurately calibrate the gradient system or to even measure the actual trajectory used. Especially spiral images in tilted orientations involving all gradients simultaneously sets very high requirements for the gradient switching behavior. A favorable property of spirals is the motion correction inherent to the trajectory [26]. The periodic nature of spirals ensures that part of the data are motion corrected. For the remainder, motion-dependent dephasing will be mild. Consequently, spirals have been demonstrated to yield good image quality for moving structures like blood in vessels or even the heart. It is noted that EPI also has an inherent motion correction in every even refocusing period, as discussed previously. The interleaved nature of motion-corrected and motion sensitized k-lines leads, however, to a 180 artifact, whereas in spirals the distribution of motion-corrected and motion-sensitized data is continuous and therefore no artifacts are formed. Apart from spirals, other non-rectilinear k-space trajectories have been suggested. Back projection uses a star-like trajectory and was in fact the method used by Lauterbur [27] in his first demonstration of MR imaging. Back projection allows the realization of extremely short echo times and has therefore found applications especially for imaging of solid structures. Its inhomogeneous k-space coverage with a high sampling density for points at the center of k-space and its somewhat awkward artifact behavior have limited its success for conventional imaging. Other trajectories, such as rosettes or even random k-space trajectories [28], have also been explored. A common feature of all non-rectilinear trajectories relates to their non-periodic nature, which produces severe artifacts when the field of view of the data acquisition is less than the size of the object. For rectilinear scans this leads to severe fold-over artifact, which can be tolerated as long as it does not affect relevant structures or even is totally avoided when it occurs in the readout direction, where oversampling can be applied without penalty in the data acquisition time. For non-rectilinear scans oversampling is not an option, since the field of view is determined by the distance between adjacent parts of the trajectory, rather than by the sampling rate along the trajectory. Oversampling therefore requires a denser k-space trajectory with concordant prolongation of the acquisition time. For an insufficient field of view of the k-space data, misregistration artifacts can be very severe, depending on the trajectory used. Spirals produce a circular rim artifact around the image. It is therefore mandatory to ensure that the k-space trajectory is sufficiently dense to always cover the whole object of interest. This limitation is especially severe for cardiac imaging, where the size of the field of view of a short axis plane can be considerable. Limitation of the field of view by the use of surface coils with limited sensitivity range is therefore mandatory for many applications of non-rectilinear trajectories.
 
 \section{Imaging Acceleration}
-To alleviate the slow image acquisition times of the MR imaging, different MRI acceleration techniques were used. Most of these included a subsampling of the k-space, meaning the omission of certain higher frequencies, from which a images is reconstructed. While there are different subsampling techniques, most involve fully sampling a center region containing the lower frequencies and dropping higher frequencies, which are deemed less important. However, all of these methods create artifacts during image reconstruction leading to different technologies being developed to minimize these effects such as compressed sensing (CS) and parallel imaging (PI).
+To alleviate the slow image acquisition times of the MR imaging, different MRI acceleration techniques are used. Most of these included scanning less k-space lines during signal acquisition, omitting certain frequencies
+%higher frequencies and fully scanning the center region. 
+The amount of k-space lines that are omitted are usually given by a reduction factor $R$. While there are different subsampling techniques, most involve fully sampling a center region containing the lower frequencies and dropping higher frequencies, which are deemed less important. However, all of these methods create artifacts like image blur during image reconstruction leading to different technologies being developed to minimize these effects such as compressed sensing (CS) and parallel imaging (PI).
+
+\subsection{Compressed Sensing}
+When looking at a subsampled k-space one can approach the reconstruction of the MR image as an problem of an under-determined system. This can then be solved using compressed sensing techniques.
+
+\subsection{Parallel Imaging}
+Parallel imaging is another popular technique for multi-coil data as it allows for merging different images reconstructed from each coil to get an averaged image that includes all regions of the image in good quality.
 
 \section{Motion-Corrected Reconstruction} \label{Sec:Motion-CorrectedReconstruction}
 Patient motion during acquisition is one of the major impediments of high-quality MRI scans. This is especially true for thoracic and abdominal imaging, as organs move during breathing. This motion can induce several consequences on MR signal formation. Intraview and interview motion have to be distinguished between: motion is intraview when occurring during individual MR experiments (between RF excitation and echo formation), whereas motion is interview when occurring between individual MR experiments. Whenever the period of motion is slow compared to the period of MR acquisition defined by the repetition time $TR$, the assumption can be made that motion is interview. This is often a reasonable assumption when considering pseudo-periodic motion induced by respiration, and also possibly by cardiac contraction, which are the two common sources of motion in cardiac and abdominal imaging (typically, the adult respiratory period is about 4–5 $s$, and $TR \approx 10 ms$ for fast imaging). Interview motion results in spatial encoding inconsistencies, and thus in image deterioration which can take complex forms (blurring/ghosting artifacts) as acquisition is performed in a Fourier space. Several strategies can be employed in order to handle patient motion better. Patient cooperation is the most commonly used method. However, breath-holds cannot last much longer than $20 s$ and physiological drifts cannot be completely avoided. This leads to a limitation on the time-period of signal recording and thus, signal-to-noise ratio (SNR). Moreover, the position of organs in successive breath-holds may not be reproducible. Synchronization techniques are well-established and systematically used in clinical protocols, but they require a high-level of motion reproducibility. This is often a limiting factor considering heart rate variability (whether in free breathing or during a breathhold), and respiratory variability in terms of amplitude and frequency. This is why alternative techniques have been put forward with the aim of inverting the process of spatial encoding of moving structures that underlies artifacts. While it is possible to correct for motion prospectively, by modulating the magnetic field gradients and RF fields in order to cancel the effect of motion in the Bloch equations, the method is limited to correcting of, at best, affine motion, due to magnetic field gradient systems being linear. Motion can also be compensated for in reconstruction, however, many methods are restricted to rigid or affine motion due either to computational issues or to the difficulty of modeling complex displacement fields~\cite{GRICS}. The latter however seems to become less of a problem as image registration improves with e.g. the help of deep learning.\\
 Motion-resolved data acquisition for these applications are usually accelerated by Parallel Imaging or Compressed Sensing techniques yielding sub-Nyquist sampled (subsampled) k-space data. In order to reconstruct aliasing-free images, these methods rely on reconstruction schemes that, for example incorporate sparsity or low-rank constraints to solve the ill-posed problem. Fixed sparsity assumptions in Compressed Sensing are often too restrictive and incapable of fully modeling spatio-temporal dynamics. Careful fine-tuning between regularization and data consistency is required and especially in highly subsampled cases residual aliasing may remain in the image (under-regularization) or staircasing and blurring artifacts can occur (over-regularization) which affect the image registration. After reconstruction, non-rigid motion fields can be estimated in image space from reconstructed images by solving a registration problem. A particular interest and challenge lies in the derivation of reliable motion fields which capture the spatio-temporal non-rigid deformations, such as respiratory or cardiac movement. Instead of performing these two steps sequentially, motion-compensated image reconstruction schemes like \emph{GRICS}~\cite{GRICS} integrate both motion field estimation and motion correction into the reconstruction process. These methods require reliable motion-resolved images from which the motion fields can be estimated. Motion field estimation can be controlled or supported by external motion surrogate signals, initial motion field estimates, from motion-aliased images or low-frequency image contents. Moreover, spatio-temporal redundancies can be exploited to achieve an aliasing-free image. While these methods have been proven to be more robust against registration errors, they can require a significantly increased computational demand and/or limit imaging acceleration~\cite{Kuestner2022}.
 
 There are also approaches for learning new subsampling strategies in a data-driven manner (pruning unimportant k-space frequencies)~\cite{MRISubsamplingPruning} as well as deep learning based radial~\cite{DeepMRIReconstructionRadialSubsampling} and non-Cartesian~\cite{DeepMRIReconstructionSubsampling} subsampling for MRI acceleration.
+
+\chapter{Image Transformations and Registration} \label{Ch:ImageTransformationsAndRegistration}
+In this chapter a brief overview over the different kinds of image transformations is given, followed by a deep dice into the challenges of image registration.
+
+\section{Image Transformations}
+There are two major groups of image transformations: linear and non-rigid.
+
+\subsection{Linear Transformations}
+Linear Transformations are a common group of global transformation, which include rotation, scaling and translation. As these are global operations, one can express them as matrix operations. If a 2D point has the cartesian coordinates $\mathbf{p} = [x,y]^T$ it can be extended to 3D as $\mathbf{p} = [x,y,1]^T$ instead of being only 2D. This allows for combining all of the linear transformations into a single matrix:
+\begin{align}
+	\begin{bmatrix}
+		x'\\
+		y'\\
+		1
+	\end{bmatrix} 
+	&= 
+	\begin{bmatrix}
+		\cos(\theta) & -\sin(\theta) & 0\\
+		\sin(\theta) & \cos(\theta) & 0\\
+		0 & 0 & 1
+	\end{bmatrix}
+	\cdot 
+	\begin{bmatrix}
+		s & 0 & 0\\
+		0 & s & 0\\
+		0 & 0 & 1
+	\end{bmatrix}
+	\cdot 
+	\begin{bmatrix}
+		1 & 0 & t_x\\
+		0 & 1 & t_y\\
+		0 & 0 & 1
+	\end{bmatrix}
+	\cdot
+	\begin{bmatrix}
+		x\\
+		y\\
+		1
+	\end{bmatrix}
+	\\
+	&=
+	\begin{bmatrix}
+		s \cdot \cos(\theta) & -s \cdot \sin(\theta) & t_x\\
+		s \cdot \sin(\theta) & s \cdot \cos(\theta) & t_y\\
+		0 & 0 & 1
+	\end{bmatrix}
+	\cdot
+	\begin{bmatrix}
+		x\\
+		y\\
+		1
+	\end{bmatrix}
+\end{align}
+with $\theta$ being the angle of the rotation, $s$ the scaling factor as well as $t_x$ and $t_y$ being the translations in x- and y-direction. This can be further generalized as a linear matrix multiplication:
+\begin{equation}
+	\mathbf{p'} =	
+	\begin{bmatrix}
+		x'\\
+		y'\\
+		1
+	\end{bmatrix} 
+	= 
+	\begin{bmatrix}
+		a_{11} & a_{12} & a_{13}\\
+		a_{21} & a_{22} & a_{23}\\
+		0 & 0 & 1
+	\end{bmatrix}
+	\cdot
+	\begin{bmatrix}
+		x\\
+		y\\
+		1
+	\end{bmatrix}
+	 = \mathbf{A} \cdot \mathbf{p}
+\end{equation}
+where $\mathbf{A}$ is the general affine transformation matrix.
+
+
+\subsection{Non-Rigid Transformations}
+The second category of transformations allow elastic or non-rigid transformations. These transformations are capable of locally warping the image. Non-rigid transformations include radial basis functions, physical continuum models, and large deformation models like diffeomorphisms.
+
 
 \section{Image Registration} \label{Sec:ImageRegistration}
 Image registration is a challenging, yet important task for image processing. It can be described as the process of transforming different image datasets into one coordinate system with matched imaging contents~\cite{Haskins2020}. In the medical field this can be used for clinical applications such as disease diagnosis and monitoring, image-guided treatment delivery, and post-operative assessment. Medical image registration is typically used to pre-process data for tasks like object detection (for e.g. tumor growth monitoring) and segmentation (for e.g. organ atlas creation) where variation in spatial resolution is common between modalities like CT and MRI and patients. Thus the performance of these methods is dependent on the quality of image registration~\cite{Chen2020}. \\
@@ -239,7 +404,7 @@ Intuitively, deformable image registration is an ill-posed problem, making it fu
 Many methods have been proposed for medical image registration to deal with the complex challenges of this task. Popular conventional registration methods include optical flow~\cite{Yang2008}, demons~\cite{Vercauteren2009} and many more. However, most of these still lack accuracy and computation speed, which makes newer deep learning approaches all the more interesting~\cite{Fu2020}.
 
 \chapter{Deep Learning}
-This chapter is all about the basics of neural networks and deep learning. This includes different architectures, usage for image registration and more.
+Deep learning, and neural networks in general, have seen a significant rise in usage over the last couple of years due to many breakthroughs in areas of image recognition, segmentation and also registration. After a brief overview of different neural network architectures that can be used for, among other applications, image registration, a comprehensive guide for the specifics of such an training process is given including different training methods and evaluation metrics.
 
 \section{Deep Learning Architectures} \label{Sec:DeepLearningArchitectures}
 Neural networks, despite the theoretical concepts being around for decades, have seen a meteoric rise in popularity over the last few years as constraints on computational power have been alleviated. Especially deep neural networks, which are often summarized under the term deep learning (DL). Recent years have witnessed an almost exponential growth in the development and use of DL algorithms, sustained thus far by rapid improvements in computational hardware (e.g. GPUs). Consequently, clinical applications requiring image classification, segmentation, registration, or object detection/localization, have witnessed significant improvements in algorithmic performance, in terms of accuracy and/or efficiency~\cite{Chen2020}. The following network architecture are widely used for different tasks including medical image registration. \\
@@ -813,8 +978,8 @@ In this section, changes to the network architecture and loss function are discu
 As seen in the section~\ref{SubSec:ResultsComparisonSubsampling}, the performance for all methods decreases drastically for highly subsampled/accelerated data due to reconstruction artifacts in the image domain due to the missing frequencies in the k-space domain. However, since we are interested in maintaining performance on subsampled data, it might prove useful to use k-space information for the loss calculation and thus for the network training as it should not contain artifacts compared to the image domain. Thus, it would act as a kind of data consistency contraint during training. In order to achieve this, the similarity loss for \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} was calculated not on the warped and fixed images, but instead on their corresponding masked k-spaces. This would hopefully still provide the network with useful information during training that is free of any aliasing artifacts, which might decrease performance on subsampled data. The k-spaces were masked to only compare the sampled frequencies to avoid large differences between the deleted frequencies of the fixed image with potential interpolated frequencies of the warped image. \\
 After trying the MSE as the similarity loss, it quickly became apparent that this yielded wildly inconsistent displacements which often corrupted the warped image and could no longer be reigned in by the smoothness constraint of the loss function. Even with a $\lambda = 10$ to put a greater emphasize on the smoothness of the displacement, unrealistic deformations could not be prevented as the training did not appear to converge.
 
-\subsection{Changes to the Network Architecture}
-Next, a change to the network architecture was tested that changed the domain from image to k-space in hopes of avoiding the reconstruction artifacts present in highly accelerated images. For this we first looked at \emph{LAPNet} which works on k-space data, but is trained in a supervised manner. As a first test, we tried to train it in an unsupervised method with the same pipeline as \emph{Fourier-Net}. To achieve this we needed to generate $33 \times 33$ crops of the k-spaces as LAPNet iteratively predicts the displacement for the center-pixel of each crop, thus producing a dense displacement for the whole image.
+%\subsection{Changes to the Network Architecture}
+%Next, a change to the network architecture was tested that changed the domain from image to k-space in hopes of avoiding the reconstruction artifacts present in highly accelerated images. For this we first looked at \emph{LAPNet} which works on k-space data, but is trained in a supervised manner. As a first test, we tried to train it in an unsupervised method with the same pipeline as \emph{Fourier-Net}. To achieve this we needed to generate $33 \times 33$ crops of the k-spaces as LAPNet iteratively predicts the displacement for the center-pixel of each crop, thus producing a dense displacement for the whole image.
 
 \section{Integration into a Motion-Corrected Reconstruction Pipeline} \label{Sec:IntegrationMotion-CorrectedReconstructionPipeline}
 Describe qualitative test to see whether the network can be used to improve a reconstruction pipeline for cardiac data.
@@ -1158,29 +1323,23 @@ The results for the accelerated data are not quite consistent as the band-limite
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
 		\midrule
-		$\%$ Dice & $67.84 \pm 14.07$ & $73.84 \pm 15.18$ & $72.83 \pm 15.64$\\
-		$\%$ Dice* & $56.14 \pm 18.45$ & $64.31 \pm 21.00$ & $63.19 \pm 21.59$ \\
-		$\%$ SSIM & $71.91 \pm 4.85$ & $77.58 \pm 10.64$ & $77.32 \pm 10.53$\\
-		MSE (m) & $0.28 \pm 0.12$ & $0.20 \pm 0.14$ & $0.21 \pm 0.15$ \\
-		$\% \, |J_{\phi}|\leq0$ & $0.37 \pm 0.37$ & $0.15 \pm 0.26$ & $0.15 \pm 0.27$ \\
-		Time [s] 	  & 0.0082  	& 0.0092 	& 0.0337  \\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $77.37 \pm 13.92$ & $-$ & $-$\\
+		$\%$ Dice* & $68.98 \pm 19.10$ & $-$ & $-$ \\
+		$\%$ SSIM & $84.75 \pm 7.01$ & $-$ & $-$\\
+		MSE (m) & $0.08 \pm 0.05$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.16 \pm 0.19$ & $-$ & $-$ \\
+		Time [s] 	  & 0.0085 & - & -  \\
 		\midrule
 		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
 		\midrule
-		$\%$ Dice & $72.30 \pm 14.04$ & $70.18 \pm 17.43$ & $70.36 \pm 16.63$\\
-		$\%$ Dice* & $61.87 \pm 19.32$ & $59.36 \pm 23.90$ & $59.47 \pm 22.80$ \\
-		$\%$ SSIM & $78.77 \pm 7.22$ & $75.78 \pm 10.63$ & $75.91 \pm 10.72$\\
-		MSE (m) & $0.16 \pm 0.10$ & $0.28 \pm 0.19$ & $0.27 \pm 0.19$ \\
-		$\% \, |J_{\phi}|\leq0$ & $ 0.46 \pm 0.54$ & $0.00 \pm 0.00$ & $0.00 \pm 0.00$ \\
-		Time [s] 	  & 0.0068  	& 0.0079 	& 0.0183  \\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $76.55 \pm 13.89$ & $76.20 \pm 13.57$ & $77.23 \pm 13.73$\\
+		$\%$ Dice* & $67.90 \pm 19.44$ & $66.30 \pm 19.01$ & $67.67 \pm 18.97$ \\
+		$\%$ SSIM & $82.93 \pm 8.12$ & $77.74 \pm 10.69$ & $77.96 \pm 10.57$\\
+		MSE (m) & $0.10 \pm 0.06$ & $0.19 \pm 0.14$ & $0.18 \pm 0.13$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.35 \pm 0.41$ & $0.01 \pm 0.05$ & $0.00 \pm 0.02$ \\
+		Time [s] 	  & 0.0069  	& 0.0065 	& 0.0312  \\
 		\bottomrule
 	\end{tabular}	
 \end{table}
@@ -1197,29 +1356,23 @@ The results for the accelerated data are not quite consistent as the band-limite
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
 		\midrule
-		$\%$ Dice & $69.12 \pm 14.05$ & $74.20 \pm 14.50$ & $74.36 \pm 14.97$\\
-		$\%$ Dice* & $57.99 \pm 18.66$ & $64.50 \pm 20.57$ & $65.01 \pm 20.82$ \\
-		$\%$ SSIM & $77.27 \pm 3.74$ & $86.08 \pm 4.19$ & $85.53 \pm 3.99$\\
-		MSE (m) & $0.21 \pm 0.10$ & $0.15 \pm 0.12$ & $0.15 \pm 0.12$ \\
-		$\% \, |J_{\phi}|\leq0$ & $0.47 \pm 0.30$ & $0.15 \pm 0.27$ & $0.15 \pm 0.28$ \\
-		Time [s] 	  & 0.0117 & 0.0169 & 0.0412  \\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $-$ & $-$ & $-$\\
+		$\%$ Dice* & $-$ & $-$ & $-$ \\
+		$\%$ SSIM & $-$ & $-$ & $-$\\
+		MSE (m) & $-$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $-$ & $-$ & $-$ \\
+		Time [s] 	  & - & - & -  \\
 		\midrule
 		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
 		\midrule
-		$\%$ Dice & $66.07 \pm 13.72$ & $71.13 \pm 15.37$ & $73.13 \pm 15.26$\\
-		$\%$ Dice* & $53.76 \pm 17.03$ & $60.10 \pm 21.34$ & $62.61 \pm 21.39$ \\
-		$\%$ SSIM & $73.34 \pm 3.83$ & $84.02 \pm 4.36$ & $84.61 \pm 4.44$\\
-		MSE (m) & $0.26 \pm 0.09$ & $0.21 \pm 0.16$ & $0.19 \pm 0.15$ \\
-		$\% \, |J_{\phi}|\leq0$ & $0.78 \pm 0.37$ & $0.00 \pm 0.00$ & $0.01 \pm 0.04$ \\
-		Time [s] 	  & 0.0138 & 0.0133 & 0.0418  \\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $75.52 \pm 13.69$ & $75.76 \pm 13.43$ & $76.56 \pm 13.47$\\
+		$\%$ Dice* & $66.86 \pm 18.97$ & $65.45 \pm 18.63$ & $66.81 \pm 18.77$ \\
+		$\%$ SSIM & $89.51 \pm 3.34$ & $86.30 \pm 4.18$ & $86.29 \pm 4.23$\\
+		MSE (m) & $0.06 \pm 0.04$ & $0.13 \pm 0.11$ & $0.13 \pm 0.11$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.27 \pm 0.29$ & $0.03 \pm 0.11$ & $0.00 \pm 0.02$ \\
+		Time [s] 	  & 0.0090 & 0.0077 & 0.0466  \\
 		\bottomrule
 	\end{tabular}	
 \end{table}
@@ -1236,91 +1389,117 @@ The results for the accelerated data are not quite consistent as the band-limite
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\	
 		\midrule
-		$\%$ Dice & $69.78 \pm 14.35$ & $73.62 \pm 15.13$ & $73.88 \pm 15.05$\\
-		$\%$ Dice* & $58.27 \pm 19.54$ & $63.39 \pm 21.54$ & $64.18 \pm 21.00$ \\
-		$\%$ SSIM & $83.27 \pm 2.86$ & $89.69 \pm 3.34$ & $89.83 \pm 3.27$\\
-		MSE (m) & $0.16 \pm 0.10$ & $0.14 \pm 0.12$ & $0.13 \pm 0.12$ \\
-		$\% \, |J_{\phi}|\leq0$ & $0.37 \pm 0.31$ & $0.21 \pm 0.39$ & $0.12 \pm 0.19$ \\
-		Time [s] 	  & 0.0112 & 0.0116 & 0.0433 \\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $-$ & $-$ & $-$\\
+		$\%$ Dice* & $-$ & $-$ & $-$ \\
+		$\%$ SSIM & $-$ & $-$ & $-$\\
+		MSE (m) & $-$ & $-$ & $-$ \\
+		$\% \, |J_{\phi}|\leq0$ & $-$ & $-$ & $-$ \\
+		Time [s] 	  & - & - & -  \\
 		\midrule
 		\multirow{2}{*}{Metrics} & \multicolumn{3}{c}{Band-limited Displacement} \\
 		\cline{2-4} 
 		 & Fourier-Net & Fourier-Net+ & 4xFourier-Net+\\		
 		\midrule
-		$\%$ Dice & $72.28 \pm 14.65$ & $71.83 \pm 15.91$ & $72.55 \pm 15.66$\\
-		$\%$ Dice* & $62.58 \pm 19.99$ & $61.10 \pm 22.07$ & $62.00 \pm 21.97$ \\
-		$\%$ SSIM & $90.68 \pm 2.93$ & $87.77 \pm 3.50$ & $89.13 \pm 3.47$\\
-		MSE (m) & $0.10 \pm 0.08$ & $0.19 \pm 0.15$ & $0.17 \pm 0.15$ \\
-		$\% \, |J_{\phi}|\leq0$ & $0.23 \pm 0.26$ & $0.00 \pm 0.01$ & $0.00 \pm 0.01$ \\
-		Time [s] 	  & 0.0091 & 0.0088 & 0.0310\\
-%		Parameters    &  	&   	&   \\
-%		Mult-Adds (G) &    	&    		&   \\
-%		Memory [MB]   &     	&     	&   \\
+		$\%$ Dice & $76.87 \pm 13.97$ & $76.10 \pm 13.83$ & $76.98 \pm 13.57$\\
+		$\%$ Dice* & $68.24 \pm 19.27$ & $66.27 \pm 19.20$ & $67.40 \pm 18.90$ \\
+		$\%$ SSIM & $92.77 \pm 2.74$ & $90.32 \pm 3.29$ & $90.42 \pm 3.33$\\
+		MSE (m) & $0.05 \pm 0.04$ & $0.12 \pm 0.12$ & $0.11 \pm 0.11$ \\
+		$\% \, |J_{\phi}|\leq0$ & $0.11 \pm 0.15$ & $0.01 \pm 0.05$ & $0.00 \pm 0.03$ \\
+		Time [s] 	  & 0.0081 & 0.0096 & 0.0279  \\
 		\bottomrule
 	\end{tabular}	
 \end{table}
  
 \newpage
 \subsection{Comparison on Subsampled Data} \label{SubSec:ResultsComparisonSubsampling}
-In section~\ref{SubSec:ComparisonVoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were already compared to \emph{VoxelMorph}, however, these comparisons were only done on fully sampled data, not accelerated ones. To further add to the comparison, \emph{NiftyReg} was again used as a traditional registration algorithm. The unaligned test image pairs were used as a baseline for the lower bound of registration performance. Values which are worse than the baseline are marked in red, while the best results for each acceleration level is highlighted with blue. The results can be seen in Table~\ref{tab:ComparisonSubsamplingACDC}.
-%\emph{LAPNet}. 
-All times are computed on CPU due to \emph{NiftyReg} only working on the CPU as the GPU capable versions were deprecated. Additionally, Figure~\ref{fig:Boxplots_DiceScores} shows the performance of the methods for each segmentation label (excluding the background) while Figure~\ref{fig:TestExamples} shows example images and segmentations warped by the different methods for a visual comparison.\\
-For $R=0$, \emph{Fourier-Net} performs best in terms of Dice (both with and without the background label), closely followed by \emph{4xFourier-Net+} while \emph{NiftyReg} performs worse than the baseline. \emph{VoxelMorph} performs best in terms of SSIM followed by \emph{Fourier-Net} and \emph{NiftyReg} as well as MSE where \emph{NiftyReg} again performs worse than the baseline. \emph{Fourier-Net} is the fastest method with under $0.1s$ per image pair, while \emph{NiftyReg} takes over $100s$ making it the slowest by a large margin (all other methods are under $1s$).\\
-For $R=4$, the registration performance decreases for all methods with \emph{NiftyReg}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} performing worse than the baseline, while \emph{VoxelMorph} performs best in terms of Dice (both with and without the background label). \emph{NiftyReg} performs best in terms of SSIM, while \emph{Fourier-Net+} and \emph{4xFourier-Net+} perform worse than the baseline. \emph{NiftyReg} and \emph{VoxelMorph} both perform best in terms of MSE with none of methods being worse than the baseline. In terms of time \emph{NiftyReg} is again the worst method with about $80s$, while all other methods need under $1s$ with \emph{Fourier-Net+} again being the fastest.\\
-For $R=8$, \emph{4xFourier-Net+} performs best for Dice with the background label, while \emph{VoxelMorph} performs best in term of Dice without the background label. \emph{NiftyReg} and \emph{Fourier-Net} perform worse than the baseline in terms of Dice (both with and without the background label), while \emph{Fourier-Net+} performs a bit better then the baseline for Dice with the background, but slightly worse than the baseline for Dice without the background. \emph{NiftyReg} again performs best for SSIM with \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} performing worse than the baseline, however \emph{VoxelMorph} is best in terms of MSE with only \emph{4xFourier-Net+} performing worse than the baseline. \emph{NiftyReg} is again the worst method in terms of time with over $80s$ while \emph{Fourier-Net+} again is the fastest.\\
-For $R=10$, \emph{4xFourier-Net+} performs best in terms of Dice with the background label, while \emph{VoxelMorph} performs best in terms of Dice without the background. \emph{NiftyReg} again performs worse than the baseline for Dice (both with and without background label), but is the best in terms of SSIM, while \emph{VoxelMorph}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} perform worse than the baseline. Both \emph{VoxelMorph} and \emph{Fourier-Net} perform best in terms of MSE with no method being worse than the baseline. \emph{Fourier-Net+} is again the fastest method with under $0.1s$, while \emph{NiftyReg} is again the slowest despite its best time yet with about $47s$.\\
-To summarize, \emph{Fourier-Net+} is the fastest method for all acceleration levels with \emph{NiftyReg} being far off in terms of execution time as it is not machine learning based. \emph{VoxelMorph} is best in terms of MSE for all acceleration levels and is best in terms of Dice without the background label for subsampled data. \emph{4xFourier-Net+} performs best in terms of Dice with the background label for $R=8$ and $R=10$. \emph{NiftyReg} is best in terms of SSIM for subsampled data, but performs badly in all other metrics. In general the performance decreases for all methods for higher acceleration levels as seen in the Dice metric, but, counter-intuitively, the SSIM is highest and the MSE the lowest for the $R=10$ baseline showing once again that these image similarity metrics are not very useful for evaluating registration performance across different acceleration levels.\\
-To further evaluate the difference between the methods performance one can look at the Dice scores of the three individual cardiac labels. The results can be seen as boxplots in Figure~\ref{fig:Boxplot_DiceScores_LV-Cavity} for the left ventricle, Figure~\ref{fig:Boxplot_DiceScores_Myocardium} for the myocardium and Figure~\ref{fig:Boxplot_DiceScores_RV-Cavity} for the right ventricle.\\
-As seen in Figure~\ref{fig:Boxplots_DiceScores}, the Dice scores for each label vary widely as the performance of all methods is best for the right ventricle and worst for the myocardium. \emph{NiftyReg} performs well for the left ventricle, even having the best performance for the subsampled data, while it is the worst method for the myocardium (being only slightly better than the baseline) and the right ventricle (being worse than the baseline). \emph{VoxelMorph} performs best for the subsampled data on the myocardium and is still very good on the left and right ventricle.
+In section~\ref{SubSec:ComparisonVoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} were already compared to \emph{VoxelMorph}, however, these comparisons were only done on fully sampled, not accelerated data. To further add to the comparison, \emph{NiftyReg} was again used as a traditional registration algorithm. The unaligned test image pairs were treated as a baseline for the lower bound of registration performance. The results can be seen in Table~\ref{tab:ComparisonSubsamplingACDC} for fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph{ACDC} test data. Values which are worse than the baseline are marked in red, while the best results for each acceleration level and metric is highlighted with blue. All times are computed on CPU due to \emph{NiftyReg} only working on the CPU as the GPU capable versions were deprecated. Additionally, Figure~\ref{fig:Boxplots_DiceScores} shows the performance of the methods for each segmentation label (excluding the background) while Figure~\ref{fig:TestExamples} shows example images and segmentations warped by the different methods for a visual comparison.\\
+For $R=0$, \emph{Fourier-Net} performs best in terms of Dice (both with and without the background label), closely followed by \emph{4xFourier-Net+} while \emph{NiftyReg} performs worse than the baseline. \emph{VoxelMorph} performs best in terms of SSIM, followed by \emph{Fourier-Net} and \emph{NiftyReg}, as well as MSE where \emph{NiftyReg} again performs worse than the baseline on the fully sampled data. \emph{NiftyReg} and \emph{4xFourier-Net+} had the lowest percentage of non-positive Jabobian determinants while \emph{VoxelMorph} had the highest value by far (almost $50\%$ while the other method were all under $1\%$) indicating folding. \emph{Fourier-Net} is the fastest method with under $0.1s$ per image pair, while \emph{NiftyReg} takes over $100s$ making it the slowest by a large margin (all other methods were under $1s$).\\
+For $R=4$, the registration performance decreases for all methods with \emph{NiftyReg} again performing worse than the baseline, while \emph{4xFourier-Net+} performed best in terms of Dice with the background label, while \emph{Fourier-Net} performed best in Dice without the background. \emph{VoxelMorph} performs best in terms of SSIM and MSE, followed by \emph{Fourier-Net} and \emph{NiftyReg}, with none of methods performing worse than the baseline. \emph{4xFourier-Net+} again has the lowest percentage of non-positive Jabobian determinants closely followed by \emph{Fourier-Net+}, while \emph{VoxelMorph}, similar to the fully sampled data, has the highest value. In terms of time \emph{NiftyReg} is again the worst method with about $80s$, while all other methods need around $0.1s$ with \emph{Fourier-Net+} being the fastest.\\
+For $R=8$, \emph{4xFourier-Net+} again performs best for Dice with the background label, while \emph{Fourier-Net} performs best in term of Dice without the background label. \emph{NiftyReg} performs worse than the baseline in terms of Dice (both with and without the background label). \emph{NiftyReg} again performs best for SSIM and MSE followed by \emph{Fourier-Net} and \emph{NiftyReg}. \emph{4xFourier-Net+} has the lowest percentage of non-positive Jabobian determinants followed by \emph{Fourier-Net+}, while \emph{VoxelMorph} again has the worst value. \emph{NiftyReg} is the worst method in terms of time with over $80s$, similar to $R=4$, while \emph{Fourier-Net+} again is the fastest, however, being slightly slower than before.\\
+For $R=10$, \emph{4xFourier-Net+} performs best in terms of Dice with the background label, while \emph{Fourier-Net} performs best in terms of Dice without the background. \emph{NiftyReg} again performs worse than the baseline for Dice (both with and without background label). \emph{VoxelMorph} is again the best method in terms of SSIM and MSE, followed by \emph{Fourier-Net} and \emph{NiftyReg} with no method being worse than the baseline. \emph{4xFourier-Net+} has again the lowest percentage of non-positive Jabobian determinants closely followed by \emph{Fourier-Net+}, while \emph{VoxelMorph} has the worst value like before. \emph{Fourier-Net+} is again the fastest method with under $0.01s$, while \emph{NiftyReg} is again the slowest despite its best time yet with about $47s$.\\
+To summarize, \emph{Fourier-Net+} is the fastest method for all acceleration levels while \emph{NiftyReg} is far behind all other methods in 
+%terms of 
+execution time as it is not machine learning based. \emph{VoxelMorph} performs best in terms of SSIM and MSE for all acceleration levels, however it also has the highest percentage of non-positive Jabobian determinants by a large margin indicating potential folding artifacts. \emph{4xFourier-Net+} performs best in terms of Dice with the background label except for $R=0$ while consistently having the lowest percentage of non-positive Jabobian determinants with a mean value under $0.005\%$ for all acceleration levels. \emph{Fourier-Net+} performs well in terms of Dice (with and without the background label), however it does not manage to surpass the other \emph{Fourier-Net} variants despite having the second lowest percentage of non-positive Jabobian determinants across the acceleration levels. \emph{Fourier-Net} performs best in terms of Dice without the background label for all acceleration level as well as in Dice with the background for $R=0$. \emph{NiftyReg} consistently performs worse than the baseline in terms of Dice (with and without the background) across all acceleration levels while having decent SSIM and MSE values. The performance, in general, decreased for all methods for higher acceleration levels as seen in the Dice metric, however, perhaps counter-intuitively, the SSIM is highest and the MSE the lowest for the $R=10$ baseline with only $R=4$ breaking the trend. This shows once again that image similarity metrics are not completely objective when it comes to evaluating registration performance across different acceleration levels.\\
+To further evaluate the difference between the methods performance one can look at the Dice scores of the three individual cardiac labels. The results can be seen as boxplots in Figure~\ref{fig:Boxplot_DiceScores_LV-Cavity} for the left ventricle, Figure~\ref{fig:Boxplot_DiceScores_Myocardium} for the myocardium and Figure~\ref{fig:Boxplot_DiceScores_RV-Cavity} for the right ventricle.
+%\\ As seen in Figure~\ref{fig:Boxplots_DiceScores}, 
+The Dice scores for each label vary widely but the performance of all methods is best for the right ventricle and worst for the myocardium. This seems to be an underlying principle of the data as the same behavior can be seen in the unaligned baseline. \\
+\emph{NiftyReg} performs well for the left ventricle, even surpassing \emph{VoxelMorph}, while it is the worst method for the myocardium (being only slightly better than the baseline) and the right ventricle (far worse than the baseline). Overall, \emph{NiftyReg} is not heavily affected by the artifacts present in the subsampled data, but is also not able to perform better than the other methods consistently. \\
+\emph{VoxelMorph} performs best on the right ventricle compared to the other labels being close the \emph{Fourier-Net} variant for $R=0$, but falling off for the subsampled data, even performing worse than the baseline. It is better than the baseline, \emph{NiftyReg} and even \emph{Fourier-Net+} on $R=0$ for the myocardium, but again loses performance for the subsampled data. This trend also continues for the left ventricle were \emph{VoxelMorph} performs about as well as the baseline, but better than \emph{NiftyReg}, however ends up falling behind the baseline. Overall, \emph{VoxelMorph} is able to outperform the baseline, \emph{NiftyReg} and even \emph{Fourier-Net+} on one occasion, but is severely hampered by the artifacts caused by the subsampling of the k-space thus limiting its usability for accelerated MRI applications.\\
+\emph{Fourier-Net} is consistently the best method for the challenging myocardium, however it is only about as good as \emph{Fourier-Net+} and \emph{4xFourier-Net+} for the left and right ventricle (even performing slightly worse than the baseline for $R=8$ on the latter). While \emph{Fourier-Net}, overall, is effected by the subsampling the effect is far less severe compared to \emph{VoxelMorph} and \emph{Fourier-Net} reaches a far better performance, especially for the challenging myocardium.\\
+\emph{Fourier-Net+} performs well for the left ventricle being barely affected by the subsampling, although it is surpassed by \emph{Fourier-Net} on $R=0$ and by \emph{4xFourier-Net+} for $R=4$ and $R=10$. For the challenging myocardium \emph{Fourier-Net+} again performs well, but is surpassed by \emph{Fourier-Net} for all acceleration levels and only manages to beat \emph{4xFourier-Net+} for $R=10$. For the right ventricle \emph{Fourier-Net+} is among the best methods, even performing better than \emph{Fourier-Net} and \emph{4xFourier-Net+}  for $R=8$.\\
+\emph{4xFourier-Net+} consistently has the best median value for the left ventricle and is close to being the best model for the right ventricle. Only on the myocardium it is consistently outperformed by \emph{Fourier-Net}.\\
+In order to explain these differences one can look at the warped images and segmentations as well as the generated displacement fields visualized in Figure~\ref{fig:TestExamples}. For all acceleration levels, an example moving and fixed image can be compared to the warped images by the different methods. For further analysis, the corresponding segmentations (with Dice scores) and displacement fields for the methods are given.\\
+For $R=0$, it is apparent that \emph{Fourier-Net+} and \emph{4xFourier-Net+} have very localized displacements centered on the cardiac region leading to a very smooth warped segmentation compared to \emph{Fourier-Net} and \emph{VoxelMorph} were the cardiac labels mix in some regions. Thus those networks have learned a less localized transformation, which can also be seen in the displacements. However, despite this \emph{Fourier-Net} still achieves the best Dice score with about $16\%$ increase compared to the baseline. While \emph{NiftyReg} does produce a very smooth warped segmentation the actual displacement is very small and not localized on the cardiac region leading to the worst Dice score of all methods.\\
+For $R=4$, the image artifacts due to the subsampling are very apparent. The segmentations for the moving and fixed image obviously remain the same.
+% despite the subsampling.
+\emph{Fourier-Net+} and \emph{4xFourier-Net+} again have very smooth segmentations, however the displacements reflect the difficulties of adapting to subsampled data in becoming slightly less local. Surprisingly, \emph{NiftyReg} actually has a more localized displacement compared to the fully sampled data, however the segmentation looks less smooth and the Dice score is slightly lower. Somewhat similar, \emph{VoxelMorph} also has a more localized displacement leading to a smoother segmentation and a higher Dice score. The results of \emph{Fourier-Net} look overall very similar to the fully sampled case, perhaps with a bit more localized displacement leading to a smoother segmentation, although this does not lead to a better Dice Score.\\
+For $R=8$, the displacements for all methods become more global due to the strong presence of image artifacts, however the Dice scores are better than before for all methods. \emph{NiftyReg} even outperforms \emph{VoxelMorph} for the first time. This trend does not continue for $R=10$, were \emph{NiftyReg} is again far behind all other methods in terms of Dice with a very much global displacement. \emph{VoxelMorph} seems to compensate more for the rippling artifacts present in the fixed image than for the change in the cardiac region as seen in the displacement. \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} do not share this behavior although their displacements also become more global and less focused on the cardiac region. The latter network performs best for the first time managing an increase in Dice of about $16\%$ compared to the baseline for this specific case despite the heavy subsampling showing the robustness of the network.
 
 \begin{table}[h] %tpb
 	%\tiny
-	%\scriptsize
+	\scriptsize
 	\centering
-	\caption{Test results for \emph{NiftiReg}, \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} on the \emph{ACDC} test data with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red.}
+	\caption{Test results for \emph{NiftiReg} (NR), \emph{VoxelMorph} (VM), \emph{Fourier-Net} (F-Net), \emph{Fourier-Net+} (F-Net+) and \emph{4xFourier-Net+} (4xF-Net+) on the \emph{ACDC} test data from fully sampled (R=0) to Acc10 (R=10) with an unaligned baseline for comparison. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red.}
 	\label{tab:ComparisonSubsamplingACDC}
-	\begin{tabular}{c c c c c c c} 
+	\begin{tabular}{c c c c c c c c} 
 		\toprule
-		 & Method & $\%$ DICE & $\%$ DICE* & $\%$ SSIM & MSE (m) & Time [s] \\
+		 & Method & $\%$ DICE & $\%$ DICE* & $\%$ SSIM & MSE (m) & $\% \, |J_{\phi}|\leq0$ & Time [s] \\
 		% Fully Sampled (R=0)
 		\midrule
-		\multirow{6}{*}{\rotatebox{90}{R=0}} & Baseline & $70.85 \pm 18.27$  & $60.35 \pm 25.24$ & $86.39 \pm 4.08$ & $0.33 \pm 0.23$ & -\\  
-		 & NiftyReg & \textcolor{red}{$70.74 \pm 13.77$} & \textcolor{red}{$57.56 \pm 18.86$} & $91.26 \pm 3.18$ & \textcolor{red}{$1.94 \pm 1.61$} & 122.52\\
-		 & VoxelMorph & $75.84 \pm 13.46$ & $68.25 \pm 18.36$ & \textcolor{blue}{$93.53 \pm 3.30$} & \textcolor{blue}{$0.06 \pm 0.04$} & 0.1845\\ 
+		\multirow{6}{*}{\rotatebox{90}{R=0}} & Baseline & $70.85 \pm 18.27$  & $60.35 \pm 25.24$ & $86.39 \pm 4.08$ & $0.33 \pm 0.23$ & - & -\\  
+		 & NR & \textcolor{red}{$70.74 \pm 13.77$} & \textcolor{red}{$57.56 \pm 18.86$} & $91.26 \pm 3.18$ & \textcolor{red}{$1.94 \pm 1.61$} & \textcolor{blue}{$0.00 \pm 0.02$} & 122.52\\
+		 & VM & $75.84 \pm 13.46$ & $68.25 \pm 18.36$ & \textcolor{blue}{$93.53 \pm 3.30$} & \textcolor{blue}{$0.06 \pm 0.04$} & $49.98 \pm 0.73$ & 0.1845\\ 
 		 %& LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
-		 & Fourier-Net & \textcolor{blue}{$78.31 \pm 13.96$} & \textcolor{blue}{$71.17 \pm 18.99$} & $91.53 \pm 3.49$ & $0.09 \pm 0.07$ & 0.1918\\ 
-		 & Fourier-Net+ & $76.88 \pm 13.86$ & $67.86 \pm 19.06$  & $88.67 \pm 3.88$ & $0.20 \pm 0.15$ & \textcolor{blue}{0.0893} \\ 
-		 & 4xFourier-Net+ & $77.90 \pm 13.92$ & $69.21 \pm 19.02$  & $88.89 \pm 4.05$ & $0.19 \pm 0.14$ & 0.3262\\ 
+		 & F-Net & \textcolor{blue}{$78.31 \pm 13.96$} & \textcolor{blue}{$71.17 \pm 18.99$} & $91.53 \pm 3.49$ & $0.09 \pm 0.07$ & $0.24 \pm 0.25$ & 0.1918\\ 
+		 & F-Net+ & $76.88 \pm 13.86$ & $67.86 \pm 19.06$ & $88.67 \pm 3.88$ & $0.20 \pm 0.15$ & $0.02 \pm 0.08$ & \textcolor{blue}{0.0893} \\ 
+		 & 4xF-Net+ & $77.90 \pm 13.92$ & $69.21 \pm 19.02$  & $88.89 \pm 4.05$ & $0.19 \pm 0.14$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.3262\\ 
 		 	
 		% 4x Accelerated (R=4) 				 		
 		\midrule
-		\multirow{6}{*}{\rotatebox{90}{R=4}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $76.80 \pm 11.02$ & $0.28 \pm 0.19$ & -\\  
-		 & NiftyReg & \textcolor{red}{$69.89 \pm 13.73$} & \textcolor{red}{$56.47 \pm 17.86$} & \textcolor{blue}{$86.03 \pm 6.41$} & \textcolor{blue}{$0.15 \pm 0.14$} & 80.08 \\  
-		 & VoxelMorph & \textcolor{blue}{$73.45 \pm 13.40$} & \textcolor{blue}{$63.75 \pm 18.51$} & $78.56 \pm 7.32$ & \textcolor{blue}{$0.15 \pm 0.08$} & 0.1858\\  	
-		 & Fourier-Net & $72.30 \pm 14.04$ & $61.87 \pm 19.32$ & $78.77 \pm 7.22$ & $0.16 \pm 0.10$ & 0.1890\\ 
-		 & Fourier-Net+ & \textcolor{red}{$70.18 \pm 17.43$} & \textcolor{red}{$59.36 \pm 23.90$} & \textcolor{red}{$75.78 \pm 10.63$} & $0.28 \pm 0.19$ & \textcolor{blue}{0.0935}\\ 
-		 & 4xFourier-Net+ & \textcolor{red}{$70.36 \pm 16.63$} & \textcolor{red}{$59.47 \pm 22.80$} & \textcolor{red}{$75.91 \pm 10.72$} & $0.27 \pm 0.19$ & 0.3462\\  
+		\multirow{6}{*}{\rotatebox{90}{R=4}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $76.80 \pm 11.02$ & $0.28 \pm 0.19$ & - & -\\  
+		 & NR & \textcolor{red}{$69.89 \pm 13.73$} & \textcolor{red}{$56.47 \pm 17.86$} & $86.03 \pm 6.41$ & $0.15 \pm 0.14$ & $ 0.12 \pm 0.15$ & 80.08 \\  
+		 & VM & $71.78 \pm 14.57$ & $63.15 \pm 18.98$ & \textcolor{blue}{$90.73 \pm 4.72$} & \textcolor{blue}{$0.04 \pm 0.03$} & $49.36 \pm 1.20$ & 0.1264\\  	
+		 & F-Net & $76.55 \pm 13.89$ & \textcolor{blue}{$67.90 \pm 19.44$} & $82.93 \pm 8.12$ & $0.10 \pm 0.06$ & $0.19 \pm 0.23$ & 0.1006\\ 
+		 & F-Net+ & $76.20 \pm 13.57$ & $66.30 \pm 19.01$ & $77.74 \pm 10.69$ & $0.19 \pm 0.14$ & $0.01 \pm 0.03$ & \textcolor{blue}{0.0294}\\ 
+		 & 4xF-Net+ & \textcolor{blue}{$77.23 \pm 13.73$} & $67.67 \pm 18.97$ & $77.96 \pm 10.57$ & $0.18 \pm 0.13$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.1131\\ 
+		  
+%%%% Old Values %%%%		 
+%		 & VoxelMorph & \textcolor{blue}{$73.45 \pm 13.40$} & \textcolor{blue}{$63.75 \pm 18.51$} & $78.56 \pm 7.32$ & \textcolor{blue}{$0.15 \pm 0.08$} & 0.1858\\  	
+%		 & Fourier-Net & $72.30 \pm 14.04$ & $61.87 \pm 19.32$ & $78.77 \pm 7.22$ & $0.16 \pm 0.10$ & 0.1890\\ 
+%		 & Fourier-Net+ & \textcolor{red}{$70.18 \pm 17.43$} & \textcolor{red}{$59.36 \pm 23.90$} & \textcolor{red}{$75.78 \pm 10.63$} & $0.28 \pm 0.19$ & \textcolor{blue}{0.0935}\\ 
+%		 & 4xFourier-Net+ & \textcolor{red}{$70.36 \pm 16.63$} & \textcolor{red}{$59.47 \pm 22.80$} & \textcolor{red}{$75.91 \pm 10.72$} & $0.27 \pm 0.19$ & 0.3462\\  
 		
 		% 8x Accelerated (R=8) 
 		\midrule
-		\multirow{6}{*}{\rotatebox{90}{R=8}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $85.35 \pm 4.43$ & $0.22 \pm 0.17$ & -\\  
-		 & NiftyReg & \textcolor{red}{$70.04 \pm 13.42$} & \textcolor{red}{$56.37 \pm 17.63$} & \textcolor{blue}{$91.07 \pm 2.80$} & $0.12 \pm 0.13$ & 88.36 \\
-		 & VoxelMorph & $72.94 \pm 14.20$ & \textcolor{blue}{$64.27 \pm 18.97$} & $88.32 \pm 3.01$ & \textcolor{blue}{$0.09 \pm 0.06$} & 0.1725\\	
-		 & Fourier-Net & \textcolor{red}{$66.07 \pm 13.72$} & \textcolor{red}{$53.76 \pm 17.03$} & \textcolor{red}{$73.34 \pm 3.83$} & \textcolor{red}{$0.26 \pm 0.09$} & 0.2109\\ 
-		 & Fourier-Net+ & $71.13 \pm 15.37$ & \textcolor{red}{$60.10 \pm 21.34$} & \textcolor{red}{$84.02 \pm 4.36$} & $0.21 \pm 0.16$ & \textcolor{blue}{0.1487}\\ 
-		 & 4xFourier-Net+ & \textcolor{blue}{$73.13 \pm 15.26$} & $62.61 \pm 21.39$ & \textcolor{red}{$84.61 \pm 4.44$} & $0.19 \pm 0.15$ & 0.5373\\ 
+		\multirow{6}{*}{\rotatebox{90}{R=8}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $85.35 \pm 4.43$ & $0.22 \pm 0.17$ & - & -\\  
+		 & NR & \textcolor{red}{$70.04 \pm 13.42$} & \textcolor{red}{$56.37 \pm 17.63$} & $91.07 \pm 2.80$ & $0.12 \pm 0.13$ & $0.08 \pm 0.10$ & 88.36 \\
+		 & VM & $71.51 \pm 14.22$ & $62.17 \pm 18.80$ & \textcolor{blue}{$94.17 \pm 2.80$} & \textcolor{blue}{$0.03 \pm 0.02$} & $49.18 \pm 1.36$ & 0.1973\\	
+		 & F-Net & $75.52 \pm 13.69$ & \textcolor{blue}{$66.86 \pm 18.97$} & $89.51 \pm 3.34$ & $0.06 \pm 0.04$ & $0.27 \pm 0.29$ & 0.2404\\ 
+		 & F-Net+ & $75.76 \pm 13.43$ & $65.45 \pm 18.63$ & $86.30 \pm 4.18$ & $0.13 \pm 0.11$ & $0.03 \pm 0.11$ & \textcolor{blue}{0.1482}\\ 
+		 & 4xF-Net+ & \textcolor{blue}{$76.56 \pm 13.47$} & $66.81 \pm 18.77$ & $86.29 \pm 4.23$ & $0.13 \pm 0.11$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.5283\\ 
+		 	 
+%%%% Old Values %%%%
+%		 & VoxelMorph & $72.94 \pm 14.20$ & \textcolor{blue}{$64.27 \pm 18.97$} & $88.32 \pm 3.01$ & \textcolor{blue}{$0.09 \pm 0.06$} & 0.1725\\	
+%		 & Fourier-Net & \textcolor{red}{$66.07 \pm 13.72$} & \textcolor{red}{$53.76 \pm 17.03$} & \textcolor{red}{$73.34 \pm 3.83$} & \textcolor{red}{$0.26 \pm 0.09$} & 0.2109\\ 
+%		 & Fourier-Net+ & $71.13 \pm 15.37$ & \textcolor{red}{$60.10 \pm 21.34$} & \textcolor{red}{$84.02 \pm 4.36$} & $0.21 \pm 0.16$ & \textcolor{blue}{0.1487}\\ 
+%		 & 4xFourier-Net+ & \textcolor{blue}{$73.13 \pm 15.26$} & $62.61 \pm 21.39$ & \textcolor{red}{$84.61 \pm 4.44$} & $0.19 \pm 0.15$ & 0.5373\\ 	
+		 	 
 		 	 
 		% 10x Accelerated (R=10) 		 		
 		\midrule		
-		\multirow{6}{*}{\rotatebox{90}{R=10}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $89.17 \pm 3.58$ & $0.20 \pm 0.17$ & -\\ 
-		 & NiftyReg & \textcolor{red}{$70.40 \pm 13.34$} & \textcolor{red}{$56.61 \pm 17.71$} & \textcolor{blue}{$93.47 \pm 2.37$} & $0.11 \pm 0.13$ & 47.44 \\
-		 & VoxelMorph &  $72.46 \pm 13.20$ & \textcolor{blue}{$62.82 \pm 18.08$} & \textcolor{red}{$88.27 \pm 2.36$} & \textcolor{blue}{$0.10 \pm 0.06$} & 0.1173\\	
-		 & Fourier-Net & $72.28 \pm 14.65$ & $62.58 \pm 19.99$ & $90.68 \pm 2.93$ & \textcolor{blue}{$0.10 \pm 0.08$} & 0.1088\\ 
-		 & Fourier-Net+ & $71.83 \pm 15.91$ & $61.10 \pm 22.07$ & \textcolor{red}{$87.77 \pm 3.50$} & $0.19 \pm 0.15$ & \textcolor{blue}{0.0438}\\ 
-		 & 4xFourier-Net+ & \textcolor{blue}{$72.55 \pm 15.66$} & $62.00 \pm 21.97$ & \textcolor{red}{$89.13 \pm 3.47$} & $0.17 \pm 0.15$ & 0.1539\\ 
+		\multirow{6}{*}{\rotatebox{90}{R=10}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $89.17 \pm 3.58$ & $0.20 \pm 0.17$ & - & -\\ 
+		 & NR & \textcolor{red}{$70.40 \pm 13.34$} & \textcolor{red}{$56.61 \pm 17.71$} & $93.47 \pm 2.37$ & $0.11 \pm 0.13$ & $0.06 \pm 0.08$ & 47.44 \\
+		 & VM & $71.89 \pm 13.94$ & $62.22 \pm 18.58$ & \textcolor{blue}{$95.85 \pm 2.58$} & \textcolor{blue}{$0.02 \pm 0.02$} & $48.56 \pm 1.75$ & 0.0577\\	 %0.2120
+		 & F-Net & $76.87 \pm 13.97$ & \textcolor{blue}{$68.24 \pm 19.27$} & $92.77 \pm 2.74$ & $0.05 \pm 0.04$ & $0.11 \pm 0.15$ & 0.0296\\ 
+		 & F-Net+ & $76.10 \pm 13.83$ & $66.27 \pm 19.20$ & $90.32 \pm 3.29$ & $0.12 \pm 0.12$ & $0.01 \pm 0.05$ & \textcolor{blue}{0.0059}\\ 
+		 & 4xF-Net+ & \textcolor{blue}{$76.98 \pm 13.57$} & $67.40 \pm 18.90$ & $90.42 \pm 3.33$ & $0.11 \pm 0.11$ & \textcolor{blue}{$0.00 \pm 0.03$} & 0.0275\\ 
+		 
+%%%% Old Values %%%%
+%		 & VoxelMorph &  $72.46 \pm 13.20$ & \textcolor{blue}{$62.82 \pm 18.08$} & \textcolor{red}{$88.27 \pm 2.36$} & \textcolor{blue}{$0.10 \pm 0.06$} & 0.1173\\	
+%		 & Fourier-Net & $72.28 \pm 14.65$ & $62.58 \pm 19.99$ & $90.68 \pm 2.93$ & \textcolor{blue}{$0.10 \pm 0.08$} & 0.1088\\ 
+%		 & Fourier-Net+ & $71.83 \pm 15.91$ & $61.10 \pm 22.07$ & \textcolor{red}{$87.77 \pm 3.50$} & $0.19 \pm 0.15$ & \textcolor{blue}{0.0438}\\ 
+%		 & 4xFourier-Net+ & \textcolor{blue}{$72.55 \pm 15.66$} & $62.00 \pm 21.97$ & \textcolor{red}{$89.13 \pm 3.47$} & $0.17 \pm 0.15$ & 0.1539\\ 		 
+		 
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -1349,33 +1528,44 @@ As seen in Figure~\ref{fig:Boxplots_DiceScores}, the Dice scores for each label 
 	\label{fig:Boxplots_DiceScores}
 \end{figure}
 
+%\begin{figure}[htpb]
+%	\centering
+%	\graphicspath{{images/}{\main/images/}}
+%	\begin{subfigure}{\textwidth}
+%    		\includegraphics[width=\textwidth]{TestExamples_Mode0.png}
+%    		\caption{Example images and segmentations for fully sampled ($R=0$) data.}
+%    		\label{fig:TestExamples_Mode0}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{\textwidth}
+%    		\includegraphics[width=\textwidth]{TestExamples_Mode1.png}
+%    		\caption{Example images and segmentations for Acc4 ($R=4$) data.}
+%    		\label{fig:TestExamples_Mode1}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{\textwidth}
+%    		\includegraphics[width=\textwidth]{TestExamples_Mode2.png}
+%    		\caption{Example images and segmentations for Acc8 ($R=8$) data.}
+%    		\label{fig:TestExamples_Mode2}
+%	\end{subfigure}
+%	\\
+%	\begin{subfigure}{\textwidth}
+%    		\includegraphics[width=\textwidth]{TestExamples_Mode3.png}
+%    		\caption{Example images and segmentations for Acc10 ($R=10$) data.}
+%    		\label{fig:TestExamples_Mode3}
+%	\end{subfigure}
+%	\caption{Examples of warped images and segmentations for \emph{NiftiReg}, \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} together with the original image pair from the \emph{ACDC} test data.}
+%	\label{fig:TestExamples}
+%\end{figure}
+
 \begin{figure}[htpb]
 	\centering
 	\graphicspath{{images/}{\main/images/}}
-	\begin{subfigure}{\textwidth}
-    		\includegraphics[width=\textwidth]{TestExamples_Mode0.png}
-    		\caption{Example images and segmentations for fully sampled ($R=0$) data.}
-    		\label{fig:TestExamples_Mode0}
-	\end{subfigure}
-	\\
-	\begin{subfigure}{\textwidth}
-    		\includegraphics[width=\textwidth]{TestExamples_Mode1.png}
-    		\caption{Example images and segmentations for Acc4 ($R=4$) data.}
-    		\label{fig:TestExamples_Mode1}
-	\end{subfigure}
-	\\
-	\begin{subfigure}{\textwidth}
-    		\includegraphics[width=\textwidth]{TestExamples_Mode2.png}
-    		\caption{Example images and segmentations for Acc8 ($R=8$) data.}
-    		\label{fig:TestExamples_Mode2}
-	\end{subfigure}
-	\\
-	\begin{subfigure}{\textwidth}
-    		\includegraphics[width=\textwidth]{TestExamples_Mode3.png}
-    		\caption{Example images and segmentations for Acc10 ($R=10$) data.}
-    		\label{fig:TestExamples_Mode3}
-	\end{subfigure}
-	\caption{Examples of warped images and segmentations for \emph{NiftiReg}, \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} together with the original image pair from the \emph{ACDC} test data.}
+	\includegraphics[width=\textwidth]{TestExamples_Mode0.png}
+    	\includegraphics[width=\textwidth]{TestExamples_Mode1.png}
+    	\includegraphics[width=\textwidth]{TestExamples_Mode2.png}
+    	\includegraphics[width=\textwidth]{TestExamples_Mode3.png}	
+	\caption{Examples of warped images, segmentations and flow fields for \emph{NiftiReg}, \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} together with the original image pair from the fully sampled ($R=0$), Acc4 ($R=4$), Acc8 ($R=8$) and Acc10 ($R=10$) \emph{ACDC} test data.}
 	\label{fig:TestExamples}
 \end{figure}
 
