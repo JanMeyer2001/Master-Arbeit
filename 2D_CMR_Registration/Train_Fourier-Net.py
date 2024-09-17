@@ -74,7 +74,7 @@ for param in transform.parameters():
     param.volatile = True
 
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
-if dataset == 'ACDC' and model_num < 6 and choose_loss < 4:
+if dataset == 'ACDC' and model_num < 6 and choose_loss != 5:
     # load ACDC data
     train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
@@ -141,7 +141,7 @@ elif model_num == 8:
     model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
 
 # choose the loss function for similarity
-assert choose_loss >= 0 and choose_loss <= 5, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3), L2 (4) or contrastive loss (5), but got: {choose_loss}"
+assert choose_loss >= 0 and choose_loss <= 6, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3), L2 (4), contrastive loss (5) or k-space loss (6), but got: {choose_loss}"
 if choose_loss == 1:
     loss_similarity = MSE().loss
 elif choose_loss == 0:
@@ -155,12 +155,16 @@ elif choose_loss == 4:
 elif choose_loss == 5:
     loss_similarity = MSE().loss
     loss_contrastive = InfoNCE() # contrative learning loss
+    """
     # load trained model for ground truth generation on fully sampled data
     model_gt = model
     path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,0)
     print('GT-Model: {}'.format(natsorted(os.listdir(path))[-1]))
     model_gt.load_state_dict(torch.load(path + natsorted(os.listdir(path))[-1]))
     model_gt.eval()
+    """
+elif choose_loss == 6:
+    loss_similarity = MSE().loss
 loss_smooth = smoothloss
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -215,7 +219,47 @@ print('\nStarted training on ', time.ctime())
 for epoch in range(epochs):
     losses = np.zeros(training_generator.__len__())
     for i, image_pair in enumerate(training_generator):
-        if choose_loss != 5:
+        if choose_loss == 5:    # contrastive loss
+            mov_img_fullySampled = image_pair[0].to(device).float()
+            fix_img_fullySampled = image_pair[1].to(device).float()
+            mov_img_subSampled   = image_pair[2].to(device).float()
+            fix_img_subSampled   = image_pair[3].to(device).float()                 
+            
+            with torch.no_grad():
+                # get result for fully sampled image pairs (do not back-propagate!!)
+                Df_xy_fullySampled, features_disp_fullySampled = model(mov_img_fullySampled, fix_img_fullySampled)
+                #grid, warped_mov_fullySampled = transform(mov_img_fullySampled, Df_xy_fullySampled.permute(0, 2, 3, 1))
+            
+            # get result for subsampled image pairs
+            Df_xy, features_disp        = model(mov_img_subSampled, fix_img_subSampled)
+            grid, warped_mov_subSampled = transform(mov_img_subSampled, Df_xy.permute(0, 2, 3, 1)) 
+            
+            # transform features from [1,32,x,y] to [x*y,32]
+            features_disp_fullySampled  = torch.flatten(features_disp_fullySampled.squeeze(), start_dim=1, end_dim=2).permute(1,0)
+            features_disp               = torch.flatten(features_disp.squeeze(), start_dim=1, end_dim=2).permute(1,0)
+
+            # take samples each 10 steps from the feature map with 32 channels
+            indixes  = torch.arange(start=0,end=features_disp_fullySampled.shape[0],step=10)
+            queries  = features_disp[indixes,:]
+            pos_keys = features_disp_fullySampled[indixes,:]
+
+            # compute contrastive loss between fully sampled and subsampled results
+            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) + 0.1 * loss_contrastive(queries, pos_keys)
+        elif choose_loss == 6:  # k-space loss
+            mov_img = image_pair[0].to(device).float()
+            fix_img = image_pair[1].to(device).float()
+              
+            Df_xy, _ = model(mov_img, fix_img)
+            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+            
+            fix_img_kspace     = FFT(fix_img)
+            warped_mov_kspace  = FFT(warped_mov)
+            
+            if mode != 0:
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace[mask.bool()]), torch.view_as_real(fix_img_kspace[mask.bool()]))
+            else:    
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace), torch.view_as_real(fix_img_kspace))
+        else:    
             mov_img = image_pair[0].to(device).float()
             fix_img = image_pair[1].to(device).float()
 
@@ -224,30 +268,12 @@ for epoch in range(epochs):
                 mov_img = F.interpolate(mov_img, [224,256], mode='nearest') 
                 fix_img = F.interpolate(fix_img, [224,256], mode='nearest')
                             
-            Df_xy = model(mov_img, fix_img)
+            Df_xy, _ = model(mov_img, fix_img)
             grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
             
             # compute similarity loss in the image space
             loss1 = loss_similarity(fix_img, warped_mov)    
-        else:
-            mov_img_fullySampled = image_pair[0].to(device).float()
-            fix_img_fullySampled = image_pair[1].to(device).float()
-            mov_img_subSampled   = image_pair[2].to(device).float()
-            fix_img_subSampled   = image_pair[3].to(device).float()                 
-            
-            with torch.no_grad():
-                # get result for fully sampled image pairs (do not back-propagate!!)
-                Df_xy_fullySampled = model_gt(mov_img_fullySampled, fix_img_fullySampled)
-                grid, warped_mov_fullySampled = transform(mov_img_fullySampled, Df_xy_fullySampled.permute(0, 2, 3, 1))
-            
-            # get result for subsampled image pairs
-            Df_xy = model(mov_img_subSampled, fix_img_subSampled)
-            grid, warped_mov_subSampled = transform(mov_img_subSampled, Df_xy.permute(0, 2, 3, 1))
-            
-            # compute contrastive loss between fully sampled and subsampled results
-            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) + loss_similarity(Df_xy.squeeze(),Df_xy.squeeze()) #loss_contrastive(torch.concat([Df_xy.squeeze()[0,:,:], Df_xy.squeeze()[1,:,:]], dim=1), torch.concat([Df_xy_fullySampled.squeeze()[0,:,:], Df_xy_fullySampled.squeeze()[1,:,:]], dim=1))
-            #loss1 = loss_similarity(fix_img_fullySampled, warped_mov_fullySampled, fix_img_subSampled, warped_mov_subSampled)
-
+        
         # compute smoothness loss
         loss2 = loss_smooth(Df_xy)
         

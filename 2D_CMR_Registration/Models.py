@@ -664,7 +664,7 @@ class Fourier_Net(nn.Module):
             self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
     def forward(self, Moving, Fixed):
-        out_1, out_2 = self.model(Moving, Fixed)#.squeeze().squeeze()
+        out_1, out_2, features_disp = self.model(Moving, Fixed)#.squeeze().squeeze()
 
         out_1 = out_1.squeeze().squeeze()
         out_2 = out_2.squeeze().squeeze()
@@ -686,7 +686,7 @@ class Fourier_Net(nn.Module):
         else:
             Df_xy = f_xy
          
-        return Df_xy
+        return Df_xy, features_disp
 
 class Fourier_Net_plus(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
@@ -1253,7 +1253,7 @@ class SYMNet(nn.Module):
 
         f_r = self.rr_dc9(r_d1) * 64   
         
-        return f_r[:,0:1,:,:], f_r[:,1:2,:,:]
+        return f_r[:,0:1,:,:], f_r[:,1:2,:,:], r_d1
 
 class LAPNet_PyTorch_2D(nn.Module): 
     def __init__(self, inshape):
