@@ -115,13 +115,13 @@ for i, image_pairs in enumerate(test_generator):
         fixed_seg    = image_pairs[3].float().to(device)
         
         warped_image_voxelmorph, V_voxelmorph = model_voxelmorph(moving_image,fixed_image)
-        V_f_net                               = model_f_net(moving_image,fixed_image)
-        V_f_net_plus                          = model_f_net_plus(moving_image,fixed_image)
-        V_f_net_plus_cascade                  = model_f_net_plus_cascade(moving_image,fixed_image)
+        V_f_net, __                           = model_f_net(moving_image,fixed_image)
+        V_f_net_plus, __                      = model_f_net_plus(moving_image,fixed_image)
+        V_f_net_plus_cascade, __              = model_f_net_plus_cascade(moving_image,fixed_image)
         if diffeo == 1:
-            V_f_net_diff                          = model_f_net(moving_image,fixed_image)
-            V_f_net_plus_diff                     = model_f_net_plus(moving_image,fixed_image)
-            V_f_net_plus_cascade_diff             = model_f_net_plus_cascade(moving_image,fixed_image)
+            V_f_net_diff, __                  = model_f_net_diff(moving_image,fixed_image)
+            V_f_net_plus_diff, __             = model_f_net_plus_diff(moving_image,fixed_image)
+            V_f_net_plus_cascade_diff, __     = model_f_net_plus_cascade_diff(moving_image,fixed_image)
         
         warped_seg_voxelmorph                  = transform_voxelmorph(moving_seg, V_voxelmorph) #.permute(0, 2, 3, 1), mod = 'nearest'
         __, warped_seg_f_net                   = transform(moving_seg, V_f_net.permute(0, 2, 3, 1), mod = 'nearest')

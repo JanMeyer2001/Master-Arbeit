@@ -138,9 +138,9 @@ model_f_net_plus_cascade.eval()
 with torch.no_grad():
     # get displacements for each model
     warped_image_voxelmorph, V_voxelmorph   = model_voxelmorph(moving_image,fixed_image)
-    V_f_net                                 = model_f_net(moving_image,fixed_image)
-    V_f_net_plus                            = model_f_net_plus(moving_image,fixed_image)
-    V_f_net_plus_cascade                    = model_f_net_plus_cascade(moving_image,fixed_image)
+    V_f_net, __                             = model_f_net(moving_image,fixed_image)
+    V_f_net_plus, __                        = model_f_net_plus(moving_image,fixed_image)
+    V_f_net_plus_cascade, __                = model_f_net_plus_cascade(moving_image,fixed_image)
 
 # warp moving images
 __, warped_image_f_net              = transform(moving_image, V_f_net.permute(0, 2, 3, 1), mod = 'nearest')

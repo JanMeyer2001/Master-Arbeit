@@ -163,7 +163,7 @@ class Fourier_Net_dense(nn.Module):
         else:
             Df_xy = f_xy
          
-        return Df_xy
+        return Df_xy, None # TODO: extract features of the displacement for contrastive learning
 
 class Fourier_Net_plus_dense(nn.Module):
     """ Version of Fourier-Net+ that gives back a dense displacement field """
@@ -223,7 +223,7 @@ class Fourier_Net_plus_dense(nn.Module):
         else:
             Df_xy = f_xy
          
-        return Df_xy
+        return Df_xy, None # TODO: extract features of the displacement for contrastive learning
 
 class Cascade_dense(nn.Module):
     """ Version of 4xFourier-Net+ that gives back a dense displacement field """
@@ -369,7 +369,7 @@ class Cascade_dense(nn.Module):
         else:
             Df_xy = fxy_4_
         
-        return Df_xy
+        return Df_xy, None # TODO: extract features of the displacement for contrastive learning
 
 class Fourier_Net_kSpace(nn.Module):
     def __init__(self, in_shape, diffeo):
@@ -745,7 +745,7 @@ class Fourier_Net_plus(nn.Module):
         else:
             Df_xy = f_xy
          
-        return Df_xy
+        return Df_xy, None # TODO: extract features of the displacement for contrastive learning
 
 class Cascade(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel, diffeo, offset):
@@ -936,7 +936,7 @@ class Cascade(nn.Module):
         else:
             Df_xy = fxy_4_
         
-        return Df_xy
+        return Df_xy, None # TODO: extract features of the displacement for contrastive learning
 
 class UNet(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):

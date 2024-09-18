@@ -113,7 +113,7 @@ else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
 # choose the model
-assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
+assert model_num >= 0 or model_num <= 5, f"Expected F_Net_plus to be between 0 and 5, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
@@ -131,6 +131,7 @@ elif model_num == 4:
 elif model_num == 5:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
+"""
 elif model_num == 6:
     model = Fourier_Net_kSpace(in_shape=input_shape, diffeo=diffeo).to(device) 
 elif model_num == 7:
@@ -139,7 +140,7 @@ elif model_num == 7:
 elif model_num == 8:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
-
+"""    
 # choose the loss function for similarity
 assert choose_loss >= 0 and choose_loss <= 6, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2), L1 (3), L2 (4), contrastive loss (5) or k-space loss (6), but got: {choose_loss}"
 if choose_loss == 1:
@@ -322,7 +323,7 @@ for epoch in range(epochs):
                 mov_seg = F.interpolate(mov_seg, [224,256], mode='nearest') 
                 fix_seg = F.interpolate(fix_seg, [224,256], mode='nearest')     
             
-            Df_xy = model(mov_img, fix_img)
+            Df_xy, __ = model(mov_img, fix_img)
 
             # get warped image and segmentation
             grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1))

@@ -864,7 +864,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             mov_img = image_pair[0].cuda().float()
             fix_img = image_pair[1].cuda().float()
             
-            Df_xy = model(mov_img, fix_img)
+            Df_xy, __ = model(mov_img, fix_img)
             grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
             
             loss1 = loss_similarity(fix_img, warped_mov) 
@@ -896,7 +896,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
                     mov_seg = image_pair[2].cuda().float()
                     fix_seg = image_pair[3].cuda().float()
                 
-                Df_xy = model(mov_img, fix_img)
+                Df_xy, __ = model(mov_img, fix_img)
                 # get warped image and segmentation
                 grid, warped_mov_img = transform(mov_img, Df_xy.permute(0, 2, 3, 1), mod = 'nearest')
                 if dataset != 'CMRxRecon':
@@ -996,7 +996,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
             
             start = time.time()
             
-            Df_xy = model(mov_img, fix_img)
+            Df_xy, __ = model(mov_img, fix_img)
             
             # get inference time
             inference_time = time.time()-start

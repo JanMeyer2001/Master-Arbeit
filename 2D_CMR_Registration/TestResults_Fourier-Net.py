@@ -166,9 +166,9 @@ for i, image_pairs in enumerate(test_generator):
         start = time.time()
         # calculate displacement on subsampled data
         if dataset == 'CMRxRecon':
-            V_xy = model(mov_img_subSampled, fix_img_subSampled)
+            V_xy, __ = model(mov_img_subSampled, fix_img_subSampled)
         else:
-            V_xy = model(mov_img_fullySampled, fix_img_fullySampled)
+            V_xy, __ = model(mov_img_fullySampled, fix_img_fullySampled)
         
         # get inference time
         inference_time = time.time()-start
