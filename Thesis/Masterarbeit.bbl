@@ -600,6 +600,379 @@
     \field{year}{1984}
   \endentry
 
+  \entry{GRICS}{article}{}
+    \name{author}{4}{}{%
+      {{hash=OF}{%
+         family={Odille},
+         familyi={O\bibinitperiod},
+         given={Freddy},
+         giveni={F\bibinitperiod},
+      }}%
+      {{hash=VP}{%
+         family={Vuissoz},
+         familyi={V\bibinitperiod},
+         given={Pierre‐André},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=MP}{%
+         family={Marie},
+         familyi={M\bibinitperiod},
+         given={Pierre‐Yves},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=FJ}{%
+         family={Felblinger},
+         familyi={F\bibinitperiod},
+         given={Jacques},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{OF+1}
+    \strng{fullhash}{OFVPMPFJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.21623
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{1}
+    \field{pages}{146\bibrangedash 157}
+    \field{title}{Generalized Reconstruction by Inversion of Coupled Systems
+  (GRICS) applied to free‐breathing MRI}
+    \field{volume}{60}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Generalized Reconstruction by Inversion of
+    \verb  Coupled Systems (GRICS).pdf:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{06}
+    \field{year}{2008}
+  \endentry
+
+  \entry{Kuestner2022}{article}{}
+    \name{author}{11}{}{%
+      {{hash=KT}{%
+         family={Küstner},
+         familyi={K\bibinitperiod},
+         given={Thomas},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=PJ}{%
+         family={Pan},
+         familyi={P\bibinitperiod},
+         given={Jiazhen},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=GC}{%
+         family={Gilliam},
+         familyi={G\bibinitperiod},
+         given={Christopher},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=QH}{%
+         family={Qi},
+         familyi={Q\bibinitperiod},
+         given={Haikun},
+         giveni={H\bibinitperiod},
+      }}%
+      {{hash=CG}{%
+         family={Cruz},
+         familyi={C\bibinitperiod},
+         given={Gastao},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=HK}{%
+         family={Hammernik},
+         familyi={H\bibinitperiod},
+         given={Kerstin},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=BT}{%
+         family={Blu},
+         familyi={B\bibinitperiod},
+         given={Thierry},
+         giveni={T\bibinitperiod},
+      }}%
+      {{hash=RD}{%
+         family={Rueckert},
+         familyi={R\bibinitperiod},
+         given={Daniel},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=BR}{%
+         family={Botnar},
+         familyi={B\bibinitperiod},
+         given={René},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=PC}{%
+         family={Prieto},
+         familyi={P\bibinitperiod},
+         given={Claudia},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=GS}{%
+         family={Gatidis},
+         familyi={G\bibinitperiod},
+         given={Sergios},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Now Publishers}%
+    }
+    \strng{namehash}{KT+1}
+    \strng{fullhash}{KTPJGCQHCGHKBTRDBRPCGS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1561/116.00000039
+    \endverb
+    \field{issn}{2048-7703}
+    \field{number}{1}
+    \field{title}{Self-Supervised Motion-Corrected Image Reconstruction Network
+  for 4D Magnetic Resonance Imaging of the Body Trunk}
+    \field{volume}{11}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Self-Supervised motion-corrected image rec
+    \verb onstruction network for 4D magnetic resonance imaging of the body tru
+    \verb nk.pdf:PDF
+    \endverb
+    \field{journaltitle}{APSIPA Transactions on Signal and Information
+  Processing}
+    \field{year}{2022}
+  \endentry
+
+  \entry{MRISubsamplingPruning}{inbook}{}
+    \name{author}{5}{}{%
+      {{hash=XK}{%
+         family={Xuan},
+         familyi={X\bibinitperiod},
+         given={Kai},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=SS}{%
+         family={Sun},
+         familyi={S\bibinitperiod},
+         given={Shanhui},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=XZ}{%
+         family={Xue},
+         familyi={X\bibinitperiod},
+         given={Zhong},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=WQ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Qian},
+         giveni={Q\bibinitperiod},
+      }}%
+      {{hash=LS}{%
+         family={Liao},
+         familyi={L\bibinitperiod},
+         given={Shu},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Springer International Publishing}%
+    }
+    \strng{namehash}{XK+1}
+    \strng{fullhash}{XKSSXZWQLS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Lecture Notes in Computer Science}
+    \verb{doi}
+    \verb 10.1007/978-3-030-59713-9_18
+    \endverb
+    \field{isbn}{9783030597139}
+    \field{issn}{1611-3349}
+    \field{pages}{178\bibrangedash 187}
+    \field{title}{Learning MRI k-Space Subsampling Pattern Using Progressive
+  Weight Pruning}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Learning MRI k-Space Subsampling Pattern U
+    \verb sing Progressive Weight Pruning.pdf:PDF
+    \endverb
+    \field{year}{2020}
+  \endentry
+
+  \entry{DeepMRIReconstructionRadialSubsampling}{inproceedings}{}
+    \name{author}{5}{}{%
+      {{hash=YG}{%
+         family={Yiasemis},
+         familyi={Y\bibinitperiod},
+         given={George},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=ZC}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Chaoping},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=SCI}{%
+         family={Sánchez},
+         familyi={S\bibinitperiod},
+         given={Clara\bibnamedelima I.},
+         giveni={C\bibinitperiod\bibinitdelim I\bibinitperiod},
+      }}%
+      {{hash=SJJ}{%
+         family={Sonke},
+         familyi={S\bibinitperiod},
+         given={Jan-Jakob},
+         giveni={J\bibinithyphendelim J\bibinitperiod},
+      }}%
+      {{hash=TJ}{%
+         family={Teuwen},
+         familyi={T\bibinitperiod},
+         given={Jonas},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \name{editor}{2}{}{%
+      {{hash=ZW}{%
+         family={Zhao},
+         familyi={Z\bibinitperiod},
+         given={Wei},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=YL}{%
+         family={Yu},
+         familyi={Y\bibinitperiod},
+         given={Lifeng},
+         giveni={L\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {SPIE}%
+    }
+    \strng{namehash}{YG+1}
+    \strng{fullhash}{YGZCSCISJJTJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Medical Imaging 2022: Physics of Medical Imaging}
+    \verb{doi}
+    \verb 10.1117/12.2609876
+    \endverb
+    \field{title}{Deep MRI reconstruction with radial subsampling}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Deep MRI reconstruction with radial subsam
+    \verb pling.pdf:PDF
+    \endverb
+    \field{month}{04}
+    \field{year}{2022}
+  \endentry
+
+  \entry{DeepMRIReconstructionSubsampling}{misc}{}
+    \name{author}{4}{}{%
+      {{hash=YG}{%
+         family={Yiasemis},
+         familyi={Y\bibinitperiod},
+         given={George},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=SCI}{%
+         family={Sánchez},
+         familyi={S\bibinitperiod},
+         given={Clara\bibnamedelima I.},
+         giveni={C\bibinitperiod\bibinitdelim I\bibinitperiod},
+      }}%
+      {{hash=SJJ}{%
+         family={Sonke},
+         familyi={S\bibinitperiod},
+         given={Jan-Jakob},
+         giveni={J\bibinithyphendelim J\bibinitperiod},
+      }}%
+      {{hash=TJ}{%
+         family={Teuwen},
+         familyi={T\bibinitperiod},
+         given={Jonas},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Image and Video Processing (eess.IV), Computer Vision and Pattern
+  Recognition (cs.CV), Medical Physics (physics.med-ph), FOS: Electrical
+  engineering, electronic engineering, information engineering, FOS: Electrical
+  engineering, electronic engineering, information engineering, FOS: Computer
+  and information sciences, FOS: Computer and information sciences, FOS:
+  Physical sciences, FOS: Physical sciences}
+    \strng{namehash}{YG+1}
+    \strng{fullhash}{YGSCISJJTJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.48550/ARXIV.2301.08365
+    \endverb
+    \field{title}{On Retrospective k-space Subsampling schemes For Deep MRI
+  Reconstruction}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/On Retrospective k-space Subsampling schem
+    \verb es For Deep MRI Reconstruction.pdf:PDF
+    \endverb
+    \field{year}{2023}
+  \endentry
+
+  \entry{Strittmatter2023}{article}{}
+    \name{author}{3}{}{%
+      {{hash=SA}{%
+         family={Strittmatter},
+         familyi={S\bibinitperiod},
+         given={Anika},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=CA}{%
+         family={Caroli},
+         familyi={C\bibinitperiod},
+         given={Anna},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=ZFG}{%
+         family={Zöllner},
+         familyi={Z\bibinitperiod},
+         given={Frank\bibnamedelima G.},
+         giveni={F\bibinitperiod\bibinitdelim G\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {MDPI AG}%
+    }
+    \strng{namehash}{SACAZFG1}
+    \strng{fullhash}{SACAZFG1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.3390/app132413298
+    \endverb
+    \field{issn}{2076-3417}
+    \field{number}{24}
+    \field{pages}{13298}
+    \field{title}{A Multistage Rigid-Affine-Deformable Network for
+  Three-Dimensional Multimodal Medical Image Registration}
+    \field{volume}{13}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Multistage Rigid-Affine-Deformable Network
+    \verb  for 3D Multimodal Medical Image Registration.pdf:PDF
+    \endverb
+    \field{journaltitle}{Applied Sciences}
+    \field{month}{12}
+    \field{year}{2023}
+  \endentry
+
   \entry{Tam2016}{article}{}
     \name{author}{14}{}{%
       {{hash=TAL}{%
@@ -1412,330 +1785,38 @@
     \field{year}{2010}
   \endentry
 
-  \entry{GRICS}{article}{}
-    \name{author}{4}{}{%
-      {{hash=OF}{%
-         family={Odille},
-         familyi={O\bibinitperiod},
-         given={Freddy},
-         giveni={F\bibinitperiod},
-      }}%
-      {{hash=VP}{%
-         family={Vuissoz},
-         familyi={V\bibinitperiod},
-         given={Pierre‐André},
-         giveni={P\bibinitperiod},
-      }}%
-      {{hash=MP}{%
-         family={Marie},
-         familyi={M\bibinitperiod},
-         given={Pierre‐Yves},
-         giveni={P\bibinitperiod},
-      }}%
-      {{hash=FJ}{%
-         family={Felblinger},
-         familyi={F\bibinitperiod},
-         given={Jacques},
+  \entry{DARTEL}{article}{}
+    \name{author}{1}{}{%
+      {{hash=AJ}{%
+         family={Ashburner},
+         familyi={A\bibinitperiod},
+         given={John},
          giveni={J\bibinitperiod},
       }}%
     }
     \list{publisher}{1}{%
-      {Wiley}%
+      {Elsevier BV}%
     }
-    \strng{namehash}{OF+1}
-    \strng{fullhash}{OFVPMPFJ1}
+    \strng{namehash}{AJ1}
+    \strng{fullhash}{AJ1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \verb{doi}
-    \verb 10.1002/mrm.21623
+    \verb 10.1016/j.neuroimage.2007.07.007
     \endverb
-    \field{issn}{1522-2594}
+    \field{issn}{1053-8119}
     \field{number}{1}
-    \field{pages}{146\bibrangedash 157}
-    \field{title}{Generalized Reconstruction by Inversion of Coupled Systems
-  (GRICS) applied to free‐breathing MRI}
-    \field{volume}{60}
+    \field{pages}{95\bibrangedash 113}
+    \field{title}{A fast diffeomorphic image registration algorithm}
+    \field{volume}{38}
     \verb{file}
     \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Generalized Reconstruction by Inversion of
-    \verb  Coupled Systems (GRICS).pdf:PDF
+    \verb ter/Masterarbeit/Literatur/A fast diffeomorphic image registration al
+    \verb gorithm (DARTEL).pdf:PDF
     \endverb
-    \field{journaltitle}{Magnetic Resonance in Medicine}
-    \field{month}{06}
-    \field{year}{2008}
-  \endentry
-
-  \entry{Kuestner2022}{article}{}
-    \name{author}{11}{}{%
-      {{hash=KT}{%
-         family={Küstner},
-         familyi={K\bibinitperiod},
-         given={Thomas},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=PJ}{%
-         family={Pan},
-         familyi={P\bibinitperiod},
-         given={Jiazhen},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=GC}{%
-         family={Gilliam},
-         familyi={G\bibinitperiod},
-         given={Christopher},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=QH}{%
-         family={Qi},
-         familyi={Q\bibinitperiod},
-         given={Haikun},
-         giveni={H\bibinitperiod},
-      }}%
-      {{hash=CG}{%
-         family={Cruz},
-         familyi={C\bibinitperiod},
-         given={Gastao},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=HK}{%
-         family={Hammernik},
-         familyi={H\bibinitperiod},
-         given={Kerstin},
-         giveni={K\bibinitperiod},
-      }}%
-      {{hash=BT}{%
-         family={Blu},
-         familyi={B\bibinitperiod},
-         given={Thierry},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=RD}{%
-         family={Rueckert},
-         familyi={R\bibinitperiod},
-         given={Daniel},
-         giveni={D\bibinitperiod},
-      }}%
-      {{hash=BR}{%
-         family={Botnar},
-         familyi={B\bibinitperiod},
-         given={René},
-         giveni={R\bibinitperiod},
-      }}%
-      {{hash=PC}{%
-         family={Prieto},
-         familyi={P\bibinitperiod},
-         given={Claudia},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=GS}{%
-         family={Gatidis},
-         familyi={G\bibinitperiod},
-         given={Sergios},
-         giveni={S\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Now Publishers}%
-    }
-    \strng{namehash}{KT+1}
-    \strng{fullhash}{KTPJGCQHCGHKBTRDBRPCGS1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1561/116.00000039
-    \endverb
-    \field{issn}{2048-7703}
-    \field{number}{1}
-    \field{title}{Self-Supervised Motion-Corrected Image Reconstruction Network
-  for 4D Magnetic Resonance Imaging of the Body Trunk}
-    \field{volume}{11}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Self-Supervised motion-corrected image rec
-    \verb onstruction network for 4D magnetic resonance imaging of the body tru
-    \verb nk.pdf:PDF
-    \endverb
-    \field{journaltitle}{APSIPA Transactions on Signal and Information
-  Processing}
-    \field{year}{2022}
-  \endentry
-
-  \entry{MRISubsamplingPruning}{inbook}{}
-    \name{author}{5}{}{%
-      {{hash=XK}{%
-         family={Xuan},
-         familyi={X\bibinitperiod},
-         given={Kai},
-         giveni={K\bibinitperiod},
-      }}%
-      {{hash=SS}{%
-         family={Sun},
-         familyi={S\bibinitperiod},
-         given={Shanhui},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=XZ}{%
-         family={Xue},
-         familyi={X\bibinitperiod},
-         given={Zhong},
-         giveni={Z\bibinitperiod},
-      }}%
-      {{hash=WQ}{%
-         family={Wang},
-         familyi={W\bibinitperiod},
-         given={Qian},
-         giveni={Q\bibinitperiod},
-      }}%
-      {{hash=LS}{%
-         family={Liao},
-         familyi={L\bibinitperiod},
-         given={Shu},
-         giveni={S\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Springer International Publishing}%
-    }
-    \strng{namehash}{XK+1}
-    \strng{fullhash}{XKSSXZWQLS1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \field{booktitle}{Lecture Notes in Computer Science}
-    \verb{doi}
-    \verb 10.1007/978-3-030-59713-9_18
-    \endverb
-    \field{isbn}{9783030597139}
-    \field{issn}{1611-3349}
-    \field{pages}{178\bibrangedash 187}
-    \field{title}{Learning MRI k-Space Subsampling Pattern Using Progressive
-  Weight Pruning}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Learning MRI k-Space Subsampling Pattern U
-    \verb sing Progressive Weight Pruning.pdf:PDF
-    \endverb
-    \field{year}{2020}
-  \endentry
-
-  \entry{DeepMRIReconstructionRadialSubsampling}{inproceedings}{}
-    \name{author}{5}{}{%
-      {{hash=YG}{%
-         family={Yiasemis},
-         familyi={Y\bibinitperiod},
-         given={George},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=ZC}{%
-         family={Zhang},
-         familyi={Z\bibinitperiod},
-         given={Chaoping},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=SCI}{%
-         family={Sánchez},
-         familyi={S\bibinitperiod},
-         given={Clara\bibnamedelima I.},
-         giveni={C\bibinitperiod\bibinitdelim I\bibinitperiod},
-      }}%
-      {{hash=SJJ}{%
-         family={Sonke},
-         familyi={S\bibinitperiod},
-         given={Jan-Jakob},
-         giveni={J\bibinithyphendelim J\bibinitperiod},
-      }}%
-      {{hash=TJ}{%
-         family={Teuwen},
-         familyi={T\bibinitperiod},
-         given={Jonas},
-         giveni={J\bibinitperiod},
-      }}%
-    }
-    \name{editor}{2}{}{%
-      {{hash=ZW}{%
-         family={Zhao},
-         familyi={Z\bibinitperiod},
-         given={Wei},
-         giveni={W\bibinitperiod},
-      }}%
-      {{hash=YL}{%
-         family={Yu},
-         familyi={Y\bibinitperiod},
-         given={Lifeng},
-         giveni={L\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {SPIE}%
-    }
-    \strng{namehash}{YG+1}
-    \strng{fullhash}{YGZCSCISJJTJ1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \field{booktitle}{Medical Imaging 2022: Physics of Medical Imaging}
-    \verb{doi}
-    \verb 10.1117/12.2609876
-    \endverb
-    \field{title}{Deep MRI reconstruction with radial subsampling}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Deep MRI reconstruction with radial subsam
-    \verb pling.pdf:PDF
-    \endverb
-    \field{month}{04}
-    \field{year}{2022}
-  \endentry
-
-  \entry{DeepMRIReconstructionSubsampling}{misc}{}
-    \name{author}{4}{}{%
-      {{hash=YG}{%
-         family={Yiasemis},
-         familyi={Y\bibinitperiod},
-         given={George},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=SCI}{%
-         family={Sánchez},
-         familyi={S\bibinitperiod},
-         given={Clara\bibnamedelima I.},
-         giveni={C\bibinitperiod\bibinitdelim I\bibinitperiod},
-      }}%
-      {{hash=SJJ}{%
-         family={Sonke},
-         familyi={S\bibinitperiod},
-         given={Jan-Jakob},
-         giveni={J\bibinithyphendelim J\bibinitperiod},
-      }}%
-      {{hash=TJ}{%
-         family={Teuwen},
-         familyi={T\bibinitperiod},
-         given={Jonas},
-         giveni={J\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {arXiv}%
-    }
-    \keyw{Image and Video Processing (eess.IV), Computer Vision and Pattern
-  Recognition (cs.CV), Medical Physics (physics.med-ph), FOS: Electrical
-  engineering, electronic engineering, information engineering, FOS: Electrical
-  engineering, electronic engineering, information engineering, FOS: Computer
-  and information sciences, FOS: Computer and information sciences, FOS:
-  Physical sciences, FOS: Physical sciences}
-    \strng{namehash}{YG+1}
-    \strng{fullhash}{YGSCISJJTJ1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.48550/ARXIV.2301.08365
-    \endverb
-    \field{title}{On Retrospective k-space Subsampling schemes For Deep MRI
-  Reconstruction}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/On Retrospective k-space Subsampling schem
-    \verb es For Deep MRI Reconstruction.pdf:PDF
-    \endverb
-    \field{year}{2023}
+    \field{journaltitle}{NeuroImage}
+    \field{month}{10}
+    \field{year}{2007}
   \endentry
 
   \entry{OASIS}{article}{}
@@ -2877,40 +2958,6 @@
     \verb on'.pdf:PDF
     \endverb
     \field{year}{2020}
-  \endentry
-
-  \entry{DARTEL}{article}{}
-    \name{author}{1}{}{%
-      {{hash=AJ}{%
-         family={Ashburner},
-         familyi={A\bibinitperiod},
-         given={John},
-         giveni={J\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Elsevier BV}%
-    }
-    \strng{namehash}{AJ1}
-    \strng{fullhash}{AJ1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1016/j.neuroimage.2007.07.007
-    \endverb
-    \field{issn}{1053-8119}
-    \field{number}{1}
-    \field{pages}{95\bibrangedash 113}
-    \field{title}{A fast diffeomorphic image registration algorithm}
-    \field{volume}{38}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/A fast diffeomorphic image registration al
-    \verb gorithm (DARTEL).pdf:PDF
-    \endverb
-    \field{journaltitle}{NeuroImage}
-    \field{month}{10}
-    \field{year}{2007}
   \endentry
 
   \entry{ScaleAndSquare}{inbook}{}

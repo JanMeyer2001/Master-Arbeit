@@ -309,19 +309,23 @@ Motion-resolved data acquisition for these applications are usually accelerated 
 There are also approaches for learning new subsampling strategies in a data-driven manner (pruning unimportant k-space frequencies)~\cite{MRISubsamplingPruning} as well as deep learning based radial~\cite{DeepMRIReconstructionRadialSubsampling} and non-Cartesian~\cite{DeepMRIReconstructionSubsampling} subsampling for MRI acceleration.
 
 \chapter{Image Transformations and Registration} \label{Ch:ImageTransformationsAndRegistration}
-In this chapter a brief overview over the different kinds of image transformations is given, followed by a deep dice into the challenges of image registration.
+In this chapter, a brief overview over the different kinds of image transformations is given, followed by an introduction into the challenges of image registration.\\
+The goal of image registration is to compute a transformation that aligns two images - moving and fixed. This transformation is then applied to the moving image to create an warped image that more closely resembles the fixed image. But first, the different kinds of image transformations must be discussed.
 
 \section{Image Transformations}
-There are two major groups of image transformations: linear and non-rigid.
+In medical image registration, there are three basic transformation types that are typically applied: rigid, affine and non-linear(deformable)~\cite{Strittmatter2023}.
 
-\subsection{Linear Transformations}
-Linear Transformations are a common group of global transformation, which include rotation, scaling and translation. As these are global operations, one can express them as matrix operations. If a 2D point has the cartesian coordinates $\mathbf{p} = [x,y]^T$ it can be extended to 3D as $\mathbf{p} = [x,y,1]^T$ instead of being only 2D. This allows for combining all of the linear transformations into a single matrix:
+\subsection{Rigid Transformations}
+Rigid transformations are linear and global transformations that affect the whole image. As these are global operations, one can express them as matrix and vector operations. A rigid transformation includes translation and rotation and can be represented by:
+\begin{equation}
+	\mathbf{T}_{rigid} (x) = \mathbf{R} \cdot \overrightarrow{p} + \overrightarrow{t},
+\end{equation}
+with $\mathbf{R}$ being the rotation matrix, $\overrightarrow{p}$ a point in the image and $\overrightarrow{t}$ the translation vector.  For 3D images, the rotation matrix and the translation vector require three parameters each. Thus, six parameters have to be calculated for a rigid transformation for 3D images~\cite{Strittmatter2023}.
+
+\subsection{Affine Transformations}
+Affine transformations are also linear and global transformations, however they include translation, rotation, scaling and shearing. Matrix multiplication can be used to merge all of these individual transformations into a single matrix:
 \begin{align}
-	\begin{bmatrix}
-		x'\\
-		y'\\
-		1
-	\end{bmatrix} 
+	\overrightarrow{p}' 	&= \mathbf{R} \cdot \mathbf{S} \cdot \mathbf{t} \cdot  \overrightarrow{p}	\\
 	&= 
 	\begin{bmatrix}
 		\cos(\theta) & -\sin(\theta) & 0\\
@@ -358,17 +362,16 @@ Linear Transformations are a common group of global transformation, which includ
 		x\\
 		y\\
 		1
-	\end{bmatrix}
-\end{align}
-with $\theta$ being the angle of the rotation, $s$ the scaling factor as well as $t_x$ and $t_y$ being the translations in x- and y-direction. This can be further generalized as a linear matrix multiplication:
-\begin{equation}
-	\mathbf{p'} =	
+	\end{bmatrix} =
 	\begin{bmatrix}
 		x'\\
 		y'\\
 		1
-	\end{bmatrix} 
-	= 
+	\end{bmatrix} ,
+\end{align}
+with $\theta$ being the angle of the rotation for the rotation matric $\mathbf{R}$, $s$ the scaling factor for the scaling matrix $\mathbf{S}$ as well as $t_x$ and $t_y$ being the translations in x- and y-direction. This can be further generalized as a single matrix multiplication:
+\begin{equation}
+	\overrightarrow{p}' = \mathbf{T}_{affine} \cdot  \overrightarrow{p} = 
 	\begin{bmatrix}
 		a_{11} & a_{12} & a_{13}\\
 		a_{21} & a_{22} & a_{23}\\
@@ -380,14 +383,21 @@ with $\theta$ being the angle of the rotation, $s$ the scaling factor as well as
 		y\\
 		1
 	\end{bmatrix}
-	 = \mathbf{A} \cdot \mathbf{p}
+	 = 
+	 \begin{bmatrix}
+		x'\\
+		y'\\
+		1
+	\end{bmatrix},
 \end{equation}
-where $\mathbf{A}$ is the general affine transformation matrix.
+with $\mathbf{T}_{affine}$ being the general affine transformation matrix~\cite{Strittmatter2023}.
 
-
-\subsection{Non-Rigid Transformations}
-The second category of transformations allow elastic or non-rigid transformations. These transformations are capable of locally warping the image. Non-rigid transformations include radial basis functions, physical continuum models, and large deformation models like diffeomorphisms.
-
+\subsection{Non-Linear Transformations}
+Non-linear or deformable transformations are used to model local deformations in images that rigid and affine transformations cannot capture as these transformations are capable of locally warping the image. Non-linear transformations include radial basis functions, physical continuum models, and large deformation models like diffeomorphisms. These transformations are complex and do not preserve straightness or parallelism:
+\begin{equation}
+	\mathbf{T}_{deformable} (x) = x + \phi (x),
+\end{equation}
+with $\phi$ being the deformation or displacement field. Deformable image registration is an ill-posed problem, often requiring regularization to ensure a smooth and plausible displacement field~\cite{Strittmatter2023}.
 
 \section{Image Registration} \label{Sec:ImageRegistration}
 Image registration is a challenging, yet important task for image processing. It can be described as the process of transforming different image datasets into one coordinate system with matched imaging contents~\cite{Haskins2020}. In the medical field this can be used for clinical applications such as disease diagnosis and monitoring, image-guided treatment delivery, and post-operative assessment. Medical image registration is typically used to pre-process data for tasks like object detection (for e.g. tumor growth monitoring) and segmentation (for e.g. organ atlas creation) where variation in spatial resolution is common between modalities like CT and MRI and patients. Thus the performance of these methods is dependent on the quality of image registration~\cite{Chen2020}. \\
@@ -481,7 +491,15 @@ For comparison of segmentations the Dice score is a commonly used metric to esti
 	\text{Dice} = \frac{2 |M_F \cap M_W|}{|M_F| + |M_W|},
 \end{equation}
 with $M_F$ and $M_W$ being segmentations corresponding to $F$ and $W$ with $M_F$ being a manual segmentation which is warped to obtain $M_W$~\cite{NiftiReg}.\\
-Aside from image similarity measures and the evaluation of image segmentations, the displacement field itself can also be evaluated. This is usually based on the assumption that the displacement should be smooth as, for example, folding the image could result in physically unrealistic anatomic structures, indicating errors. The Jacobian determinant of the deformation $|J_{\phi}|$ must be positive everywhere to avoid folding and thus the percentage of non-positive Jacobian determinant of the deformation $\% \, |J_{\phi}|\leq0$ can be used to evaluate the quality of the generated displacement field~\cite{Chen2023}.
+Aside from image similarity measures and the evaluation of image segmentations, the displacement field itself can also be evaluated. This is usually based on the assumption that the displacement should be smooth as, for example, folding the image could result in physically unrealistic anatomic structures, indicating errors. Jacobian matrices are the derivatives of the displacement field $\phi$ that form a second order tensor field:
+\begin{equation}
+	J_{\phi}(x) = \nabla \mathbb{\phi}  (x) = \begin{pmatrix}
+	\frac{\partial \phi_1(x)}{\partial x_1} & \frac{\partial \phi_1(x)}{\partial x_2} & \frac{\partial \phi_1(x)}{\partial x_3} \\
+	\frac{\partial \phi_2(x)}{\partial x_1} & \frac{\partial \phi_2(x)}{\partial x_2} & \frac{\partial \phi_2(x)}{\partial x_3} \\
+	\frac{\partial \phi_3(x)}{\partial x_1} & \frac{\partial \phi_3(x)}{\partial x_2} & \frac{\partial \phi_3(x)}{\partial x_3} 
+	\end{pmatrix},
+\end{equation}
+and encode the local stretching, shearing and rotating of the displacement field. The determinants of such matrices, also called the Jacobian determinants of the deformation $|J_{\phi}|$, must be positive everywhere to avoid folding as a region of negative determinants would indicate that the one-to-one mapping has been lost~\cite{DARTEL}. Thus the percentage of non-positive Jacobian determinants of the deformation $\% \, |J_{\phi}|\leq0$ can be used to evaluate the quality of the generated displacement field~\cite{Chen2023}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -1419,7 +1437,7 @@ For $R=8$, \emph{4xFourier-Net+} again performs best for Dice with the backgroun
 For $R=10$, \emph{4xFourier-Net+} performs best in terms of Dice with the background label, while \emph{Fourier-Net} performs best in terms of Dice without the background. \emph{NiftyReg} again performs worse than the baseline for Dice (both with and without background label). \emph{VoxelMorph} is again the best method in terms of SSIM and MSE, followed by \emph{Fourier-Net} and \emph{NiftyReg} with no method being worse than the baseline. \emph{4xFourier-Net+} has again the lowest percentage of non-positive Jabobian determinants closely followed by \emph{Fourier-Net+}, while \emph{VoxelMorph} has the worst value like before. \emph{Fourier-Net+} is again the fastest method with under $0.01s$, while \emph{NiftyReg} is again the slowest despite its best time yet with about $47s$.\\
 To summarize, \emph{Fourier-Net+} is the fastest method for all acceleration levels while \emph{NiftyReg} is far behind all other methods in 
 %terms of 
-execution time as it is not machine learning based. \emph{VoxelMorph} performs best in terms of SSIM and MSE for all acceleration levels, however it also has the highest percentage of non-positive Jabobian determinants by a large margin indicating potential folding artifacts. \emph{4xFourier-Net+} performs best in terms of Dice with the background label except for $R=0$ while consistently having the lowest percentage of non-positive Jabobian determinants with a mean value under $0.005\%$ for all acceleration levels. \emph{Fourier-Net+} performs well in terms of Dice (with and without the background label), however it does not manage to surpass the other \emph{Fourier-Net} variants despite having the second lowest percentage of non-positive Jabobian determinants across the acceleration levels. \emph{Fourier-Net} performs best in terms of Dice without the background label for all acceleration level as well as in Dice with the background for $R=0$. \emph{NiftyReg} consistently performs worse than the baseline in terms of Dice (with and without the background) across all acceleration levels while having decent SSIM and MSE values. The performance, in general, decreased for all methods for higher acceleration levels as seen in the Dice metric, however, perhaps counter-intuitively, the SSIM is highest and the MSE the lowest for the $R=10$ baseline with only $R=4$ breaking the trend. This shows once again that image similarity metrics are not completely objective when it comes to evaluating registration performance across different acceleration levels.\\
+execution time as it is not machine learning based. \emph{VoxelMorph} performs best in terms of SSIM and MSE for all acceleration levels, however it also has the highest percentage of non-positive Jabobian determinants by a large margin indicating potential folding artifacts. \emph{4xFourier-Net+} performs best in terms of Dice with the background label except for $R=0$ while consistently having the lowest percentage of non-positive Jabobian determinants with a mean value under $0.004\%$ for all acceleration levels. \emph{Fourier-Net+} performs well in terms of Dice (with and without the background label), however it does not manage to surpass the other \emph{Fourier-Net} variants despite having the second lowest percentage of non-positive Jabobian determinants across the acceleration levels. \emph{Fourier-Net} performs best in terms of Dice without the background label for all acceleration level as well as in Dice with the background for $R=0$. \emph{NiftyReg} consistently performs worse than the baseline in terms of Dice (with and without the background) across all acceleration levels while having decent SSIM and MSE values. The performance, in general, decreased for all methods for higher acceleration levels as seen in the Dice metric, however, perhaps counter-intuitively, the SSIM is highest and the MSE the lowest for the $R=10$ baseline with only $R=4$ breaking the trend. This shows once again that image similarity metrics are not completely objective when it comes to evaluating registration performance across different acceleration levels.\\
 To further evaluate the difference between the methods performance one can look at the Dice scores of the three individual cardiac labels. The results can be seen as boxplots in Figure~\ref{fig:Boxplot_DiceScores_LV-Cavity} for the left ventricle, Figure~\ref{fig:Boxplot_DiceScores_Myocardium} for the myocardium and Figure~\ref{fig:Boxplot_DiceScores_RV-Cavity} for the right ventricle.
 %\\ As seen in Figure~\ref{fig:Boxplots_DiceScores}, 
 The Dice scores for each label vary widely but the performance of all methods is best for the right ventricle and worst for the myocardium. This seems to be an underlying principle of the data as the same behavior can be seen in the unaligned baseline. \\
