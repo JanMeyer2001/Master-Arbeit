@@ -600,6 +600,300 @@
     \field{year}{1984}
   \endentry
 
+  \entry{SpiralMRI}{article}{}
+    \name{author}{3}{}{%
+      {{hash=ACB}{%
+         family={Ahn},
+         familyi={A\bibinitperiod},
+         given={C.\bibnamedelima B.},
+         giveni={C\bibinitperiod\bibinitdelim B\bibinitperiod},
+      }}%
+      {{hash=KJH}{%
+         family={Kim},
+         familyi={K\bibinitperiod},
+         given={J.\bibnamedelima H.},
+         giveni={J\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+      {{hash=CZH}{%
+         family={Cho},
+         familyi={C\bibinitperiod},
+         given={Z.\bibnamedelima H.},
+         giveni={Z\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{ACBKJHCZH1}
+    \strng{fullhash}{ACBKJHCZH1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.1986.4307732
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{1}
+    \field{pages}{2\bibrangedash 7}
+    \field{title}{High-Speed Spiral-Scan Echo Planar NMR Imaging-I}
+    \field{volume}{5}
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{03}
+    \field{year}{1986}
+  \endentry
+
+  \entry{SpiralMRI2}{article}{}
+    \name{author}{2}{}{%
+      {{hash=GGH}{%
+         family={Glover},
+         familyi={G\bibinitperiod},
+         given={Gary\bibnamedelima H.},
+         giveni={G\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+      {{hash=LAT}{%
+         family={Lee},
+         familyi={L\bibinitperiod},
+         given={Adrian\bibnamedelima T.},
+         giveni={A\bibinitperiod\bibinitdelim T\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{GGHLAT1}
+    \strng{fullhash}{GGHLAT1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.1910330507
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{5}
+    \field{pages}{624\bibrangedash 635}
+    \field{title}{Motion Artifacts in fMRI: Comparison of 2DFT with PR and
+  Spiral Scan Methods}
+    \field{volume}{33}
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{05}
+    \field{year}{1995}
+  \endentry
+
+  \entry{SpiralMRI3}{article}{}
+    \name{author}{3}{}{%
+      {{hash=NDG}{%
+         family={Nishimura},
+         familyi={N\bibinitperiod},
+         given={Dwight\bibnamedelima G.},
+         giveni={D\bibinitperiod\bibinitdelim G\bibinitperiod},
+      }}%
+      {{hash=IP}{%
+         family={Irarrazabal},
+         familyi={I\bibinitperiod},
+         given={Pablo},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=MCH}{%
+         family={Meyer},
+         familyi={M\bibinitperiod},
+         given={Craig\bibnamedelima H.},
+         giveni={C\bibinitperiod\bibinitdelim H\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{NDGIPMCH1}
+    \strng{fullhash}{NDGIPMCH1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.1910330414
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{4}
+    \field{pages}{549\bibrangedash 556}
+    \field{title}{A Velocity k‐Space Analysis of Flow Effects in
+  Echo‐Planar and Spiral Imaging}
+    \field{volume}{33}
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{04}
+    \field{year}{1995}
+  \endentry
+
+  \entry{AdvancesPI}{article}{}
+    \name{author}{3}{}{%
+      {{hash=HJ}{%
+         family={Hamilton},
+         familyi={H\bibinitperiod},
+         given={Jesse},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=FD}{%
+         family={Franson},
+         familyi={F\bibinitperiod},
+         given={Dominique},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Seiberlich},
+         familyi={S\bibinitperiod},
+         given={Nicole},
+         giveni={N\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{HJFDSN1}
+    \strng{fullhash}{HJFDSN1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.pnmrs.2017.04.002
+    \endverb
+    \field{issn}{0079-6565}
+    \field{pages}{71\bibrangedash 95}
+    \field{title}{Recent advances in parallel imaging for MRI}
+    \field{volume}{101}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Recent advances in parallel imaging for MR
+    \verb I.pdf:PDF
+    \endverb
+    \field{journaltitle}{Progress in Nuclear Magnetic Resonance Spectroscopy}
+    \field{month}{08}
+    \field{year}{2017}
+  \endentry
+
+  \entry{SENSE1}{article}{}
+    \name{author}{4}{}{%
+      {{hash=PKP}{%
+         family={Pruessmann},
+         familyi={P\bibinitperiod},
+         given={Klaas\bibnamedelima P.},
+         giveni={K\bibinitperiod\bibinitdelim P\bibinitperiod},
+      }}%
+      {{hash=WM}{%
+         family={Weiger},
+         familyi={W\bibinitperiod},
+         given={Markus},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=SMB}{%
+         family={Scheidegger},
+         familyi={S\bibinitperiod},
+         given={Markus\bibnamedelima B.},
+         giveni={M\bibinitperiod\bibinitdelim B\bibinitperiod},
+      }}%
+      {{hash=BP}{%
+         family={Boesiger},
+         familyi={B\bibinitperiod},
+         given={Peter},
+         giveni={P\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{PKP+1}
+    \strng{fullhash}{PKPWMSMBBP1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/(sici)1522-2594(199911)42:5<952::aid-mrm16>3.0.co;2-s
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{5}
+    \field{pages}{952\bibrangedash 962}
+    \field{title}{SENSE: Sensitivity encoding for fast MRI}
+    \field{volume}{42}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/SENSE Sensitivity encoding for fast MRI.pd
+    \verb f:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{11}
+    \field{year}{1999}
+  \endentry
+
+  \entry{GRAPPA}{article}{}
+    \name{author}{8}{}{%
+      {{hash=GMA}{%
+         family={Griswold},
+         familyi={G\bibinitperiod},
+         given={Mark\bibnamedelima A.},
+         giveni={M\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=JPM}{%
+         family={Jakob},
+         familyi={J\bibinitperiod},
+         given={Peter\bibnamedelima M.},
+         giveni={P\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=HRM}{%
+         family={Heidemann},
+         familyi={H\bibinitperiod},
+         given={Robin\bibnamedelima M.},
+         giveni={R\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=NM}{%
+         family={Nittka},
+         familyi={N\bibinitperiod},
+         given={Mathias},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=JV}{%
+         family={Jellus},
+         familyi={J\bibinitperiod},
+         given={Vladimir},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=WJ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Jianmin},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=KB}{%
+         family={Kiefer},
+         familyi={K\bibinitperiod},
+         given={Berthold},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=HA}{%
+         family={Haase},
+         familyi={H\bibinitperiod},
+         given={Axel},
+         giveni={A\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{GMA+1}
+    \strng{fullhash}{GMAJPMHRMNMJVWJKBHA1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.10171
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{6}
+    \field{pages}{1202\bibrangedash 1210}
+    \field{title}{Generalized autocalibrating partially parallel acquisitions
+  (GRAPPA)}
+    \field{volume}{47}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Generalized autocalibrating partially para
+    \verb llel acquisitions (GRAPPA).pdf:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{06}
+    \field{year}{2002}
+  \endentry
+
   \entry{GRICS}{article}{}
     \name{author}{4}{}{%
       {{hash=OF}{%
@@ -971,6 +1265,82 @@
     \field{journaltitle}{Applied Sciences}
     \field{month}{12}
     \field{year}{2023}
+  \endentry
+
+  \entry{NiftiReg}{article}{}
+    \name{author}{8}{}{%
+      {{hash=MM}{%
+         family={Modat},
+         familyi={M\bibinitperiod},
+         given={Marc},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=RGR}{%
+         family={Ridgway},
+         familyi={R\bibinitperiod},
+         given={Gerard\bibnamedelima R.},
+         giveni={G\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+      {{hash=TZA}{%
+         family={Taylor},
+         familyi={T\bibinitperiod},
+         given={Zeike\bibnamedelima A.},
+         giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Lehmann},
+         familyi={L\bibinitperiod},
+         given={Manja},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Barnes},
+         familyi={B\bibinitperiod},
+         given={Josephine},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=HDJ}{%
+         family={Hawkes},
+         familyi={H\bibinitperiod},
+         given={David\bibnamedelima J.},
+         giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+      {{hash=FNC}{%
+         family={Fox},
+         familyi={F\bibinitperiod},
+         given={Nick\bibnamedelima C.},
+         giveni={N\bibinitperiod\bibinitdelim C\bibinitperiod},
+      }}%
+      {{hash=OS}{%
+         family={Ourselin},
+         familyi={O\bibinitperiod},
+         given={Sébastien},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{MM+1}
+    \strng{fullhash}{MMRGRTZALMBJHDJFNCOS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.cmpb.2009.09.002
+    \endverb
+    \field{issn}{0169-2607}
+    \field{number}{3}
+    \field{pages}{278\bibrangedash 284}
+    \field{title}{Fast free-form deformation using graphics processing units}
+    \field{volume}{98}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Fast Free-Form Defomation using GPUs.pdf:P
+    \verb DF
+    \endverb
+    \field{journaltitle}{Computer Methods and Programs in Biomedicine}
+    \field{month}{06}
+    \field{year}{2010}
   \endentry
 
   \entry{Tam2016}{article}{}
@@ -1709,82 +2079,6 @@
     \field{year}{2020}
   \endentry
 
-  \entry{NiftiReg}{article}{}
-    \name{author}{8}{}{%
-      {{hash=MM}{%
-         family={Modat},
-         familyi={M\bibinitperiod},
-         given={Marc},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=RGR}{%
-         family={Ridgway},
-         familyi={R\bibinitperiod},
-         given={Gerard\bibnamedelima R.},
-         giveni={G\bibinitperiod\bibinitdelim R\bibinitperiod},
-      }}%
-      {{hash=TZA}{%
-         family={Taylor},
-         familyi={T\bibinitperiod},
-         given={Zeike\bibnamedelima A.},
-         giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
-      }}%
-      {{hash=LM}{%
-         family={Lehmann},
-         familyi={L\bibinitperiod},
-         given={Manja},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=BJ}{%
-         family={Barnes},
-         familyi={B\bibinitperiod},
-         given={Josephine},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=HDJ}{%
-         family={Hawkes},
-         familyi={H\bibinitperiod},
-         given={David\bibnamedelima J.},
-         giveni={D\bibinitperiod\bibinitdelim J\bibinitperiod},
-      }}%
-      {{hash=FNC}{%
-         family={Fox},
-         familyi={F\bibinitperiod},
-         given={Nick\bibnamedelima C.},
-         giveni={N\bibinitperiod\bibinitdelim C\bibinitperiod},
-      }}%
-      {{hash=OS}{%
-         family={Ourselin},
-         familyi={O\bibinitperiod},
-         given={Sébastien},
-         giveni={S\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Elsevier BV}%
-    }
-    \strng{namehash}{MM+1}
-    \strng{fullhash}{MMRGRTZALMBJHDJFNCOS1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1016/j.cmpb.2009.09.002
-    \endverb
-    \field{issn}{0169-2607}
-    \field{number}{3}
-    \field{pages}{278\bibrangedash 284}
-    \field{title}{Fast free-form deformation using graphics processing units}
-    \field{volume}{98}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Fast Free-Form Defomation using GPUs.pdf:P
-    \verb DF
-    \endverb
-    \field{journaltitle}{Computer Methods and Programs in Biomedicine}
-    \field{month}{06}
-    \field{year}{2010}
-  \endentry
-
   \entry{DARTEL}{article}{}
     \name{author}{1}{}{%
       {{hash=AJ}{%
@@ -2478,58 +2772,6 @@
     \verb ter/Masterarbeit/Literatur/CMRxRecon.pdf:PDF
     \endverb
     \field{year}{2023}
-  \endentry
-
-  \entry{SENSE1}{article}{}
-    \name{author}{4}{}{%
-      {{hash=PKP}{%
-         family={Pruessmann},
-         familyi={P\bibinitperiod},
-         given={Klaas\bibnamedelima P.},
-         giveni={K\bibinitperiod\bibinitdelim P\bibinitperiod},
-      }}%
-      {{hash=WM}{%
-         family={Weiger},
-         familyi={W\bibinitperiod},
-         given={Markus},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=SMB}{%
-         family={Scheidegger},
-         familyi={S\bibinitperiod},
-         given={Markus\bibnamedelima B.},
-         giveni={M\bibinitperiod\bibinitdelim B\bibinitperiod},
-      }}%
-      {{hash=BP}{%
-         family={Boesiger},
-         familyi={B\bibinitperiod},
-         given={Peter},
-         giveni={P\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Wiley}%
-    }
-    \strng{namehash}{PKP+1}
-    \strng{fullhash}{PKPWMSMBBP1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1002/(sici)1522-2594(199911)42:5<952::aid-mrm16>3.0.co;2-s
-    \endverb
-    \field{issn}{1522-2594}
-    \field{number}{5}
-    \field{pages}{952\bibrangedash 962}
-    \field{title}{SENSE: Sensitivity encoding for fast MRI}
-    \field{volume}{42}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/SENSE Sensitivity encoding for fast MRI.pd
-    \verb f:PDF
-    \endverb
-    \field{journaltitle}{Magnetic Resonance in Medicine}
-    \field{month}{11}
-    \field{year}{1999}
   \endentry
 
   \entry{ACDC}{article}{}
