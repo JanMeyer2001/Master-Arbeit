@@ -832,7 +832,7 @@ def save_checkpoint(state, save_dir, save_filename, max_model_num=10):
         remove(model_lists[0])
         model_lists = natsorted(glob.glob(save_dir + '*'))
 
-def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, mode, epochs, optimizer, loss_similarity, loss_smooth, transform, training_generator, validation_generator, test_generator, earlyStop):
+def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learning_rate, start_channel, smth_lambda, choose_loss, mode, epochs, optimizer, loss_similarity, loss_smooth, transform, training_generator, validation_generator, test_generator, device, earlyStop):
     
     # path to save model parameters to
     model_dir = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
@@ -861,16 +861,48 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
     for epoch in range(epochs):
         losses = np.zeros(training_generator.__len__())
         for i, image_pair in enumerate(training_generator):
-            mov_img = image_pair[0].cuda().float()
-            fix_img = image_pair[1].cuda().float()
-            
-            Df_xy, __ = model(mov_img, fix_img)
-            grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
-            
-            loss1 = loss_similarity(fix_img, warped_mov) 
-            loss5 = loss_smooth(Df_xy)
-            
-            loss = loss1 + smth_lambda * loss5
+            if choose_loss == 5:    # contrastive loss
+                mov_img_fullySampled = image_pair[0].to(device).float()
+                fix_img_fullySampled = image_pair[1].to(device).float()
+                mov_img_subSampled   = image_pair[2].to(device).float()
+                fix_img_subSampled   = image_pair[3].to(device).float()                 
+                
+                with torch.no_grad():
+                    # get result for fully sampled image pairs (do not back-propagate!!)
+                    Df_xy_fullySampled, features_disp_fullySampled = model(mov_img_fullySampled, fix_img_fullySampled)
+                    #grid, warped_mov_fullySampled = transform(mov_img_fullySampled, Df_xy_fullySampled.permute(0, 2, 3, 1))
+                
+                # get result for subsampled image pairs
+                Df_xy, features_disp        = model(mov_img_subSampled, fix_img_subSampled)
+                grid, warped_mov_subSampled = transform(mov_img_subSampled, Df_xy.permute(0, 2, 3, 1)) 
+                
+                # transform features from [1,32,x,y] to [x*y,32]
+                features_disp_fullySampled  = torch.flatten(features_disp_fullySampled.squeeze(), start_dim=1, end_dim=2).permute(1,0)
+                features_disp               = torch.flatten(features_disp.squeeze(), start_dim=1, end_dim=2).permute(1,0)
+
+                # take samples each 10 steps from the feature map with 32 channels
+                indixes  = torch.arange(start=0,end=features_disp_fullySampled.shape[0],step=10)
+                queries  = features_disp[indixes,:]
+                pos_keys = features_disp_fullySampled[indixes,:]
+
+                # compute image similarity loss
+                loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) 
+                # compute contrastive loss between fully sampled and subsampled results
+                loss2 = loss_smooth(queries, pos_keys)
+            else:    
+                mov_img = image_pair[0].to(device).float()
+                fix_img = image_pair[1].to(device).float()
+
+                Df_xy, _ = model(mov_img, fix_img)
+                grid, warped_mov = transform(mov_img, Df_xy.permute(0, 2, 3, 1))
+                
+                # compute similarity loss in the image space
+                loss1 = loss_similarity(fix_img, warped_mov)    
+                
+                # compute smoothness loss
+                loss2 = loss_smooth(Df_xy)
+                
+            loss = loss1 + smth_lambda * loss2
             losses[i] = loss
 
             optimizer.zero_grad()
@@ -962,7 +994,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
     #############
     ## Testing ##
     #############
-    """
+    #"""
     print('\nTesting started on ', time.ctime())
 
     csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,model_name,diffeo_name,choose_loss,start_channel,FT_size[0],FT_size[1],smth_lambda,learning_rate,mode)
@@ -1073,7 +1105,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
         wandb.log({"Dice full": Mean_Dice_full, "Dice no background": Mean_Dice_noBackground, "MSE": Mean_MSE, "SSIM": Mean_SSIM, "NegJ": Mean_NegJ, "Time": Mean_time})
     
     print('Testing ended on ', time.ctime())
-    """
+    #"""
     # Mark the run as finished
     wandb.finish()   
 

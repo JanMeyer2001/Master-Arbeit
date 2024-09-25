@@ -31,7 +31,7 @@ parser.add_argument("--dataset", type=str,
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,
-                    help="choose similarity loss: SAD (0), MSE (1), NCC (2), L1 (3) or L2 (4)")
+                    help="choose loss: SAD (0), MSE (1), NCC (2), L1 (3), relativeL2 on k-space (4), contrastive loss (5) or MSE on k-space (6)")
 parser.add_argument("--mode", type=int,
                     dest="mode", default=1,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
@@ -244,9 +244,11 @@ for epoch in range(epochs):
             queries  = features_disp[indixes,:]
             pos_keys = features_disp_fullySampled[indixes,:]
 
+            # compute image similarity loss
+            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled)
             # compute contrastive loss between fully sampled and subsampled results
-            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) + 0.1 * loss_contrastive(queries, pos_keys)
-        elif choose_loss == 6:  # k-space loss
+            loss2 = loss_contrastive(queries, pos_keys)
+        elif choose_loss == 4 or choose_loss == 6:  # k-space loss
             mov_img = image_pair[0].to(device).float()
             fix_img = image_pair[1].to(device).float()
               
@@ -259,7 +261,10 @@ for epoch in range(epochs):
             if mode != 0:
                 loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace[mask.bool()]), torch.view_as_real(fix_img_kspace[mask.bool()]))
             else:    
-                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace), torch.view_as_real(fix_img_kspace))
+                loss1 = loss_similarity(torch.view_as_real(warped_mov_kspace), torch.view_as_real(fix_img_kspace))    
+            
+            # compute smoothness loss
+            loss2 = loss_smooth(Df_xy)
         else:    
             mov_img = image_pair[0].to(device).float()
             fix_img = image_pair[1].to(device).float()
@@ -274,10 +279,10 @@ for epoch in range(epochs):
             
             # compute similarity loss in the image space
             loss1 = loss_similarity(fix_img, warped_mov)    
-        
-        # compute smoothness loss
-        loss2 = loss_smooth(Df_xy)
-        
+            
+            # compute smoothness loss
+            loss2 = loss_smooth(Df_xy)
+            
         loss = loss1 + smooth * loss2
         losses[i] = loss
 
