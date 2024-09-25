@@ -41,6 +41,9 @@ parser.add_argument("--FT_size_y", type=int,
 parser.add_argument("--gpu", type=int,
                     dest="gpu", default=1, 
                     help="choose whether to use the gpu (1) or not (0)")
+parser.add_argument("--epoch", type=int,
+                    dest="epoch", default=1, 
+                    help="choose which epoch is used in the evaluation")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -53,6 +56,7 @@ model_num = opt.model_num
 diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 gpu = opt.gpu
+epoch = opt.epoch
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda" if gpu==1 else "cpu")
@@ -98,7 +102,7 @@ modelpath = path + natsorted(os.listdir(path))[model_idx]
 """
 
 # choose model after certain epoch of training
-modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
 print('Best model: {}'.format(basename(modelpath)))
 
 bs = 1
