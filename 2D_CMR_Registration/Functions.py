@@ -84,6 +84,7 @@ def get_image_pairs_ACDC_ContrastiveLearning(subset, data_path, subfolder):
     """ get the corresponding paths of image pairs for contrastive learning on the ACDC dataset """
     image_pairs_fullySampled = []  
     image_pairs_subSampled = []  
+    masks = []  
     # get folder names for patients
     patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, 'FullySampled', subset)) if f.is_dir() and not (f.name.find('patient') == -1)]
     patients_subSampled = [basename(f.path) for f in scandir(join(data_path, subfolder, subset)) if f.is_dir() and not (f.name.find('patient') == -1)]
@@ -101,7 +102,11 @@ def get_image_pairs_ACDC_ContrastiveLearning(subset, data_path, subfolder):
                     # add pairs of the frames to a list 
                     image_pairs_fullySampled = image_pairs_fullySampled + list(itertools.combinations(frames_fullySampled, 2))
                     image_pairs_subSampled = image_pairs_subSampled + list(itertools.combinations(frames_subSampled, 2))
-    return image_pairs_fullySampled, image_pairs_subSampled
+                    # get masks 
+                    mask = [f.path for f in scandir(join(data_path, 'FullySampled', subset, patient, slice)) if isfile(join(data_path, 'FullySampled', subset, patient, slice, f)) and f.name.startswith('Mask')]*len(list(itertools.combinations(frames_fullySampled, 2)))
+                    # add masks to list
+                    masks = masks + mask
+    return image_pairs_fullySampled, image_pairs_subSampled, masks
 
 def get_image_pairs_ACDC_kSpace(subset, data_path, subfolder):
     """ get the corresponding paths of k-space pairs for the ACDC dataset """
@@ -116,6 +121,11 @@ def get_image_pairs_ACDC_kSpace(subset, data_path, subfolder):
         # sort all crops?
         image_pairs = image_pairs + zip(mov_crops,fix_crops)
     return image_pairs
+
+def load_mask(path):
+    mask = imread(path, as_gray=True)
+    mask = torch.from_numpy(mask)
+    return mask
 
 def load_image_pair_ACDC_train(pathname1, pathname2):
     """ expects paths for files and loads the corresponding image pair"""
@@ -178,6 +188,47 @@ def load_image_pair_ACDC_train_LAPNet(pathname1, pathname2):
 
     return k_space1, k_space2, flow
 
+def getIndixes(mask=None, density_inside=4, density_outside=20):
+    """ extracts indixes from mask tensor size (x,y) with sampling density inside and outside the cardiac region """
+    assert type(mask) != type(None), f"Mask needs to be input into getIndixes!!"
+    # sample cardiac region more than the background
+    if torch.count_nonzero(mask) != 0:
+        # get all non-zero positions in the mask to find the cardiac region
+        positions = np.nonzero(mask.squeeze().cpu().numpy())
+        crop_x = int((positions[0].max() - positions[0].min())/2)
+        crop_y = int((positions[1].max() - positions[1].min())/2)
+        center_x = positions[0].min() + crop_x
+        center_y = positions[1].min() + crop_y
+        # make mask quadratic around cardiac region
+        mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)] = 1
+        # init foreground for cardiac region
+        foreground = torch.zeros_like(mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)])
+        # init background
+        background = torch.zeros_like(mask)
+        # undersampled background by flatting, indexing and resizing
+        background = torch.flatten(background, start_dim=0, end_dim=1)
+        indixes = torch.arange(start=0,end=background.shape[0],step=density_outside)
+        background[indixes] = 1
+        background = torch.unflatten(background,0,mask.shape)
+        # cut out foreground
+        #background[positions[0].min():positions[0].max(),positions[0].min():positions[0].max()] = 0
+        # undersample foreground with density_inside  
+        foreground = torch.flatten(foreground, start_dim=0, end_dim=1)
+        indixes = torch.arange(start=0,end=foreground.shape[0],step=density_inside)
+        foreground[indixes] = 1
+        foreground = torch.unflatten(foreground,0,mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)].shape)
+        # insert foreground into background
+        background[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)] = foreground
+        # get positions of indixes
+        position = np.nonzero(torch.flatten(background, start_dim=0, end_dim=1).cpu().numpy())[0]
+    # if there is no segmentation available (aka. the mask is empty)
+    else:
+        # undersampled background by flatting, indexing and resizing
+        background = torch.flatten(mask, start_dim=0, end_dim=1)
+        position = torch.arange(start=0,end=background.shape[0],step=density_outside)
+        
+    return position
+
 class TrainDatasetACDC_ContrastiveLearning(Data.Dataset):
   'Training dataset for ACDC data'
   def __init__(self, data_path, mode):
@@ -193,7 +244,7 @@ class TrainDatasetACDC_ContrastiveLearning(Data.Dataset):
             subfolder = 'AccFactor10'  
         # get paths of training data
         self.data_path = data_path
-        self.paths_fullySampled, self.paths_subSampled = get_image_pairs_ACDC_ContrastiveLearning(subset='Training', data_path=data_path, subfolder=subfolder)
+        self.paths_fullySampled, self.paths_subSampled, self.paths_masks = get_image_pairs_ACDC_ContrastiveLearning(subset='Training', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'total number of training samples'
@@ -203,7 +254,8 @@ class TrainDatasetACDC_ContrastiveLearning(Data.Dataset):
         'Loads fully sampled and subsampled image pairs'
         mov_img_fullySampled, fix_img_fullySampled  = load_image_pair_ACDC_train(self.paths_fullySampled[index][0], self.paths_fullySampled[index][1])
         mov_img_subSampled, fix_img_subSampled      = load_image_pair_ACDC_train(self.paths_subSampled[index][0], self.paths_subSampled[index][1])
-        return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
+        masks = load_mask(self.paths_masks[index])
+        return mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled, masks
 
 class TrainDatasetACDC_kSpace(Data.Dataset):
   'Training dataset for k-space ACDC data'

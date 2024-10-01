@@ -224,7 +224,8 @@ for epoch in range(epochs):
             mov_img_fullySampled = image_pair[0].to(device).float()
             fix_img_fullySampled = image_pair[1].to(device).float()
             mov_img_subSampled   = image_pair[2].to(device).float()
-            fix_img_subSampled   = image_pair[3].to(device).float()                 
+            fix_img_subSampled   = image_pair[3].to(device).float() 
+            mask                 = image_pair[4].float().to(device)                 
             
             with torch.no_grad():
                 # get result for fully sampled image pairs (do not back-propagate!!)
@@ -235,12 +236,15 @@ for epoch in range(epochs):
             Df_xy, features_disp        = model(mov_img_subSampled, fix_img_subSampled)
             grid, warped_mov_subSampled = transform(mov_img_subSampled, Df_xy.permute(0, 2, 3, 1)) 
             
+            # interpolate mask to the size of the features
+            mask = F.interpolate(mask.unsqueeze(0), features_disp.shape[2:4], mode='nearest-exact').squeeze(0).squeeze(0)
+        
             # transform features from [1,32,x,y] to [x*y,32]
             features_disp_fullySampled  = torch.flatten(features_disp_fullySampled.squeeze(), start_dim=1, end_dim=2).permute(1,0)
             features_disp               = torch.flatten(features_disp.squeeze(), start_dim=1, end_dim=2).permute(1,0)
 
-            # take samples each 10 steps from the feature map with 32 channels
-            indixes  = torch.arange(start=0,end=features_disp_fullySampled.shape[0],step=10)
+            # take samples from the feature map with 32 channels
+            indixes  = getIndixes(mask, density_inside=4, density_outside=20)
             queries  = features_disp[indixes,:]
             pos_keys = features_disp_fullySampled[indixes,:]
 
