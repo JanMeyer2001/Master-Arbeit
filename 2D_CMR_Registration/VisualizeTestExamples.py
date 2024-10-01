@@ -115,22 +115,22 @@ model_f_net_plus         = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size
 model_f_net_plus_cascade = Cascade(2, 2, start_channel, diffeo, FT_size).to(device)
 
 # load different models
-path_voxelmorph = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,0,0.01,0.0001,0) # for voxelmorph 0 is MSE loss
+path_voxelmorph = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,0,0.01,0.0001,mode) # for voxelmorph 0 is MSE loss
 modelpath_voxelmorph = path_voxelmorph + natsorted(listdir(path_voxelmorph))[-1]
 model_voxelmorph.load_state_dict(torch.load(modelpath_voxelmorph))
 model_voxelmorph.eval()
 
-path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
+path_f_net      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,0,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
 modelpath_f_net = path_f_net + natsorted(listdir(path_f_net))[-1]
 model_f_net.load_state_dict(torch.load(modelpath_f_net))
 model_f_net.eval()
 
-path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
+path_f_net_plus      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,1,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
 modelpath_f_net_plus = path_f_net_plus + natsorted(listdir(path_f_net_plus))[-1]
 model_f_net_plus.load_state_dict(torch.load(modelpath_f_net_plus))
 model_f_net_plus.eval()
 
-path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,0)
+path_f_net_plus_cascade      = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,2,diffeo,1,start_channel,FT_size[0],FT_size[1],0.01,0.0001,mode)
 modelpath_f_net_plus_cascade = path_f_net_plus_cascade + natsorted(listdir(path_f_net_plus_cascade))[-1]
 model_f_net_plus_cascade.load_state_dict(torch.load(modelpath_f_net_plus_cascade))
 model_f_net_plus_cascade.eval()
@@ -171,6 +171,7 @@ flows = [empty_flow,empty_flow,displacement_nifti,V_voxelmorph,V_f_net,V_f_net_p
 # convert to flow images
 for i, flow in enumerate(flows):
     if i == 2:
+        # input flow for NiftyReg directly
         flows[i] = flow_vis.flow_to_color(flow, convert_to_bgr=False)
     else:
         flows[i] = flow_vis.flow_to_color(flow.data.cpu().squeeze().permute(1,2,0).numpy(), convert_to_bgr=False)
