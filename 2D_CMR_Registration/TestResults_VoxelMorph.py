@@ -10,7 +10,7 @@ import time
 from skimage.metrics import structural_similarity, mean_squared_error
 import warnings
 warnings.filterwarnings("ignore")
-import argparse
+from natsort import natsorted
 
 parser = ArgumentParser()
 parser.add_argument("--learning_rate", type=float,
@@ -29,8 +29,8 @@ parser.add_argument("--gpu", type=int,
                     dest="gpu", default=0, 
                     help="choose whether to use the gpu (1) or not (0)")
 parser.add_argument("--epoch", type=int,
-                    dest="epoch", default=1, 
-                    help="choose which epoch is used in the evaluation")
+                    dest="epoch", default=0, 
+                    help="choose which epoch is used in the evaluation (for input 0 the best version will be chosen)")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -66,17 +66,14 @@ transform = SpatialTransformer(input_shape, mode = 'nearest').to(device)
 
 path = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smooth,learning_rate,mode)
 
-"""
-# choose best model
-model_idx = -1
-from natsort import natsorted
-print('Best model: {}'.format(natsorted(os.listdir(path))[model_idx]))
-modelpath = path + natsorted(os.listdir(path))[model_idx]
-"""
-
-# choose model after certain epoch of training
-modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
-print('Best model: {}'.format(basename(modelpath)))
+if epoch == 0:
+    # choose best model
+    print('Best model: {}'.format(natsorted(os.listdir(path))[-1]))
+    modelpath = path + natsorted(os.listdir(path))[-1]
+else:
+    # choose model after certain epoch of training
+    modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
+    print('Best model: {}'.format(basename(modelpath)))
 bs = 1
 
 torch.backends.cudnn.benchmark = True

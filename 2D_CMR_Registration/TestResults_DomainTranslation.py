@@ -20,9 +20,12 @@ parser.add_argument("--lambda", type=float,
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=8,
                     help="number of start channels")
-parser.add_argument("--dataset", type=str, 
-                    dest="dataset", default="ACDC",
-                    help="dataset for test images: Select either ACDC, CMRxRecon or OASIS")
+parser.add_argument("--indomain", type=str, 
+                    dest="indomain", default="ACDC",
+                    help="indomain for training images: Select either ACDC, CMRxRecon or OASIS")
+parser.add_argument("--outdomain", type=str, 
+                    dest="outdomain", default="CMRxRecon",
+                    help="outdomain for test images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int, dest="choose_loss", default=1,
                     help="choose similarity loss: SAD (0), MSE (1), NCC (2), SSIM (3)")
 parser.add_argument("--mode", type=int, dest="mode", default='0',
@@ -50,7 +53,8 @@ opt = parser.parse_args()
 learning_rate = opt.learning_rate
 start_channel = opt.start_channel
 smooth = opt.smth_lambda
-dataset = opt.dataset
+indomain = opt.indomain
+outdomain = opt.outdomain
 choose_loss = opt.choose_loss
 mode = opt.mode
 model_num = opt.model_num
@@ -58,6 +62,8 @@ diffeo = opt.diffeo
 FT_size = [opt.FT_size_x,opt.FT_size_y]
 gpu = opt.gpu
 epoch = opt.epoch
+
+assert indomain != outdomain, f"In- and Out-Domain need to be different!! Else use the normal TestResults-script."
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda" if gpu==1 else "cpu")
@@ -92,7 +98,7 @@ elif model_num == 8:
 
 transform = SpatialTransform().to(device)
 
-path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(indomain,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 
 if epoch == 0:
     # choose best model
@@ -113,36 +119,36 @@ MSE_test = []
 SSIM_test = []
 NegJ = []
 times = []
-if dataset != 'CMRxRecon':
+if outdomain != 'CMRxRecon':
     Dice_test_full = []
     Dice_test_noBackground = []
 
-if dataset == 'ACDC':
+if outdomain == 'ACDC':
     # load ACDC test data
     test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
-elif dataset == 'CMRxRecon':
+elif outdomain == 'CMRxRecon':
     # load CMRxRecon test data
     test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
-elif dataset == 'OASIS':
+elif outdomain == 'OASIS':
     # path for OASIS test dataset
     test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
 else:
-    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
+    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % outdomain)
 
-csv_name = './TestResults-{}/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
+csv_name = './TestResults-DomainTranslation/TestMetrics-Domain_{}-{}_Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(indomain,outdomain,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
 f = open(csv_name, 'w')
 with f:
-    if dataset == 'CMRxRecon':
+    if outdomain == 'CMRxRecon':
         fnames = ['Image Pair','SSIM','MSE','Mean SSIM','Mean MSE','Mean Time','Mean NegJ']
-    elif dataset == 'OASIS':
+    elif outdomain == 'OASIS':
         fnames = ['Image Pair','Dice','SSIM','MSE','Mean Dice','Mean SSIM','Mean MSE','Mean Time','Mean NegJ']
-    elif dataset == 'ACDC':
+    elif outdomain == 'ACDC':
         fnames = ['Image Pair','Dice full','Dice no background','SSIM','MSE','Mean Dice full',' Mean Dice no background','Mean SSIM','Mean MSE','Mean Time','Mean NegJ']    
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
@@ -151,7 +157,7 @@ for i, image_pairs in enumerate(test_generator):
     with torch.no_grad():
         mov_img_fullySampled = image_pairs[0].float().to(device)
         fix_img_fullySampled = image_pairs[1].float().to(device)
-        if dataset == 'CMRxRecon':
+        if outdomain == 'CMRxRecon':
             mov_img_subSampled = image_pairs[2].float().to(device)
             fix_img_subSampled = image_pairs[3].float().to(device)
         else:
@@ -167,7 +173,7 @@ for i, image_pairs in enumerate(test_generator):
 
         start = time.time()
         # calculate displacement on subsampled data
-        if dataset == 'CMRxRecon':
+        if outdomain == 'CMRxRecon':
             V_xy, __ = model(mov_img_subSampled, fix_img_subSampled)
         else:
             V_xy, __ = model(mov_img_fullySampled, fix_img_fullySampled)
@@ -178,13 +184,13 @@ for i, image_pairs in enumerate(test_generator):
         
         # but warp fully sampled data
         __, warped_mov_img_fullySampled = transform(mov_img_fullySampled, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
-        if dataset != 'CMRxRecon':
+        if outdomain != 'CMRxRecon':
             __, warped_mov_seg = transform(mov_seg, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
         
         # calculate MSE, SSIM and Dice 
-        if dataset == 'OASIS':
+        if outdomain == 'OASIS':
             csv_Dice_full = dice(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
-        elif dataset == 'ACDC':
+        elif outdomain == 'ACDC':
             dices_temp = dice_ACDC(warped_mov_seg[0,0,:,:].cpu().numpy(),fix_seg[0,0,:,:].cpu().numpy())
             csv_Dice_full = np.mean(dices_temp)
             csv_Dice_noBackground = np.mean(dices_temp[1:3])
@@ -193,9 +199,9 @@ for i, image_pairs in enumerate(test_generator):
                   
         MSE_test.append(csv_MSE)
         SSIM_test.append(csv_SSIM)
-        if dataset == 'OASIS':
+        if outdomain == 'OASIS':
             Dice_test_full.append(csv_Dice_full)
-        elif dataset == 'ACDC':
+        elif outdomain == 'ACDC':
             Dice_test_full.append(csv_Dice_full)
             Dice_test_noBackground.append(csv_Dice_noBackground)
     
@@ -213,11 +219,11 @@ for i, image_pairs in enumerate(test_generator):
         f = open(csv_name, 'a')
         with f:
             writer = csv.writer(f)
-            if dataset == 'CMRxRecon':
+            if outdomain == 'CMRxRecon':
                 writer.writerow([i, csv_SSIM, csv_MSE, '-', '-', '-', '-']) 
-            elif dataset == 'OASIS':
+            elif outdomain == 'OASIS':
                 writer.writerow([i, csv_Dice_full,csv_MSE, csv_SSIM, '-', '-', '-', '-', '-']) 
-            elif dataset == 'ACDC':    
+            elif outdomain == 'ACDC':    
                 writer.writerow([i, csv_Dice_full, csv_Dice_noBackground, csv_MSE, csv_SSIM, '-', '-', '-', '-', '-', '-'])
 
 mean_MSE = np.mean(MSE_test)
@@ -231,10 +237,10 @@ std_NegJ = np.std(NegJ)
 
 mean_time = np.mean(times)
 
-if dataset == 'OASIS':
+if outdomain == 'OASIS':
     mean_Dice_full = np.mean(Dice_test_full)
     std_Dice_full = np.std(Dice_test_full)
-elif dataset == 'ACDC':
+elif outdomain == 'ACDC':
     mean_Dice_full = np.mean(Dice_test_full)
     std_Dice_full = np.std(Dice_test_full)
     mean_Dice_noBackground = np.mean(Dice_test_noBackground)
@@ -243,16 +249,16 @@ elif dataset == 'ACDC':
 f = open(csv_name, 'a')
 with f:
     writer = csv.writer(f)
-    if dataset == 'CMRxRecon':
+    if outdomain == 'CMRxRecon':
         writer.writerow(['-', '-', '-', mean_SSIM, mean_MSE, mean_time, mean_NegJ])
-    elif dataset == 'OASIS':
+    elif outdomain == 'OASIS':
         writer.writerow(['-', '-', '-', '-', mean_Dice_full, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
-    elif dataset == 'ACDC':
+    elif outdomain == 'ACDC':
         writer.writerow(['-', '-', '-', '-', '-', mean_Dice_full, mean_Dice_noBackground, mean_SSIM, mean_MSE, mean_time, mean_NegJ])
 
-if dataset == 'CMRxRecon':
+if outdomain == 'CMRxRecon':
     print('Mean inference time: {:.4f} seconds\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
-elif dataset == 'OASIS':
+elif outdomain == 'OASIS':
     print('Mean inference time: {:.4f} seconds\n     % DICE: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
-elif dataset == 'ACDC':
+elif outdomain == 'ACDC':
     print('Mean inference time: {:.4f} seconds\n     % DICE full: {:.2f} \\pm {:.2f}\n     % DICE no background: {:.2f} \\pm {:.2f}\n     % SSIM: {:.2f} \\pm {:.2f}\n     MSE (e-3): {:.2f} \\pm {:.2f}\n     % DetJ<0: {:.2f} \\pm {:.2f}'.format(mean_time, mean_Dice_full*100, std_Dice_full*100, mean_Dice_noBackground*100, std_Dice_noBackground*100, mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100, mean_NegJ, std_NegJ))
