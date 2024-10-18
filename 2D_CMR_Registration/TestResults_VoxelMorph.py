@@ -28,6 +28,9 @@ parser.add_argument("--mode", type=int, dest="mode", default='0',
 parser.add_argument("--gpu", type=int,
                     dest="gpu", default=0, 
                     help="choose whether to use the gpu (1) or not (0)")
+parser.add_argument("--epoch", type=int,
+                    dest="epoch", default=1, 
+                    help="choose which epoch is used in the evaluation")
 opt = parser.parse_args()
 
 learning_rate = opt.learning_rate
@@ -36,6 +39,7 @@ dataset = opt.dataset
 choose_loss = opt.choose_loss
 mode = opt.mode
 gpu = opt.gpu
+epoch = opt.epoch
 
 device = torch.device("cuda" if gpu==1 else "cpu")
 
@@ -71,7 +75,7 @@ modelpath = path + natsorted(os.listdir(path))[model_idx]
 """
 
 # choose model after certain epoch of training
-modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_0006') == -1)][0]
+modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
 print('Best model: {}'.format(basename(modelpath)))
 bs = 1
 
@@ -86,7 +90,7 @@ if dataset != 'CMRxRecon':
     Dice_test_full = []
     Dice_test_noBackground = []
 
-csv_name = './TestResults-{}/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}.csv'.format(dataset,choose_loss,smooth,learning_rate,mode)
+csv_name = './TestResults-{}/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(dataset,choose_loss,smooth,learning_rate,mode,epoch)
 f = open(csv_name, 'w')
 with f:
     if dataset == 'CMRxRecon':
