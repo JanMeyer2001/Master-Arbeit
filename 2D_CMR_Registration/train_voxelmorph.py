@@ -46,6 +46,9 @@ mode = opt.mode
 choose_loss = opt.choose_loss
 earlyStop = opt.earlyStop
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.autograd.set_detect_anomaly(True)
+
 # load CMR training, validation and test data
 assert mode >= 0 and mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
 if dataset == 'ACDC':
@@ -57,11 +60,11 @@ if dataset == 'ACDC':
     #input_shape = [216,256]
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
-    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
-    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
-    #input_shape = [82,170]
+    #input_shape = [82,170] # for crops
 elif dataset == 'OASIS':
     # path for OASIS dataset
     train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 
@@ -98,11 +101,11 @@ with f:
 torch.backends.cudnn.deterministic = True
 
 # use dense voxelmorph
-model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).cuda()  #, int_steps=7, int_downsize=2
+model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).to(device)  #, int_steps=7, int_downsize=2
 model.train()  
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-transform = SpatialTransformer(input_shape).cuda() #SpatialTransform().cuda()
+transform = SpatialTransformer(input_shape).to(device) #SpatialTransform().to(device)
 
 # prepare image loss
 if choose_loss == 1:
@@ -129,8 +132,8 @@ print('\nStarted training on ', time.ctime())
 for epoch in range(epochs):
     losses = np.zeros(training_generator.__len__())
     for i, image_pair in enumerate(training_generator):
-        mov_img = image_pair[0].cuda().float()
-        fix_img = image_pair[1].cuda().float()
+        mov_img = image_pair[0].to(device).float()
+        fix_img = image_pair[1].to(device).float()
         
         warped_mov, Df_xy = model(mov_img, fix_img)
         
@@ -156,12 +159,12 @@ for epoch in range(epochs):
             Dice_Validation = []
         
         for i, image_pair in enumerate(validation_generator): 
-            fix_img = image_pair[0].cuda().float()
-            mov_img = image_pair[1].cuda().float()
+            fix_img = image_pair[0].to(device).float()
+            mov_img = image_pair[1].to(device).float()
             
             if dataset != 'CMRxRecon':
-                mov_seg = image_pair[2].cuda().float()
-                fix_seg = image_pair[3].cuda().float()
+                mov_seg = image_pair[2].to(device).float()
+                fix_seg = image_pair[3].to(device).float()
             
             warped_mov_img, Df_xy = model(mov_img, fix_img)
             
@@ -212,7 +215,7 @@ for epoch in range(epochs):
         save_checkpoint(model.state_dict(), model_dir, modelname)
         
         # save image
-        sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch))
+        sample_path = join(model_dir_png, 'Epoch_{:04d}-images.jpg'.format(epoch+1))
         save_flow(mov_img, fix_img, warped_mov_img, None, sample_path)
         if dataset == 'CMRxRecon':
             print("epoch {:d}/{:d} - SSIM_val: {:.5f}, MSE_val: {:.6f}".format(epoch+1, epochs, Mean_SSIM, Mean_MSE))

@@ -188,7 +188,7 @@ def load_image_pair_ACDC_train_LAPNet(pathname1, pathname2):
 
     return k_space1, k_space2, flow
 
-def getIndixes(mask=None, density_inside=4, density_outside=20):
+def getIndixes(mask=None, density_inside=None, density_outside=None, sampling='random'):
     """ extracts indixes from mask tensor size (x,y) with sampling density inside and outside the cardiac region """
     assert type(mask) != type(None), f"Mask needs to be input into getIndixes!!"
     # sample cardiac region more than the background
@@ -205,29 +205,44 @@ def getIndixes(mask=None, density_inside=4, density_outside=20):
         foreground = torch.zeros_like(mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)])
         # init background
         background = torch.zeros_like(mask)
-        # undersampled background by flatting, indexing and resizing
-        background = torch.flatten(background, start_dim=0, end_dim=1)
-        indixes = torch.arange(start=0,end=background.shape[0],step=density_outside)
-        background[indixes] = 1
-        background = torch.unflatten(background,0,mask.shape)
-        # cut out foreground
-        #background[positions[0].min():positions[0].max(),positions[0].min():positions[0].max()] = 0
-        # undersample foreground with density_inside  
-        foreground = torch.flatten(foreground, start_dim=0, end_dim=1)
-        indixes = torch.arange(start=0,end=foreground.shape[0],step=density_inside)
-        foreground[indixes] = 1
-        foreground = torch.unflatten(foreground,0,mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)].shape)
-        # insert foreground into background
-        background[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)] = foreground
+        if type(density_outside) != type(None):
+            # undersampled background by flatting, indexing and resizing
+            background = torch.flatten(background, start_dim=0, end_dim=1)
+            if sampling=='random':
+                indixes = torch.round(torch.rand(int(background.shape[0]/density_outside))*(background.shape[0]-1)).int()
+            elif sampling=='linear':    
+                indixes = torch.arange(start=0,end=background.shape[0],step=density_outside)
+            else:
+                print('wrong sampling method in getIndixes!!')
+            background[indixes] = 1
+            background = torch.unflatten(background,0,mask.shape)
+            # cut out foreground
+            #background[positions[0].min():positions[0].max(),positions[0].min():positions[0].max()] = 0
+        if type(density_inside) != type(None):
+            # undersample foreground with density_inside  
+            foreground = torch.flatten(foreground, start_dim=0, end_dim=1)
+            if sampling=='random':
+                indixes = torch.round(torch.rand(int(foreground.shape[0]/density_inside))*(foreground.shape[0]-1)).int()
+            elif sampling=='linear':    
+                indixes = torch.arange(start=0,end=foreground.shape[0],step=density_inside)
+            else:
+                print('wrong sampling method in getIndixes!!')
+            foreground[indixes] = 1
+            foreground = torch.unflatten(foreground,0,mask[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)].shape)
+            # insert foreground into background
+            background[(center_x-crop_x):(center_x+crop_x),(center_y-crop_y):(center_y+crop_y)] = foreground
         # get positions of indixes
         position = np.nonzero(torch.flatten(background, start_dim=0, end_dim=1).cpu().numpy())[0]
     # if there is no segmentation available (aka. the mask is empty)
     else:
         # undersampled background by flatting, indexing and resizing
         background = torch.flatten(mask, start_dim=0, end_dim=1)
-        position = torch.arange(start=0,end=background.shape[0],step=density_outside)
+        if type(density_outside) != type(None):
+            position = torch.arange(start=0,end=background.shape[0],step=density_outside)
+        else:
+            position = [0]    
         
-    return position
+    return position#, background
 
 class TrainDatasetACDC_ContrastiveLearning(Data.Dataset):
   'Training dataset for ACDC data'
@@ -487,7 +502,7 @@ def load_image_pair_CMRxRecon(pathname1, pathname2):
 
 class TrainDatasetCMRxRecon(Data.Dataset):
   'Training dataset for CMR data'
-  def __init__(self, data_path, mode):
+  def __init__(self, data_path, cropping, mode):
         'Initialization'
         super(TrainDatasetCMRxRecon, self).__init__()
         # choose subfolder according to mode
@@ -502,7 +517,10 @@ class TrainDatasetCMRxRecon(Data.Dataset):
             subfolder = 'AccFactor10'  
         # get paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs_CMRxRecon(subset='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
+        if cropping == False:
+            self.paths = get_image_pairs_CMRxRecon(subset='TrainingSet/Full', data_path=data_path, subfolder=subfolder)
+        else:    
+            self.paths = get_image_pairs_CMRxRecon(subset='TrainingSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -515,7 +533,7 @@ class TrainDatasetCMRxRecon(Data.Dataset):
 
 class ValidationDatasetCMRxRecon(Data.Dataset):
   'Validation dataset for CMRxRecon data'
-  def __init__(self, data_path, mode):
+  def __init__(self, data_path, cropping, mode):
         'Initialization'
         # choose subfolder according to mode
         assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon validation dataset to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
@@ -529,7 +547,10 @@ class ValidationDatasetCMRxRecon(Data.Dataset):
             subfolder = 'AccFactor10' 
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs_CMRxRecon(subset='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
+        if cropping == False:
+            self.paths = get_image_pairs_CMRxRecon(subset='ValidationSet/Full', data_path=data_path, subfolder=subfolder)
+        else:    
+            self.paths = get_image_pairs_CMRxRecon(subset='ValidationSet/Croped', data_path=data_path, subfolder=subfolder)
             
   def __len__(self):
         'Denotes the total number of samples'
@@ -542,7 +563,7 @@ class ValidationDatasetCMRxRecon(Data.Dataset):
   
 class TestDatasetCMRxRecon(Data.Dataset):
   'Test dataset for CMRxRecon data'
-  def __init__(self, data_path, mode):
+  def __init__(self, data_path, cropping, mode):
         'Initialization'
         self.data_path = data_path
         # choose subfolder according to mode
@@ -557,7 +578,10 @@ class TestDatasetCMRxRecon(Data.Dataset):
             subfolder = 'AccFactor10' 
         # get names and paths of training data
         self.data_path = data_path
-        self.paths = get_image_pairs_CMRxRecon(subset='TestSet/Croped', data_path=data_path, subfolder=subfolder)
+        if cropping == False:
+            self.paths = get_image_pairs_CMRxRecon(subset='TestSet/Full', data_path=data_path, subfolder=subfolder)
+        else:    
+            self.paths = get_image_pairs_CMRxRecon(subset='TestSet/Croped', data_path=data_path, subfolder=subfolder)
 
   def __len__(self):
         'Denotes the total number of samples'
@@ -570,7 +594,7 @@ class TestDatasetCMRxRecon(Data.Dataset):
 
 class TestDatasetCMRxReconBenchmark(Data.Dataset):
   'Test dataset for benchmark of subsampled CMRxRecon data'
-  def __init__(self, data_path, mode):
+  def __init__(self, data_path, cropping, mode):
         'Initialization'
         # choose subfolder according to mode
         assert mode >= 0 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
@@ -583,7 +607,10 @@ class TestDatasetCMRxReconBenchmark(Data.Dataset):
         elif mode == 3:
             subfolder = 'AccFactor10' 
         # get names and paths of training data
-        subset = 'TestSet/Croped'
+        if cropping == False:
+            subset='TestSet/Full'
+        else: 
+            subset = 'TestSet/Croped'
         self.image_pairs_fullySampled = []  
         self.image_pairs_subSampled = []  
         # get folder names for patients
@@ -1167,7 +1194,7 @@ def log_TrainTest(wandb, model, model_name, diffeo_name, dataset, FT_size, learn
 ### Helper Functions for CMRImageGenerator ###
 ##############################################
 
-def readfile2numpy(file_name):
+def readfile2numpy(file_name,real=True):
     '''
     read the data from mat and convert to numpy array
     '''
@@ -1175,9 +1202,24 @@ def readfile2numpy(file_name):
     keys = list(hf.keys())
     assert len(keys) == 1, f"Expected only one key in file, got {len(keys)} instead"
     new_value = hf[keys[0]][()]
-    data = new_value["real"] + 1j*new_value["imag"]
+    if real == True:
+        data = new_value
+    else:    
+        data = new_value["real"] + 1j*new_value["imag"]
 
     return data  
+
+def extract_mask(fullmulti, slice, frame, H, W):
+    '''
+    generate slice, get mask, interpolate to [246,512] and save image
+    '''
+    slice_kspace = fullmulti[frame, slice] 
+    # convert to tensor
+    slice_kspace = T.to_tensor(slice_kspace)
+    # interpolate images to be the same size
+    image = F.interpolate(image.unsqueeze(0).unsqueeze(0), (H, W), mode='bilinear').squeeze(0).squeeze(0)
+
+    return image
 
 def extract_slice(fullmulti, slice, frame, H, W):
     '''

@@ -10,7 +10,6 @@ import csv
 import time
 from skimage.metrics import structural_similarity, mean_squared_error
 from fastmri.data.subsample import RandomMaskFunc, EquispacedMaskFractionFunc
-import sys
 from info_nce import InfoNCE
 from natsort import natsorted
 
@@ -21,7 +20,7 @@ parser.add_argument("--epochs", type=int,
                     dest="epochs", default=15,
                     help="number of epochs")
 parser.add_argument("--lambda", type=float,
-                    dest="smth_lambda", default=10,
+                    dest="smth_lambda", default=0.01,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=16,
@@ -97,9 +96,9 @@ elif dataset == 'ACDC' and model_num >= 6:
     input_shape = [216,256]    
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
-    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', cropping=False, mode=mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
-    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', cropping=False, mode=mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'OASIS':
@@ -244,12 +243,12 @@ for epoch in range(epochs):
             features_disp               = torch.flatten(features_disp.squeeze(), start_dim=1, end_dim=2).permute(1,0)
 
             # take samples from the feature map with 32 channels
-            indixes  = getIndixes(mask, density_inside=4, density_outside=20)
+            indixes  = getIndixes(mask.cpu(), density_inside=10, density_outside=30, sampling='random')
             queries  = features_disp[indixes,:]
             pos_keys = features_disp_fullySampled[indixes,:]
 
             # compute image similarity loss
-            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled)
+            loss1 = loss_similarity(fix_img_subSampled, warped_mov_subSampled) + loss_smooth(Df_xy)
             # compute contrastive loss between fully sampled and subsampled results
             loss2 = loss_contrastive(queries, pos_keys)
         elif choose_loss == 4 or choose_loss == 6:  # k-space loss
