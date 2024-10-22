@@ -1255,6 +1255,124 @@
     \field{year}{2002}
   \endentry
 
+  \entry{SPIRiT}{article}{}
+    \name{author}{2}{}{%
+      {{hash=LM}{%
+         family={Lustig},
+         familyi={L\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=PJM}{%
+         family={Pauly},
+         familyi={P\bibinitperiod},
+         given={John\bibnamedelima M.},
+         giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{LMPJM1}
+    \strng{fullhash}{LMPJM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.22428
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{2}
+    \field{pages}{457\bibrangedash 471}
+    \field{title}{SPIRiT: Iterative self‐consistent parallel imaging
+  reconstruction from arbitrary k‐space}
+    \field{volume}{64}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/SPIRiT - Iterative Self-consistent Paralle
+    \verb l ImagingReconstruction From Arbitrary k-Space.pdf:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{06}
+    \field{year}{2010}
+  \endentry
+
+  \entry{ESPIRiT}{article}{}
+    \name{author}{8}{}{%
+      {{hash=UM}{%
+         family={Uecker},
+         familyi={U\bibinitperiod},
+         given={Martin},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=LP}{%
+         family={Lai},
+         familyi={L\bibinitperiod},
+         given={Peng},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=MMJ}{%
+         family={Murphy},
+         familyi={M\bibinitperiod},
+         given={Mark\bibnamedelima J.},
+         giveni={M\bibinitperiod\bibinitdelim J\bibinitperiod},
+      }}%
+      {{hash=VP}{%
+         family={Virtue},
+         familyi={V\bibinitperiod},
+         given={Patrick},
+         giveni={P\bibinitperiod},
+      }}%
+      {{hash=EM}{%
+         family={Elad},
+         familyi={E\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=PJM}{%
+         family={Pauly},
+         familyi={P\bibinitperiod},
+         given={John\bibnamedelima M.},
+         giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod},
+      }}%
+      {{hash=VSS}{%
+         family={Vasanawala},
+         familyi={V\bibinitperiod},
+         given={Shreyas\bibnamedelima S.},
+         giveni={S\bibinitperiod\bibinitdelim S\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Lustig},
+         familyi={L\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{UM+1}
+    \strng{fullhash}{UMLPMMJVPEMPJMVSSLM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.24751
+    \endverb
+    \field{issn}{1522-2594}
+    \field{number}{3}
+    \field{pages}{990\bibrangedash 1001}
+    \field{title}{ESPIRiT—an eigenvalue approach to autocalibrating parallel
+  MRI: Where SENSE meets GRAPPA}
+    \field{volume}{71}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/ESPIRiT - an eigenvalue approach to autoca
+    \verb librating parallel MRI. Where SENSE meets GRAPPA.pdf:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{05}
+    \field{year}{2013}
+  \endentry
+
   \entry{PI+CS}{article}{}
     \name{author}{4}{}{%
       {{hash=LD}{%
@@ -1350,57 +1468,61 @@
     \field{year}{2010}
   \endentry
 
-  \entry{GRICS}{article}{}
-    \name{author}{4}{}{%
-      {{hash=OF}{%
-         family={Odille},
-         familyi={O\bibinitperiod},
-         given={Freddy},
-         giveni={F\bibinitperiod},
+  \entry{MRISubsamplingPruning}{inbook}{}
+    \name{author}{5}{}{%
+      {{hash=XK}{%
+         family={Xuan},
+         familyi={X\bibinitperiod},
+         given={Kai},
+         giveni={K\bibinitperiod},
       }}%
-      {{hash=VP}{%
-         family={Vuissoz},
-         familyi={V\bibinitperiod},
-         given={Pierre‐André},
-         giveni={P\bibinitperiod},
+      {{hash=SS}{%
+         family={Sun},
+         familyi={S\bibinitperiod},
+         given={Shanhui},
+         giveni={S\bibinitperiod},
       }}%
-      {{hash=MP}{%
-         family={Marie},
-         familyi={M\bibinitperiod},
-         given={Pierre‐Yves},
-         giveni={P\bibinitperiod},
+      {{hash=XZ}{%
+         family={Xue},
+         familyi={X\bibinitperiod},
+         given={Zhong},
+         giveni={Z\bibinitperiod},
       }}%
-      {{hash=FJ}{%
-         family={Felblinger},
-         familyi={F\bibinitperiod},
-         given={Jacques},
-         giveni={J\bibinitperiod},
+      {{hash=WQ}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Qian},
+         giveni={Q\bibinitperiod},
+      }}%
+      {{hash=LS}{%
+         family={Liao},
+         familyi={L\bibinitperiod},
+         given={Shu},
+         giveni={S\bibinitperiod},
       }}%
     }
     \list{publisher}{1}{%
-      {Wiley}%
+      {Springer International Publishing}%
     }
-    \strng{namehash}{OF+1}
-    \strng{fullhash}{OFVPMPFJ1}
+    \strng{namehash}{XK+1}
+    \strng{fullhash}{XKSSXZWQLS1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
+    \field{booktitle}{Lecture Notes in Computer Science}
     \verb{doi}
-    \verb 10.1002/mrm.21623
+    \verb 10.1007/978-3-030-59713-9_18
     \endverb
-    \field{issn}{1522-2594}
-    \field{number}{1}
-    \field{pages}{146\bibrangedash 157}
-    \field{title}{Generalized Reconstruction by Inversion of Coupled Systems
-  (GRICS) applied to free‐breathing MRI}
-    \field{volume}{60}
+    \field{isbn}{9783030597139}
+    \field{issn}{1611-3349}
+    \field{pages}{178\bibrangedash 187}
+    \field{title}{Learning MRI k-Space Subsampling Pattern Using Progressive
+  Weight Pruning}
     \verb{file}
     \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Generalized Reconstruction by Inversion of
-    \verb  Coupled Systems (GRICS).pdf:PDF
+    \verb ter/Masterarbeit/Literatur/Learning MRI k-Space Subsampling Pattern U
+    \verb sing Progressive Weight Pruning.pdf:PDF
     \endverb
-    \field{journaltitle}{Magnetic Resonance in Medicine}
-    \field{month}{06}
-    \field{year}{2008}
+    \field{year}{2020}
   \endentry
 
   \entry{Kuestner2022}{article}{}
@@ -1498,61 +1620,157 @@
     \field{year}{2022}
   \endentry
 
-  \entry{MRISubsamplingPruning}{inbook}{}
-    \name{author}{5}{}{%
-      {{hash=XK}{%
-         family={Xuan},
-         familyi={X\bibinitperiod},
-         given={Kai},
-         giveni={K\bibinitperiod},
+  \entry{GRICS}{article}{}
+    \name{author}{4}{}{%
+      {{hash=OF}{%
+         family={Odille},
+         familyi={O\bibinitperiod},
+         given={Freddy},
+         giveni={F\bibinitperiod},
       }}%
-      {{hash=SS}{%
-         family={Sun},
-         familyi={S\bibinitperiod},
-         given={Shanhui},
-         giveni={S\bibinitperiod},
+      {{hash=VP}{%
+         family={Vuissoz},
+         familyi={V\bibinitperiod},
+         given={Pierre‐André},
+         giveni={P\bibinitperiod},
       }}%
-      {{hash=XZ}{%
-         family={Xue},
-         familyi={X\bibinitperiod},
-         given={Zhong},
-         giveni={Z\bibinitperiod},
+      {{hash=MP}{%
+         family={Marie},
+         familyi={M\bibinitperiod},
+         given={Pierre‐Yves},
+         giveni={P\bibinitperiod},
       }}%
-      {{hash=WQ}{%
-         family={Wang},
-         familyi={W\bibinitperiod},
-         given={Qian},
-         giveni={Q\bibinitperiod},
-      }}%
-      {{hash=LS}{%
-         family={Liao},
-         familyi={L\bibinitperiod},
-         given={Shu},
-         giveni={S\bibinitperiod},
+      {{hash=FJ}{%
+         family={Felblinger},
+         familyi={F\bibinitperiod},
+         given={Jacques},
+         giveni={J\bibinitperiod},
       }}%
     }
     \list{publisher}{1}{%
-      {Springer International Publishing}%
+      {Wiley}%
     }
-    \strng{namehash}{XK+1}
-    \strng{fullhash}{XKSSXZWQLS1}
+    \strng{namehash}{OF+1}
+    \strng{fullhash}{OFVPMPFJ1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{booktitle}{Lecture Notes in Computer Science}
     \verb{doi}
-    \verb 10.1007/978-3-030-59713-9_18
+    \verb 10.1002/mrm.21623
     \endverb
-    \field{isbn}{9783030597139}
-    \field{issn}{1611-3349}
-    \field{pages}{178\bibrangedash 187}
-    \field{title}{Learning MRI k-Space Subsampling Pattern Using Progressive
-  Weight Pruning}
+    \field{issn}{1522-2594}
+    \field{number}{1}
+    \field{pages}{146\bibrangedash 157}
+    \field{title}{Generalized Reconstruction by Inversion of Coupled Systems
+  (GRICS) applied to free‐breathing MRI}
+    \field{volume}{60}
     \verb{file}
     \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Learning MRI k-Space Subsampling Pattern U
-    \verb sing Progressive Weight Pruning.pdf:PDF
+    \verb ter/Masterarbeit/Literatur/Generalized Reconstruction by Inversion of
+    \verb  Coupled Systems (GRICS).pdf:PDF
     \endverb
-    \field{year}{2020}
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{06}
+    \field{year}{2008}
+  \endentry
+
+  \entry{ParallelMRI}{article}{}
+    \name{author}{4}{}{%
+      {{hash=DA}{%
+         family={Deshmane},
+         familyi={D\bibinitperiod},
+         given={Anagha},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=GV}{%
+         family={Gulani},
+         familyi={G\bibinitperiod},
+         given={Vikas},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=GMA}{%
+         family={Griswold},
+         familyi={G\bibinitperiod},
+         given={Mark\bibnamedelima A.},
+         giveni={M\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Seiberlich},
+         familyi={S\bibinitperiod},
+         given={Nicole},
+         giveni={N\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{DA+1}
+    \strng{fullhash}{DAGVGMASN1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/jmri.23639
+    \endverb
+    \field{issn}{1522-2586}
+    \field{number}{1}
+    \field{pages}{55\bibrangedash 72}
+    \field{title}{Parallel MR imaging}
+    \field{volume}{36}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Parallel MR imaging.pdf:PDF
+    \endverb
+    \field{journaltitle}{Journal of Magnetic Resonance Imaging}
+    \field{month}{06}
+    \field{year}{2012}
+  \endentry
+
+  \entry{LowRank+SparseMRI}{article}{}
+    \name{author}{3}{}{%
+      {{hash=OR}{%
+         family={Otazo},
+         familyi={O\bibinitperiod},
+         given={Ricardo},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=CE}{%
+         family={Candès},
+         familyi={C\bibinitperiod},
+         given={Emmanuel},
+         giveni={E\bibinitperiod},
+      }}%
+      {{hash=SDK}{%
+         family={Sodickson},
+         familyi={S\bibinitperiod},
+         given={Daniel\bibnamedelima K.},
+         giveni={D\bibinitperiod\bibinitdelim K\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Wiley}%
+    }
+    \strng{namehash}{ORCESDK1}
+    \strng{fullhash}{ORCESDK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1002/mrm.25240
+    \endverb
+    \field{issn}{0740-3194}
+    \field{number}{3}
+    \field{pages}{1125\bibrangedash 1136}
+    \field{title}{Low-rank plus sparse matrix decomposition for accelerated
+  dynamic MRI with separation of background and dynamic components: L+S
+  Reconstruction}
+    \field{volume}{73}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Low-Rank Plus Sparse Matrix Decomposition
+    \verb for Accelerated Dynamic MRI with Separation of Background and Dynamic
+    \verb  Components.pdf:PDF
+    \endverb
+    \field{journaltitle}{Magnetic Resonance in Medicine}
+    \field{month}{04}
+    \field{year}{2014}
   \endentry
 
   \entry{Strittmatter2023}{article}{}
@@ -2303,475 +2521,6 @@
     \field{year}{2007}
   \endentry
 
-  \entry{OASIS}{article}{}
-    \name{author}{6}{}{%
-      {{hash=MDS}{%
-         family={Marcus},
-         familyi={M\bibinitperiod},
-         given={Daniel\bibnamedelima S.},
-         giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod},
-      }}%
-      {{hash=WTH}{%
-         family={Wang},
-         familyi={W\bibinitperiod},
-         given={Tracy\bibnamedelima H.},
-         giveni={T\bibinitperiod\bibinitdelim H\bibinitperiod},
-      }}%
-      {{hash=PJ}{%
-         family={Parker},
-         familyi={P\bibinitperiod},
-         given={Jamie},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=CJG}{%
-         family={Csernansky},
-         familyi={C\bibinitperiod},
-         given={John\bibnamedelima G.},
-         giveni={J\bibinitperiod\bibinitdelim G\bibinitperiod},
-      }}%
-      {{hash=MJC}{%
-         family={Morris},
-         familyi={M\bibinitperiod},
-         given={John\bibnamedelima C.},
-         giveni={J\bibinitperiod\bibinitdelim C\bibinitperiod},
-      }}%
-      {{hash=BRL}{%
-         family={Buckner},
-         familyi={B\bibinitperiod},
-         given={Randy\bibnamedelima L.},
-         giveni={R\bibinitperiod\bibinitdelim L\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {MIT Press - Journals}%
-    }
-    \strng{namehash}{MDS+1}
-    \strng{fullhash}{MDSWTHPJCJGMJCBRL1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1162/jocn.2007.19.9.1498
-    \endverb
-    \field{issn}{1530-8898}
-    \field{number}{9}
-    \field{pages}{1498\bibrangedash 1507}
-    \field{title}{Open Access Series of Imaging Studies (OASIS):
-  Cross-sectional MRI Data in Young, Middle Aged, Nondemented, and Demented
-  Older Adults}
-    \field{volume}{19}
-    \field{journaltitle}{Journal of Cognitive Neuroscience}
-    \field{month}{09}
-    \field{year}{2007}
-  \endentry
-
-  \entry{HyperMorph}{inbook}{}
-    \name{author}{5}{}{%
-      {{hash=HA}{%
-         family={Hoopes},
-         familyi={H\bibinitperiod},
-         given={Andrew},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=HM}{%
-         family={Hoffmann},
-         familyi={H\bibinitperiod},
-         given={Malte},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=FB}{%
-         family={Fischl},
-         familyi={F\bibinitperiod},
-         given={Bruce},
-         giveni={B\bibinitperiod},
-      }}%
-      {{hash=GJ}{%
-         family={Guttag},
-         familyi={G\bibinitperiod},
-         given={John},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=DAV}{%
-         family={Dalca},
-         familyi={D\bibinitperiod},
-         given={Adrian\bibnamedelima V.},
-         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{1}{%
-      {Springer International Publishing}%
-    }
-    \strng{namehash}{HA+2}
-    \strng{fullhash}{HAHMFBGJDAV1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \field{booktitle}{Information Processing in Medical Imaging}
-    \verb{doi}
-    \verb 10.1007/978-3-030-78191-0_1
-    \endverb
-    \field{isbn}{9783030781910}
-    \field{issn}{1611-3349}
-    \field{pages}{3\bibrangedash 17}
-    \field{title}{HyperMorph: Amortized Hyperparameter Learning for Image
-  Registration}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/HyperMorph - Amortized Hyperparameter Lear
-    \verb ning for Image Registration.pdf:PDF
-    \endverb
-    \field{year}{2021}
-  \endentry
-
-  \entry{Learn2Reg}{article}{}
-    \name{author}{53}{}{%
-      {{hash=HA}{%
-         family={Hering},
-         familyi={H\bibinitperiod},
-         given={Alessa},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=HL}{%
-         family={Hansen},
-         familyi={H\bibinitperiod},
-         given={Lasse},
-         giveni={L\bibinitperiod},
-      }}%
-      {{hash=MTCW}{%
-         family={Mok},
-         familyi={M\bibinitperiod},
-         given={Tony C.\bibnamedelima W.},
-         giveni={T\bibinitperiod\bibinitdelim C\bibinitperiod\bibinitdelim
-  W\bibinitperiod},
-      }}%
-      {{hash=CACS}{%
-         family={Chung},
-         familyi={C\bibinitperiod},
-         given={Albert C.\bibnamedelima S.},
-         giveni={A\bibinitperiod\bibinitdelim C\bibinitperiod\bibinitdelim
-  S\bibinitperiod},
-      }}%
-      {{hash=SH}{%
-         family={Siebert},
-         familyi={S\bibinitperiod},
-         given={Hanna},
-         giveni={H\bibinitperiod},
-      }}%
-      {{hash=HS}{%
-         family={Hager},
-         familyi={H\bibinitperiod},
-         given={Stephanie},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=LA}{%
-         family={Lange},
-         familyi={L\bibinitperiod},
-         given={Annkristin},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=KS}{%
-         family={Kuckertz},
-         familyi={K\bibinitperiod},
-         given={Sven},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=HS}{%
-         family={Heldmann},
-         familyi={H\bibinitperiod},
-         given={Stefan},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=SW}{%
-         family={Shao},
-         familyi={S\bibinitperiod},
-         given={Wei},
-         giveni={W\bibinitperiod},
-      }}%
-      {{hash=VS}{%
-         family={Vesal},
-         familyi={V\bibinitperiod},
-         given={Sulaiman},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=RM}{%
-         family={Rusu},
-         familyi={R\bibinitperiod},
-         given={Mirabela},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=SG}{%
-         family={Sonn},
-         familyi={S\bibinitperiod},
-         given={Geoffrey},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=ET}{%
-         family={Estienne},
-         familyi={E\bibinitperiod},
-         given={Theo},
-         giveni={T\bibinitperiod},
-      }}%
-      {{hash=VM}{%
-         family={Vakalopoulou},
-         familyi={V\bibinitperiod},
-         given={Maria},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=HL}{%
-         family={Han},
-         familyi={H\bibinitperiod},
-         given={Luyi},
-         giveni={L\bibinitperiod},
-      }}%
-      {{hash=HY}{%
-         family={Huang},
-         familyi={H\bibinitperiod},
-         given={Yunzhi},
-         giveni={Y\bibinitperiod},
-      }}%
-      {{hash=YPT}{%
-         family={Yap},
-         familyi={Y\bibinitperiod},
-         given={Pew-Thian},
-         giveni={P\bibinithyphendelim T\bibinitperiod},
-      }}%
-      {{hash=BM}{%
-         family={Brudfors},
-         familyi={B\bibinitperiod},
-         given={Mikael},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=BY}{%
-         family={Balbastre},
-         familyi={B\bibinitperiod},
-         given={Yael},
-         giveni={Y\bibinitperiod},
-      }}%
-      {{hash=JS}{%
-         family={Joutard},
-         familyi={J\bibinitperiod},
-         given={Samuel},
-         giveni={S\bibinitperiod},
-      }}%
-      {{hash=MM}{%
-         family={Modat},
-         familyi={M\bibinitperiod},
-         given={Marc},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=LG}{%
-         family={Lifshitz},
-         familyi={L\bibinitperiod},
-         given={Gal},
-         giveni={G\bibinitperiod},
-      }}%
-      {{hash=RD}{%
-         family={Raviv},
-         familyi={R\bibinitperiod},
-         given={Dan},
-         giveni={D\bibinitperiod},
-      }}%
-      {{hash=LJ}{%
-         family={Lv},
-         familyi={L\bibinitperiod},
-         given={Jinxin},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=LQ}{%
-         family={Li},
-         familyi={L\bibinitperiod},
-         given={Qiang},
-         giveni={Q\bibinitperiod},
-      }}%
-      {{hash=JV}{%
-         family={Jaouen},
-         familyi={J\bibinitperiod},
-         given={Vincent},
-         giveni={V\bibinitperiod},
-      }}%
-      {{hash=VD}{%
-         family={Visvikis},
-         familyi={V\bibinitperiod},
-         given={Dimitris},
-         giveni={D\bibinitperiod},
-      }}%
-      {{hash=FC}{%
-         family={Fourcade},
-         familyi={F\bibinitperiod},
-         given={Constance},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=RM}{%
-         family={Rubeaux},
-         familyi={R\bibinitperiod},
-         given={Mathieu},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=PW}{%
-         family={Pan},
-         familyi={P\bibinitperiod},
-         given={Wentao},
-         giveni={W\bibinitperiod},
-      }}%
-      {{hash=XZ}{%
-         family={Xu},
-         familyi={X\bibinitperiod},
-         given={Zhe},
-         giveni={Z\bibinitperiod},
-      }}%
-      {{hash=JB}{%
-         family={Jian},
-         familyi={J\bibinitperiod},
-         given={Bailiang},
-         giveni={B\bibinitperiod},
-      }}%
-      {{hash=DBF}{%
-         family={De\bibnamedelima Benetti},
-         familyi={D\bibinitperiod\bibinitdelim B\bibinitperiod},
-         given={Francesca},
-         giveni={F\bibinitperiod},
-      }}%
-      {{hash=WM}{%
-         family={Wodzinski},
-         familyi={W\bibinitperiod},
-         given={Marek},
-         giveni={M\bibinitperiod},
-      }}%
-      {{hash=GN}{%
-         family={Gunnarsson},
-         familyi={G\bibinitperiod},
-         given={Niklas},
-         giveni={N\bibinitperiod},
-      }}%
-      {{hash=SJ}{%
-         family={Sjolund},
-         familyi={S\bibinitperiod},
-         given={Jens},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=GD}{%
-         family={Grzech},
-         familyi={G\bibinitperiod},
-         given={Daniel},
-         giveni={D\bibinitperiod},
-      }}%
-      {{hash=QH}{%
-         family={Qiu},
-         familyi={Q\bibinitperiod},
-         given={Huaqi},
-         giveni={H\bibinitperiod},
-      }}%
-      {{hash=LZ}{%
-         family={Li},
-         familyi={L\bibinitperiod},
-         given={Zeju},
-         giveni={Z\bibinitperiod},
-      }}%
-      {{hash=TA}{%
-         family={Thorley},
-         familyi={T\bibinitperiod},
-         given={Alexander},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=DJ}{%
-         family={Duan},
-         familyi={D\bibinitperiod},
-         given={Jinming},
-         giveni={J\bibinitperiod},
-      }}%
-      {{hash=GC}{%
-         family={Grosbrohmer},
-         familyi={G\bibinitperiod},
-         given={Christoph},
-         giveni={C\bibinitperiod},
-      }}%
-      {{hash=HA}{%
-         family={Hoopes},
-         familyi={H\bibinitperiod},
-         given={Andrew},
-         giveni={A\bibinitperiod},
-      }}%
-      {{hash=RI}{%
-         family={Reinertsen},
-         familyi={R\bibinitperiod},
-         given={Ingerid},
-         giveni={I\bibinitperiod},
-      }}%
-      {{hash=XY}{%
-         family={Xiao},
-         familyi={X\bibinitperiod},
-         given={Yiming},
-         giveni={Y\bibinitperiod},
-      }}%
-      {{hash=LB}{%
-         family={Landman},
-         familyi={L\bibinitperiod},
-         given={Bennett},
-         giveni={B\bibinitperiod},
-      }}%
-      {{hash=HY}{%
-         family={Huo},
-         familyi={H\bibinitperiod},
-         given={Yuankai},
-         giveni={Y\bibinitperiod},
-      }}%
-      {{hash=MK}{%
-         family={Murphy},
-         familyi={M\bibinitperiod},
-         given={Keelin},
-         giveni={K\bibinitperiod},
-      }}%
-      {{hash=LN}{%
-         family={Lessmann},
-         familyi={L\bibinitperiod},
-         given={Nikolas},
-         giveni={N\bibinitperiod},
-      }}%
-      {{hash=vGB}{%
-         prefix={van},
-         prefixi={v\bibinitperiod},
-         family={Ginneken},
-         familyi={G\bibinitperiod},
-         given={Bram},
-         giveni={B\bibinitperiod},
-      }}%
-      {{hash=DAV}{%
-         family={Dalca},
-         familyi={D\bibinitperiod},
-         given={Adrian\bibnamedelima V.},
-         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
-      }}%
-      {{hash=HMP}{%
-         family={Heinrich},
-         familyi={H\bibinitperiod},
-         given={Mattias\bibnamedelima P.},
-         giveni={M\bibinitperiod\bibinitdelim P\bibinitperiod},
-      }}%
-    }
-    \list{publisher}{2}{%
-      {Institute of Electrical}%
-      {Electronics Engineers (IEEE)}%
-    }
-    \strng{namehash}{HA+1}
-  \strng{fullhash}{HAHLMTCWCACSSHHSLAKSHSSWVSRMSGETVMHLHYYPTBMBYJSMMLGRDLJLQJVVDFCRMPWXZJBDBFWMGNSJGDQHLZTADJGCHARIXYLBHYMKLNGBvDAVHMP1}
-    \field{labelnamesource}{author}
-    \field{labeltitlesource}{title}
-    \verb{doi}
-    \verb 10.1109/tmi.2022.3213983
-    \endverb
-    \field{issn}{1558-254X}
-    \field{number}{3}
-    \field{pages}{697\bibrangedash 712}
-    \field{title}{Learn2Reg: Comprehensive Multi-Task Medical Image
-  Registration Challenge, Dataset and Evaluation in the Era of Deep Learning}
-    \field{volume}{42}
-    \verb{file}
-    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
-    \verb ter/Masterarbeit/Literatur/Learn2Reg.pdf:PDF
-    \endverb
-    \field{journaltitle}{IEEE Transactions on Medical Imaging}
-    \field{month}{03}
-    \field{year}{2023}
-  \endentry
-
   \entry{CMRxRecon}{misc}{}
     \name{author}{28}{}{%
       {{hash=WC}{%
@@ -3484,6 +3233,123 @@
     \endverb
     \field{journaltitle}{ArXiv}
     \field{year}{2015}
+  \endentry
+
+  \entry{VoxelMorphDiff}{article}{}
+    \name{author}{4}{}{%
+      {{hash=DAV}{%
+         family={Dalca},
+         familyi={D\bibinitperiod},
+         given={Adrian\bibnamedelima V.},
+         giveni={A\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+      {{hash=BG}{%
+         family={Balakrishnan},
+         familyi={B\bibinitperiod},
+         given={Guha},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=GJ}{%
+         family={Guttag},
+         familyi={G\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=SMR}{%
+         family={Sabuncu},
+         familyi={S\bibinitperiod},
+         given={Mert\bibnamedelima R.},
+         giveni={M\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {Elsevier BV}%
+    }
+    \strng{namehash}{DAV+1}
+    \strng{fullhash}{DAVBGGJSMR1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1016/j.media.2019.07.006
+    \endverb
+    \field{issn}{1361-8415}
+    \field{pages}{226\bibrangedash 236}
+    \field{title}{Unsupervised learning of probabilistic diffeomorphic
+  registration for images and surfaces}
+    \field{volume}{57}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Unsupervised Learning of Probabilistic Dif
+    \verb feomorphic Registration for Images and Surfaces.pdf:PDF
+    \endverb
+    \field{journaltitle}{Medical Image Analysis}
+    \field{month}{10}
+    \field{year}{2019}
+  \endentry
+
+  \entry{InfoNCE}{article}{}
+    \name{author}{3}{}{%
+      {{hash=OAvd}{%
+         family={Oord},
+         familyi={O\bibinitperiod},
+         given={Aaron van\bibnamedelima den},
+         giveni={A\bibinitperiod\bibinitdelim v\bibinitperiod\bibinitdelim
+  d\bibinitperiod},
+      }}%
+      {{hash=LY}{%
+         family={Li},
+         familyi={L\bibinitperiod},
+         given={Yazhe},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=VO}{%
+         family={Vinyals},
+         familyi={V\bibinitperiod},
+         given={Oriol},
+         giveni={O\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Machine Learning (cs.LG), Machine Learning (stat.ML), FOS: Computer
+  and information sciences}
+    \strng{namehash}{OAvdLYVO1}
+    \strng{fullhash}{OAvdLYVO1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{abstract}{%
+    While supervised learning has enabled great progress in many applications,
+  unsupervised learning has not seen such widespread adoption, and remains an
+  important and challenging endeavor for artificial intelligence. In this work,
+  we propose a universal unsupervised learning approach to extract useful
+  representations from high-dimensional data, which we call Contrastive
+  Predictive Coding. The key insight of our model is to learn such
+  representations by predicting the future in latent space by using powerful
+  autoregressive models. We use a probabilistic contrastive loss which induces
+  the latent space to capture information that is maximally useful to predict
+  future samples. It also makes the model tractable by using negative sampling.
+  While most prior work has focused on evaluating representations for a
+  particular modality, we demonstrate that our approach is able to learn useful
+  representations achieving strong performance on four distinct domains:
+  speech, images, text and reinforcement learning in 3D environments.%
+    }
+    \verb{doi}
+    \verb 10.48550/ARXIV.1807.03748
+    \endverb
+    \verb{eprint}
+    \verb 1807.03748
+    \endverb
+    \field{title}{Representation Learning with Contrastive Predictive Coding}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Representation Learning with Contrastive P
+    \verb redictive Coding.pdf:PDF
+    \endverb
+    \field{eprinttype}{arXiv}
+    \field{eprintclass}{cs.LG}
+    \field{month}{07}
+    \field{year}{2018}
   \endentry
 \enddatalist
 \endinput
