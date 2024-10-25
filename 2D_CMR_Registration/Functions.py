@@ -649,8 +649,99 @@ class TestDatasetCMRxReconBenchmark(Data.Dataset):
         mov_img_subSampled = torch.from_numpy(mov_img_subSampled).unsqueeze(0)
         fix_img_subSampled = torch.from_numpy(fix_img_subSampled).unsqueeze(0)
 
-        return  mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
+        return mov_img_fullySampled, fix_img_fullySampled, mov_img_subSampled, fix_img_subSampled
 
+class DatasetCMRxReconstruction(Data.Dataset):
+    'Dataset for reconstruction of subsampled CMRxRecon data'
+    def __init__(self, data_path, cropping, mode):
+        'Initialization'
+        # choose subfolder according to mode
+        assert mode >= 1 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 1:
+            subfolder = 'AccFactor04'
+        elif mode == 2:
+            subfolder = 'AccFactor08' 
+        elif mode == 3:
+            subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        if cropping == False:
+            subset='TrainingSet/Full' # TODO: change to TestSet later
+        else: 
+            subset = 'TrainingSet/Croped' # TODO: change to TestSet later
+        
+        self.pairs = []  
+        # get folder names for patients
+        patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        
+        # TODO: remove [0:2] after debugging!!
+        for patient in patients_fullySampled[0:2]:
+            if patient in patients_subSampled:
+                # get subfolder names for image slices
+                slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                for slice in slices_fullySampled:
+                    if slice in slices_subSampled:
+                        # get all frames for each slice
+                        frames_subSampled   = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
+                        frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
+                        # get k-space and coil map paths
+                        k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
+                        coil_maps    = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
+                        # repeat mask for correct size
+                        masks = [f.path for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)] * len(frames_subSampled)
+                        # add fully sampled, subsampled frames as well as corresponding k-space and coil map data to a list 
+                        self.pairs = self.pairs + list(zip(frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps))
+
+        """
+        self.patient_array = []  
+        # get folder names for patients
+        patients = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        
+        # TODO: remove [0:2] after debugging!!
+        for patient in patients[0:2]:
+            self.slice_array = []
+            # get subfolder names for image slices
+            slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+            for slice in slices:
+                # get all frames for each slice
+                frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
+                # get the k-space data
+                k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
+                # get the coil maps
+                coil_maps = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
+                # put data for slice into container
+                self.slice_array.append([frames,k_space_data,coil_maps])
+            self.patient_array.append(self.slice_array)    
+            """
+    def __len__(self):
+        'number of samples'
+        return len(self.pairs)
+
+        #'number of patients'
+        #return len(self.patient_array)
+
+    def __getitem__(self, index):
+        'Generates two image pairs (1x fully sampled, 1x subsampled)'
+        # read in image data
+        img_fullySampled = imread(self.pairs[index][0], as_gray=True)/255
+        img_subSampled   = imread(self.pairs[index][1], as_gray=True)/255
+        mask             = imread(self.pairs[index][2], as_gray=True)/255
+        
+        # convert to tensor
+        img_fullySampled = torch.from_numpy(img_fullySampled).unsqueeze(0)
+        img_subSampled   = torch.from_numpy(img_subSampled).unsqueeze(0)
+        mask             = torch.from_numpy(mask).unsqueeze(0)
+
+        # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
+        k_space  = torch.view_as_complex(torch.load(self.pairs[index][3]))
+        coil_map = torch.from_numpy(torch.load(self.pairs[index][4])).permute(2,0,1)
+
+        return img_fullySampled, img_subSampled, mask, k_space, coil_map
+
+        #'Gives back data for a single patient'
+        #data = self.patient_array[index]
+        #return data
 
 class TrainDatasetOASIS(Data.Dataset):
   'OASIS dataset'
@@ -1495,3 +1586,295 @@ def espirit_proj(x, esp):
           proj[:, :, :, pdx] = np.add(proj[:, :, :, pdx],ip[:, :, :, qdx]) * esp[:, :, :, pdx, qdx]
 
     return (ip, proj, x - proj)
+
+    
+##############
+## (J)SENSE ##
+##############
+
+def SENSE_iter(subsampled_k_space=None,num_iter=30,mask=None,est_sensemap=None,gt_img=None):
+    """
+    Iterative Sense Reconstruction for numpy arrays.
+
+    Arguments:
+        subsampled_k_space: Multi channel k-space data. Expected dimensions are (nc,H,W), where (H,W) are the image 
+            dimensions and nc is the channel dimension.
+        num_iter: number of iterations for optimization
+        mask: subsampling mask with size (H,W)
+        est_sensemap: estimated coil sensitivity maps with size (nc,H,W)
+        gt_img: fully sampled image as ground truth with size (H,W)
+
+    Returns:
+        recs: reconstructed image slice with size (H,W)
+    """
+    assert type(subsampled_k_space) != type(None) and type(mask) != type(None) and type(est_sensemap) != type(None)
+
+    # init image reconstruction
+    recs = np.zeros((num_iter, subsampled_k_space.shape[1], subsampled_k_space.shape[2]), dtype=complex)
+    img_sli_rec = np.fft.ifft2(np.fft.ifftshift(subsampled_k_space, axes=(1, 2)), axes=(1, 2))
+    recs[0] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0) 
+
+    # begin iterative reconstruction
+    for i in range(num_iter-1):
+        rec_ksp = (1 - mask) * np.fft.fftshift(np.fft.fft2(est_sensemap * recs[i, np.newaxis, :, :], axes=(1, 2)), axes=(1, 2))
+        rec_usksp = rec_ksp + subsampled_k_space
+
+        img_sli_rec = np.fft.ifft2(np.fft.ifftshift(rec_usksp, axes=(1, 2)), axes=(1, 2))
+        recs[i+1] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0)
+        if type(gt_img) != type(None):
+            print("Iteration: %(i)s         MSE score: %(mse)s" % {'i': i, 'mse': mean_squared_error(mask * np.sqrt(np.sum(np.square(np.abs(img_sli_rec)), axis=0)), gt_img)})
+            #print("Iteration: %(i)s         RMSE score: %(rmse)s" % {'i': i, 'rmse': rmse(mask * np.sqrt(np.sum(np.square(np.abs(img_sli_rec)), axis=0)), gt_img)})
+
+    return recs[-1]
+
+def JSENSE(subsampled_k_space=None,num_iter=30,max_basis_order=8,mask=None,est_sensemap=None,gt_img=None):
+    """
+    Iterative JSense Reconstruction for numpy arrays.
+
+    Arguments:
+        subsampled_k_space: Multi channel k-space data. Expected dimensions are (nc,H,W), where (H,W) are the image 
+            dimensions and nc is the channel dimension.
+        num_iter: number of iterations for optimization
+        mask: subsampling mask with size (H,W)
+        est_sensemap: estimated coil sensitivity maps with size (nc,H,W)
+        gt_img: fully sampled image as ground truth with size (H,W)
+
+    Returns:
+        recs: reconstructed image slice with size (H,W)
+    """
+    assert type(subsampled_k_space) != type(None) and type(mask) != type(None) and type(est_sensemap) != type(None)
+
+    # Initializing image reconstruction
+    recs = np.zeros((num_iter, subsampled_k_space.shape[1], subsampled_k_space.shape[2]), dtype=complex)
+    img_sli_rec = np.fft.ifft2(np.fft.ifftshift(subsampled_k_space, axes=(1, 2)), axes=(1, 2))
+    recs[0] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0) 
+
+    num_coeffs = (max_basis_order + 1) ** 2
+    basis_funct = create_basis_functions(subsampled_k_space.shape[1], subsampled_k_space.shape[2], max_basis_order,show_plot=False)
+    coeffs_array = sense_estimation_ls(subsampled_k_space, recs[0], basis_funct, mask)
+
+    est_sensemap = np.sum(coeffs_array[:, :, np.newaxis, np.newaxis] * basis_funct[np.newaxis], 1)
+    
+    img_sli_rec = np.fft.ifft2(np.fft.ifftshift(subsampled_k_space, axes=(1, 2)), axes=(1, 2))
+    recs[1] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0) 
+
+    print('JSENSE RECONSTRUCTION')
+    for i in range(1, num_iter-1):
+        # Sense reconstruction 
+        coeffs_array = sense_estimation_ls(subsampled_k_space, recs[i], basis_funct, mask)
+
+        # Data consistency projection
+        rec_ksp = (1 - mask) * np.fft.fftshift(np.fft.fft2(est_sensemap * recs[i, np.newaxis, :, :], axes=(1, 2)), axes=(1, 2))
+        rec_usksp = rec_ksp + subsampled_k_space
+
+        # Update sensemap  
+        est_sensemap = np.sum(coeffs_array[:, :, np.newaxis, np.newaxis] * basis_funct[np.newaxis], 1)
+
+        # Create next reconstruction
+        img_sli_rec = np.fft.ifft2(np.fft.ifftshift(rec_usksp, axes=(1, 2)), axes=(1, 2))
+        recs[i+1] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0) 
+            
+        print("Iteration: %(i)s         RMSE score: %(rmse)s" % {'i': i, 'rmse': rmse(mask * np.sqrt(np.sum(np.square(np.abs(img_sli_rec)), axis=0)), gt_img)})
+
+    return recs[-1]
+
+def normalize_basis(basis_funct):
+    # Code from Melanie Gaillochet https://github.com/Minimel/MasterThesis_MRI_Reconstruction
+    """
+    We return a list of orthonormal bases using Gram Schmidt algorithm
+    :param X: list of basis we would liek to orthonormalize
+    :return:
+    """
+    matrix = np.array(basis_funct).T
+
+    orthonormal_basis, _ = np.linalg.qr(matrix)
+
+    orthonormal_basis = orthonormal_basis.T
+    return orthonormal_basis
+    
+def create_basis_functions(num_rows, num_cols, max_order, orthonormalize=True, show_plot=False):
+    # Code from Melanie Gaillochet https://github.com/Minimel/MasterThesis_MRI_Reconstruction
+    """
+    We are creating 2D polynomial basis functions
+    (ie: a0 + a1*x + a2*y + a3*xy + a4*x^2 + a5*x^2*y + a6*y^2x +....)
+    :param num_rows:
+    :param num_cols:
+    :param image: x estimate of the reconstruction image (if we want the base
+    to be multiplied: E^H E bx)
+    :return: a list with all basis [(m x n)] arrays
+    """
+    # We take all the values between 0 and 1, in the x and y axis
+    y_axis = np.linspace(-1, 1, num_rows)
+    x_axis = np.linspace(-1, 1, num_cols)
+
+    X, Y = np.meshgrid(x_axis, y_axis, copy=False)
+    X = X.flatten().T
+    Y = Y.flatten().T
+
+    basis_funct = np.zeros(((max_order+1)**2, num_cols*num_rows))
+    i = 0
+    for power_x in range(0, max_order + 1):
+        for power_y in range(0, max_order + 1):
+            current_basis = X ** power_x * Y ** power_y
+            basis_funct[i,:] = current_basis
+            i += 1
+
+    # We normalize the basis function
+    if orthonormalize:
+        basis_funct = normalize_basis(basis_funct)
+
+    return basis_funct.reshape((max_order+1)**2, num_rows, num_cols)
+
+
+def sense_estimation_ls(Y, X, basis_funct, uspat):
+    """
+    Estimation the sensitivity maps for MRI Reconstruction using polynomial basis functions 
+    :param data: y (undersampled kspace) [c x n x m]
+    :param X: predicted reconstruction estimate [c x n x m]
+    :param max_basis_order:
+    :return coefficients: Least squares coefficients for basis functions
+    """
+    num_coils, sizex, sizey = Y.shape
+    num_coeffs = basis_funct.shape[0]
+    coeff_coils = np.zeros((num_coils, num_coeffs), dtype=complex)
+
+    for i in range(num_coils):
+        Y_i = Y[i].reshape(sizex*sizey)
+        A_i = (uspat[i, np.newaxis] * np.fft.fftshift(np.fft.fft2(basis_funct[:,:,:] * X[np.newaxis, :, :], axes=(1, 2)), axes=(1, 2))).reshape(num_coeffs, sizex*sizey)
+        coeff_coils[i,:] = np.matmul(np.matmul(Y_i, np.transpose(np.conjugate(A_i))), np.linalg.inv(np.matmul(A_i, np.transpose(np.conjugate(A_i)))))
+
+    return coeff_coils
+
+
+# Pytorch implementation
+
+def complex_inverse(ctensor, ntry=5): #-> "ComplexTensor"
+    # Code from https://github.com/kamo-naoyuki/pytorch_complex/blob/b6f82d076f8e6ad035e8573a007c467391d646ff/torch_complex/tensor.py
+    # m x n x n
+    in_size = ctensor.size()
+    a = ctensor.view(-1, ctensor.size(-1), ctensor.size(-1))
+    # see "The Matrix Cookbook" (http://www2.imm.dtu.dk/pubdb/p.php?3274)
+    # "Section 4.3"
+    for i in range(ntry):
+        t = i * 0.1
+
+        e = a.real + t * a.imag
+        f = a.imag - t * a.real
+
+        try:
+            x = torch.matmul(f, e.inverse())
+            z = (e + torch.matmul(x, f)).inverse()
+        except Exception:
+            if i == ntry - 1:
+                raise
+            continue
+
+        if t != 0.0:
+            eye = torch.eye(
+                a.real.size(-1), dtype=a.real.dtype, device=a.real.device
+            )[None]
+            o_real = torch.matmul(z, (eye - t * x))
+            o_imag = -torch.matmul(z, (t * eye + x))
+        else:
+            o_real = z
+            o_imag = -torch.matmul(z, x)
+
+        o = torch.complex(o_real, o_imag, device=a.real.device)
+        return o.view(*in_size)
+
+def pytorch_UFT(x, uspat, sensmaps):
+    # inp: [nx, ny], [nx, ny]
+    # out: [nx, ny, ns]
+    return uspat[:, :].unsqueeze(0) * fftshift(torch.fft.fftn(sensmaps * x[:, :].unsqueeze(0), dim=(1, 2)), dim=(1, 2))
+
+def pytorch_sense_estimation_ls(Y, X, basis_funct, uspat, device):
+    """
+    Estimation the sensitivity maps for MRI Reconstruction using polynomial basis functions. Implemented with pytorch and GPU accelerated Least squares solution. 
+    :param data: y (undersampled kspace) [c x n x m]
+    :param X: predicted reconstruction estimate [c x n x m]
+    :param max_basis_order:
+    :return coefficients: Least squares coefficients for basis functions
+    """
+
+    Y = torch.from_numpy(Y).to(device)
+    X = torch.from_numpy(X).to(device)
+    basis_funct = torch.from_numpy(basis_funct).to(device)
+    uspat = torch.from_numpy(uspat).to(device)
+
+    num_coils, sizex, sizey = Y.shape
+    num_coeffs = basis_funct.shape[1]
+
+    coeff_coils = torch.zeros((num_coils, num_coeffs), dtype=torch.cfloat, device=Y.real.device)
+    # XA - Y = 0
+    for i in range(num_coils):
+        Y = Y[i,:,:].reshape(sizex*sizey) 
+        A = pytorch_UFT(X, uspat, basis_funct[i,:,:,:]).reshape(num_coeffs, sizex*sizey) 
+        coeff = torch.matmul(torch.matmul(Y, torch.transpose(torch.conj(A), 0, 1)), complex_inverse(torch.matmul(A, torch.transpose(torch.conj(A), 0, 1))))
+        coeff_coils[i,:] = coeff
+
+    return coeff_coils.detach().cpu().numpy()
+
+### TODO: remove if SENSE works...
+def choose_acceleration(seed, R):
+    rng = np.random.RandomState()
+    rng.seed(seed)
+    if R == 2:
+        center_fraction = 0.16
+    elif R == 3:
+        center_fraction = 0.12
+    elif R == 4:
+        center_fraction = 0.08
+    elif R == 8:
+        center_fraction = 0.04
+    else:
+        print('EXIT: Undersampling ratio not implemented____')
+        exit()
+
+    acceleration = R
+    return center_fraction, acceleration
+
+def generate_US_pattern(shape, R=4 ,seed=1):
+        """
+            Args:
+                shape: The shape of the mask to be created. The shape should have
+                    at least 3 dimensions. Samples are drawn along the second last
+                    dimension.
+                seed: Seed for the random number generator. Setting the seed
+                    ensures the same mask is generated each time for the same
+                    shape. The random state is reset afterwards.
+
+            Returns:
+                A mask of the specified shape.
+            """
+        if len(shape) < 3:
+            raise ValueError("Shape should have 3 or more dimensions")
+
+        rng = np.random.RandomState()
+        rng.seed(seed)
+        center_fraction, acceleration = choose_acceleration(seed, R)
+        num_cols = shape[2]
+        num_low_freqs = int(round(num_cols * center_fraction))
+
+        # create the mask
+        mask = np.zeros(num_cols, dtype=np.float32)
+        pad = (num_cols - num_low_freqs + 1) // 2
+        mask[pad: pad + num_low_freqs] = True
+
+        # determine acceleration rate by adjusting for the number of low frequencies
+        adjusted_accel = (acceleration * (num_low_freqs - num_cols)) / (
+                num_low_freqs * acceleration - num_cols
+        )
+        offset = rng.randint(0, round(adjusted_accel))
+
+        accel_samples = np.arange(offset, num_cols - 1, adjusted_accel)
+        accel_samples = np.around(accel_samples).astype(np.uint)
+        mask[accel_samples] = True
+
+        # reshape the mask
+        mask = np.repeat(mask[np.newaxis, :], shape[1], axis=0)
+        mask = np.repeat(mask[np.newaxis, :, :], shape[0], axis=0)
+
+        return mask, num_low_freqs
+
+def rmse(pred, gt):
+    return np.linalg.norm(pred.flatten() - gt.flatten()) ** 2 / np.linalg.norm(gt.flatten()) ** 2

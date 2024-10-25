@@ -4,19 +4,44 @@ from numpy import transpose
 import torch
 from fastmri.data import transforms as T
 import time
+import sigpy.mri as mr
 from Functions import *
 
 # Load k-space data
-data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/AccFactor04'
+data_path = '/home/jmeyer/storage/datasets/CMRxRecon/MultiCoil/Cine/TrainingSet/FullSample' #AccFactor04
 names = [f.path for f in scandir(data_path) if f.is_dir() and f.name.endswith('P120')]
 X = readfile2numpy(join(data_path, names[0], 'cine_sax.mat'))[0,0] # take first slice and frame
 X_real = torch.from_numpy(X['real'].astype(np.float32))
 X_imag = torch.from_numpy(X['imag'].astype(np.float32))
-X = torch.complex(X_real,X_imag)
-X = torch.permute(X, (1,2,0)).unsqueeze(dim=0)
+X = torch.complex(X_real,X_imag).numpy()
+#X = torch.permute(X, (1,2,0)).unsqueeze(dim=0)
+
+# get estimated maps
+img_sli = np.fft.ifftshift(np.fft.ifft2(np.fft.ifftshift(X, axes=(1,2)), axes=(1,2)), axes=(1,2)) # Change to normal view
+gt_img = np.sqrt(np.sum(np.square(np.abs(img_sli.copy())), axis=0))  # Save rss ground truth 
+ksp_sli = np.fft.fftshift(np.fft.fft2(img_sli, axes=(1,2)), axes=(1,2)) # Create kspace data
+num_coils, rows, cols = ksp_sli.shape 
+
+# Create and apply US pattern
+us_pat, num_low_freqs = generate_US_pattern(ksp_sli.shape, R=4) 
+us_ksp = us_pat * ksp_sli
+
+# Estimate initial sensemaps using Espirit 
+est_sensemap = np.fft.fftshift(mr.app.EspiritCalib(us_ksp, 
+calib_width=num_low_freqs, thresh=0.02, kernel_width=6, crop=0.01, max_iter=100, 
+show_pbar=False).run(),axes=(1, 2))
+
+# Display ESPIRiT operator
+for idx in range(np.squeeze(est_sensemap).shape[0]):
+    plt.subplot(5, 2, idx + 1)
+    plt.imshow(np.abs(est_sensemap[idx,:,:]), cmap='gray')
+    plt.axis('off')
+plt.show()
+plt.savefig('ESPIRiT.png') # for saving the image
+plt.close
 
 # Derive ESPIRiT operator
-esp = espirit(X.numpy(), 6, 24, 0.01, 0.9925)
+esp = espirit(X, 6, 24, 0.01, 0.9925)
 
 # Display ESPIRiT operator
 for idx in range(np.squeeze(esp).shape[2]):
