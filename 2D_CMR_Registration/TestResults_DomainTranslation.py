@@ -157,9 +157,16 @@ for i, image_pairs in enumerate(test_generator):
     with torch.no_grad():
         mov_img_fullySampled = image_pairs[0].float().to(device)
         fix_img_fullySampled = image_pairs[1].float().to(device)
-        if outdomain == 'CMRxRecon':
+        if outdomain == 'CMRxRecon' and model_num != 0:
             mov_img_subSampled = image_pairs[2].float().to(device)
             fix_img_subSampled = image_pairs[3].float().to(device)
+        elif outdomain == 'CMRxRecon' and model_num == 0:
+            mov_img_fullySampled = F.interpolate(mov_img_fullySampled, (256,512), mode='bilinear')
+            fix_img_fullySampled = F.interpolate(fix_img_fullySampled, (256,512), mode='bilinear')
+            mov_img_subSampled   = image_pairs[2].float().to(device)
+            fix_img_subSampled   = image_pairs[3].float().to(device)
+            mov_img_subSampled   = F.interpolate(mov_img_subSampled, (256,512), mode='bilinear')
+            fix_img_subSampled   = F.interpolate(fix_img_subSampled, (256,512), mode='bilinear')
         else:
             mov_seg = image_pairs[2].float().to(device)
             fix_seg = image_pairs[3].float().to(device)

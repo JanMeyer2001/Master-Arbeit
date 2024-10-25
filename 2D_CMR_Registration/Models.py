@@ -1160,6 +1160,8 @@ class SYMNet(nn.Module):
         self.ec8 = self.encoder(self.start_channel * 8, self.start_channel * 16, stride=2, bias=bias_opt)
         self.ec9 = self.encoder(self.start_channel * 16, self.start_channel * 8, bias=bias_opt)
 
+        self.ec2_odd = self.encoder(self.start_channel, self.start_channel * 2, stride=2, bias=bias_opt, padding=2)
+
         self.r_dc1 = self.encoder(self.start_channel * 8 + self.start_channel * 8, self.start_channel * 8, kernel_size=3,
                                   stride=1, bias=bias_opt)
         self.r_dc2 = self.encoder(self.start_channel * 8, self.start_channel * 4, kernel_size=3, stride=1, bias=bias_opt)
@@ -1222,8 +1224,12 @@ class SYMNet(nn.Module):
         e0 = self.eninput(x_in)
         e0 = self.ec1(e0)
 
-        e1 = self.ec2(e0)
-        e1 = self.ec3(e1)
+        if int(e0.shape[2]/2) % 2 == 0:
+            e1 = self.ec2(e0)
+            e1 = self.ec3(e1)
+        else:
+            e1 = self.ec2_odd(e0)
+            e1 = self.ec3(e1)[:,:,:,0:256]
 
         e2 = self.ec4(e1)
         e2 = self.ec5(e2)
@@ -1236,7 +1242,8 @@ class SYMNet(nn.Module):
         e4 = self.ec9(e4)
         r_d0 = torch.cat((self.r_up1(e4), e3), 1)
         """
-        r_d0 = torch.cat((self.r_up1(e3), e2), 1)
+        e = self.r_up1(e3)
+        r_d0 = torch.cat((e, e2), 1)
 
         #r_d0 = self.r_dc1(r_d0)
         #r_d0 = self.r_dc2(r_d0)
@@ -1246,7 +1253,8 @@ class SYMNet(nn.Module):
         r_d0 = self.r_dc4(r_d0)
 
         #r_d1 = torch.cat((self.r_up2(r_d0), e2), 1)
-        r_d1 = torch.cat((self.r_up3(r_d0), e1), 1)
+        r = self.r_up3(r_d0)
+        r_d1 = torch.cat((r, e1), 1)
 
         #r_d1 = self.r_dc3(r_d1)
         r_d1 = self.r_dc4(r_d1)

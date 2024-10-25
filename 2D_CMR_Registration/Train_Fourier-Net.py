@@ -112,7 +112,7 @@ else:
     raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % dataset)
 
 # choose the model
-assert model_num >= 0 or model_num <= 5, f"Expected F_Net_plus to be between 0 and 5, but got: {model_num}"
+assert model_num >= 0 or model_num <= 5, f"Expected model_num to be between 0 and 5, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
