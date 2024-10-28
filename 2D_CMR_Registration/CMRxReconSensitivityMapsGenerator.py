@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 import time
 from skimage.morphology import area_opening
 from skimage.util import img_as_ubyte
+import sigpy.mri as mr
 from Functions import *
 
 parser = ArgumentParser()
@@ -106,11 +107,10 @@ for subset in subsets:
                     k_space = fullmulti[frame, slice]
                     k_space = T.to_tensor(k_space) # [n,x,y,c] --> n channels, size [x,y], c for real and complex values
                     torch.save(k_space, join(image_path, folder, subfolder) + '/k-space_Frame' + str(frame) + '.pt') 
-
+                    
                     # Derive ESPIRiT sensitivity maps
-                    k_space = torch.permute(torch.view_as_complex(k_space), (1,2,0)).unsqueeze(dim=0)
-                    esp = espirit(k_space.numpy(), 6, 24, 0.01, 0.9925)
-                    maps = esp[0,:,:,:,0]
+                    k_space = torch.view_as_complex(k_space).squeeze().numpy()
+                    maps    = np.fft.fftshift(mr.app.EspiritCalib(k_space, calib_width=24, thresh=0.02, kernel_width=6, crop=0.01, max_iter=100, show_pbar=False).run(),axes=(1, 2))
                     """
                     for idx in range(maps.shape[2]):
                         plt.subplot(1, maps.shape[2], idx + 1)
