@@ -171,20 +171,20 @@ for data in data_generator:
       
     # plot the reconstructed motion-compensated frames
     for frame in range(num_frames):
-        plt.subplot(3, num_frames, frame+1)
+        plt.subplot(num_frames, 3, 3*frame+1)
         plt.imshow(images_subsampled[:,:,0,frame], cmap='gray')
-        #if frame == 0:
-        #   plt.title('Subsampled') # Frames
+        if frame == 0:
+            plt.title('Subsampled') # Frames
         plt.axis('off')
-        plt.subplot(3, num_frames, num_frames+frame+1)
+        plt.subplot(num_frames, 3, 3*frame+2)
         plt.imshow(images_fullysampled[:,:,frame], cmap='gray')
-        #if frame == 0:
-        #    plt.title('Fully Sampled') # Frames
+        if frame == 0:
+            plt.title('Fully Sampled') # Frames
         plt.axis('off')
-        plt.subplot(3, num_frames, 2*num_frames+frame+1)
+        plt.subplot(num_frames, 3, 3*frame+3)
         plt.imshow(img_recon_motion[:,:,frame], cmap='gray')
-        #if frame == 0:
-        #    plt.title('Motion-Reconstructed') # Frames
+        if frame == 0:
+            plt.title('Motion-Reconstructed') # Frames
         plt.axis('off')
     #plt.tight_layout()
     plt.subplots_adjust(wspace=0.00005,hspace=0.00005) 
