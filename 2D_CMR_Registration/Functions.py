@@ -28,6 +28,8 @@ from matplotlib.pyplot import cm
 from torch.fft import fftn, ifftn, fftshift, ifftshift
 from typing import Optional, Tuple, Union
 from skimage.util import view_as_windows
+from scipy.sparse import csr_matrix
+import math
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -665,9 +667,9 @@ class DatasetCMRxReconstruction(Data.Dataset):
             subfolder = 'AccFactor10' 
         # get names and paths of training data
         if cropping == False:
-            subset='TrainingSet/Full' # TODO: change to TestSet later
+            subset='TestSet/Full' 
         else: 
-            subset = 'TrainingSet/Croped' # TODO: change to TestSet later
+            subset = 'TestSet/Croped'
         
         self.pairs = []  
         # get folder names for patients
@@ -691,57 +693,40 @@ class DatasetCMRxReconstruction(Data.Dataset):
                         # repeat mask for correct size
                         masks = [f.path for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)] * len(frames_subSampled)
                         # add fully sampled, subsampled frames as well as corresponding k-space and coil map data to a list 
-                        self.pairs = self.pairs + list(zip(frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps))
+                        self.pairs.append([frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps])
+                        #self.pairs = self.pairs + list(zip(frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps))
 
-        """
-        self.patient_array = []  
-        # get folder names for patients
-        patients = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
-        
-        # TODO: remove [0:2] after debugging!!
-        for patient in patients[0:2]:
-            self.slice_array = []
-            # get subfolder names for image slices
-            slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
-            for slice in slices:
-                # get all frames for each slice
-                frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
-                # get the k-space data
-                k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
-                # get the coil maps
-                coil_maps = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
-                # put data for slice into container
-                self.slice_array.append([frames,k_space_data,coil_maps])
-            self.patient_array.append(self.slice_array)    
-            """
     def __len__(self):
         'number of samples'
         return len(self.pairs)
 
-        #'number of patients'
-        #return len(self.patient_array)
-
     def __getitem__(self, index):
-        'Generates two image pairs (1x fully sampled, 1x subsampled)'
-        # read in image data
-        img_fullySampled = imread(self.pairs[index][0], as_gray=True)/255
-        img_subSampled   = imread(self.pairs[index][1], as_gray=True)/255
-        mask             = imread(self.pairs[index][2], as_gray=True)/255
-        
-        # convert to tensor
-        img_fullySampled = torch.from_numpy(img_fullySampled).unsqueeze(0)
-        img_subSampled   = torch.from_numpy(img_subSampled).unsqueeze(0)
-        mask             = torch.from_numpy(mask).unsqueeze(0)
+        'Generates data for an image slice'
+        image_frames_fullysampled = []
+        image_frames_subsampled   = []
+        mask_frames               = []
+        k_space_frames            = []
+        coil_map_frames           = []
 
-        # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
-        k_space  = torch.view_as_complex(torch.load(self.pairs[index][3]))
-        coil_map = torch.from_numpy(torch.load(self.pairs[index][4])).permute(2,0,1)
+        # fill list for all frames
+        for i in range(len(self.pairs[index][0])):
+            # read in image data
+            img_fullySampled = imread(self.pairs[index][0][i], as_gray=True)/255
+            img_subSampled   = imread(self.pairs[index][1][i], as_gray=True)/255
+            mask             = imread(self.pairs[index][2][i], as_gray=True)/255
+            
+            # convert to tensor
+            image_frames_fullysampled.append(torch.from_numpy(img_fullySampled).unsqueeze(0))
+            image_frames_subsampled.append(torch.from_numpy(img_subSampled).unsqueeze(0))
+            mask_frames.append(torch.from_numpy(mask).unsqueeze(0))
 
-        return img_fullySampled, img_subSampled, mask, k_space, coil_map
+            # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
+            k_space  = torch.view_as_complex(torch.load(self.pairs[index][3][i]))
+            k_space_frames.append(k_space)
+            coil_map = torch.from_numpy(torch.load(self.pairs[index][4][i]))
+            coil_map_frames.append(coil_map)
 
-        #'Gives back data for a single patient'
-        #data = self.patient_array[index]
-        #return data
+        return image_frames_fullysampled, image_frames_subsampled, mask_frames, k_space_frames, coil_map_frames
 
 class TrainDatasetOASIS(Data.Dataset):
   'OASIS dataset'
@@ -1594,7 +1579,7 @@ def espirit_proj(x, esp):
 
 def SENSE_iter(subsampled_k_space=None,num_iter=30,mask=None,est_sensemap=None,gt_img=None):
     """
-    Iterative Sense Reconstruction for numpy arrays.
+    Iterative SENSE reconstruction for numpy arrays.
 
     Arguments:
         subsampled_k_space: Multi channel k-space data. Expected dimensions are (nc,H,W), where (H,W) are the image 
@@ -1612,24 +1597,64 @@ def SENSE_iter(subsampled_k_space=None,num_iter=30,mask=None,est_sensemap=None,g
     # init image reconstruction
     recs = np.zeros((num_iter, subsampled_k_space.shape[1], subsampled_k_space.shape[2]), dtype=complex)
     img_sli_rec = np.fft.ifft2(np.fft.ifftshift(subsampled_k_space, axes=(1, 2)), axes=(1, 2))
-    recs[0] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0) 
-
+    recs[0] = np.fft.fftshift(np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0))
+    
     # begin iterative reconstruction
     for i in range(num_iter-1):
-        rec_ksp = (1 - mask) * np.fft.fftshift(np.fft.fft2(est_sensemap * recs[i, np.newaxis, :, :], axes=(1, 2)), axes=(1, 2))
-        rec_usksp = rec_ksp + subsampled_k_space
+        rec_ksp     = (1 - mask) * np.fft.fftshift(np.fft.fft2(est_sensemap * recs[i, np.newaxis, :, :], axes=(1, 2)), axes=(1, 2))
+        rec_usksp   = rec_ksp + subsampled_k_space
 
         img_sli_rec = np.fft.ifft2(np.fft.ifftshift(rec_usksp, axes=(1, 2)), axes=(1, 2))
-        recs[i+1] = np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0)
+        recs[i+1]   = np.fft.fftshift(np.sum(img_sli_rec * np.conjugate(est_sensemap), axis=0) / np.sum(est_sensemap * np.conjugate(est_sensemap), axis=0))
         if type(gt_img) != type(None):
             print("Iteration: %(i)s         MSE score: %(mse)s" % {'i': i, 'mse': mean_squared_error(mask * np.sqrt(np.sum(np.square(np.abs(img_sli_rec)), axis=0)), gt_img)})
             #print("Iteration: %(i)s         RMSE score: %(rmse)s" % {'i': i, 'rmse': rmse(mask * np.sqrt(np.sum(np.square(np.abs(img_sli_rec)), axis=0)), gt_img)})
+
+    return np.abs(recs[-1])
+
+def SENSE_motion_compensated(subsampled_k_space=None,num_iter=30,mask=None,est_sensemap=None,flow=None,transform=None):
+    """
+    Iterative motion-compensated SENSE reconstruction for numpy arrays.
+
+    Arguments:
+        subsampled_k_space: k-space time-series data. Expected dimensions are (H,W,nc,t), where (H,W) are the image 
+                            dimensions, nc the coil channel dimension and t is the time channel dimension
+        num_iter: number of iterations (int)
+        masks: subsampling masks with size (H,W,nc,t)
+        smaps: estimated coil sensitivity maps with size (H,W,nc,t)
+        flow: flow fields with size (H,W,2,t-1)
+        transform: spatial transformer to warp images
+
+    Returns:
+        recs: motion corrected image frames with size (H,W,t)
+    """
+    assert type(subsampled_k_space) != type(None) and type(mask) != type(None) and type(est_sensemap) != type(None)
+
+    # get image dimensions
+    Nx, Ny, Nc, Nt = subsampled_k_space.shape
+
+    # init image reconstruction
+    recs = np.zeros((num_iter, Nx, Ny, Nt), dtype=np.float32)
+    
+    for t in range(Nt):
+        img_sli_rec     = np.fft.ifft2(np.fft.ifftshift(subsampled_k_space[:,:,:,t], axes=(1, 2)), axes=(1, 2))
+        recs[0,:,:,t]   = np.abs(np.fft.fftshift(np.sum(img_sli_rec * np.conjugate(est_sensemap[:,:,:,t]), axis=2) / np.sum(est_sensemap[:,:,:,t] * np.conjugate(est_sensemap[:,:,:,t]), axis=2)))
+        # correct for motion
+        __, im_aux      = transform(torch.from_numpy(recs[0,:,:,t]).unsqueeze(dim=0).unsqueeze(dim=0).float(), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0).float(), mod = 'nearest')
+        recs[0,:,:,t]   = im_aux.squeeze().squeeze().numpy()
+        
+        # begin iterative reconstruction
+        for i in range(num_iter-1):
+            rec_ksp         = (1 - mask[:,:,:,t]) * np.fft.fftshift(np.fft.fft2(est_sensemap[:,:,:,t] * recs[i, :, :, np.newaxis, t], axes=(1, 2)), axes=(1, 2))
+            rec_usksp       = rec_ksp + subsampled_k_space[:,:,:,t]
+            img_sli_rec     = np.fft.ifft2(np.fft.ifftshift(rec_usksp, axes=(1, 2)), axes=(1, 2))
+            recs[i+1,:,:,t] = np.abs(np.fft.fftshift(np.sum(img_sli_rec * np.conjugate(est_sensemap[:,:,:,t]), axis=2) / np.sum(est_sensemap[:,:,:,t] * np.conjugate(est_sensemap[:,:,:,t]), axis=2)))
 
     return recs[-1]
 
 def JSENSE(subsampled_k_space=None,num_iter=30,max_basis_order=8,mask=None,est_sensemap=None,gt_img=None):
     """
-    Iterative JSense Reconstruction for numpy arrays.
+    Iterative JSENSE reconstruction for numpy arrays.
 
     Arguments:
         subsampled_k_space: Multi channel k-space data. Expected dimensions are (nc,H,W), where (H,W) are the image 
@@ -1814,67 +1839,237 @@ def pytorch_sense_estimation_ls(Y, X, basis_funct, uspat, device):
 
     return coeff_coils.detach().cpu().numpy()
 
-### TODO: remove if SENSE works...
-def choose_acceleration(seed, R):
-    rng = np.random.RandomState()
-    rng.seed(seed)
-    if R == 2:
-        center_fraction = 0.16
-    elif R == 3:
-        center_fraction = 0.12
-    elif R == 4:
-        center_fraction = 0.08
-    elif R == 8:
-        center_fraction = 0.04
-    else:
-        print('EXIT: Undersampling ratio not implemented____')
-        exit()
-
-    acceleration = R
-    return center_fraction, acceleration
-
-def generate_US_pattern(shape, R=4 ,seed=1):
-        """
-            Args:
-                shape: The shape of the mask to be created. The shape should have
-                    at least 3 dimensions. Samples are drawn along the second last
-                    dimension.
-                seed: Seed for the random number generator. Setting the seed
-                    ensures the same mask is generated each time for the same
-                    shape. The random state is reset afterwards.
-
-            Returns:
-                A mask of the specified shape.
-            """
-        if len(shape) < 3:
-            raise ValueError("Shape should have 3 or more dimensions")
-
-        rng = np.random.RandomState()
-        rng.seed(seed)
-        center_fraction, acceleration = choose_acceleration(seed, R)
-        num_cols = shape[2]
-        num_low_freqs = int(round(num_cols * center_fraction))
-
-        # create the mask
-        mask = np.zeros(num_cols, dtype=np.float32)
-        pad = (num_cols - num_low_freqs + 1) // 2
-        mask[pad: pad + num_low_freqs] = True
-
-        # determine acceleration rate by adjusting for the number of low frequencies
-        adjusted_accel = (acceleration * (num_low_freqs - num_cols)) / (
-                num_low_freqs * acceleration - num_cols
-        )
-        offset = rng.randint(0, round(adjusted_accel))
-
-        accel_samples = np.arange(offset, num_cols - 1, adjusted_accel)
-        accel_samples = np.around(accel_samples).astype(np.uint)
-        mask[accel_samples] = True
-
-        # reshape the mask
-        mask = np.repeat(mask[np.newaxis, :], shape[1], axis=0)
-        mask = np.repeat(mask[np.newaxis, :, :], shape[0], axis=0)
-
-        return mask, num_low_freqs
-
 def rmse(pred, gt):
     return np.linalg.norm(pred.flatten() - gt.flatten()) ** 2 / np.linalg.norm(gt.flatten()) ** 2
+
+# Conjugate gradient solver for linear inverse problem
+def conjugate_gradient(inputs, A, AH, max_iter=10, tol=1e-12):
+    #x0 = inputs[0]
+    y = inputs[1]
+    constants = inputs[2:]
+
+    #xk = x0
+    rhs = AH(y, *constants)
+    def M(p):
+        return AH(A(p, *constants), *constants)
+
+    x = np.zeros_like(rhs)
+    i, r, p = 0, rhs, rhs
+    rTr = np.real(np.sum(np.conj(r) * r))
+    num_iter = 0
+    while (num_iter < max_iter) and (rTr > tol):
+        Ap = M(p)
+        alpha = rTr / np.real(np.sum(np.conj(p) * Ap))
+        x = x + p * alpha
+        r = r - Ap * alpha
+        rTrNew = np.real(np.sum(np.conj(r) * r))
+        beta = rTrNew / rTr
+        rTr = rTrNew
+        p = r + p * beta
+        num_iter += 1
+
+    return x
+
+# define own motion operator using Spatial Transformer
+def ForwardOperator(images, masks, smaps, flow, transform):
+    """
+    Forward operator (image to k-space) for iterative motion-compensated SENSE reconstruction for numpy arrays.
+
+    Arguments:
+        image: image time-series data. Expected dimensions are (H,W,1,t), where (H,W) are the image 
+                dimensions and t is the time channel dimension
+        masks: subsampling masks with size (H,W,nc,t)
+        smaps: estimated coil sensitivity maps with size (H,W,nc,t)
+        flow: flow fields with size (H,W,2,t-1)
+        transform: spatial transformer to warp images
+
+    Returns:
+        kspace_out: motion corrected k-space with size (H,W,nc)
+    """
+    # get image dimensions
+    Nx, Ny, Nc, Nt = smaps.shape
+
+    # init k-space
+    kspace_out = np.zeros((Nx,Ny,Nc,Nt)) + 1j * np.zeros((Nx,Ny,Nc,Nt))
+    
+    for t in range(Nt):
+        # correct for motion
+        __, im_aux = transform(torch.from_numpy(images[:,:,:,t].transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')
+        # get k-space
+        kspace_out[:,:,:,t] = mriForwardOp(im_aux.squeeze().permute(1,2,0).numpy(), masks[:,:,:,t], smaps[:,:,:,t])
+    return kspace_out #np.sum(,3)
+
+def AdjointOperator(k_space, masks, smaps, flow, transform):
+    """
+    Forward operator (image to k-space) for iterative motion-compensated SENSE reconstruction for numpy arrays.
+
+    Arguments:
+        k_space: k-space time-series data. Expected dimensions are (H,W,C,t), where (H,W) are the image 
+                dimensions, C is the coil channel dimension and t is the time channel dimension
+        masks: subsampling masks with size (H,W,nc,t)
+        smaps: estimated coil sensitivity maps with size (H,W,nc,t)
+        flow: flow fields with size (H,W,2,t) --> note that the first frame is zero as it is the reference
+        transform: spatial transformer to warp images
+
+    Returns:
+        kspace_out: motion corrected k-space with size (H,W,nc)
+    """
+    # get k-space dimensions
+    Nx, Ny, Nc, Nt = k_space.shape
+
+    # init image
+    images_out = np.zeros((Nx,Ny,Nc,Nt)) #+ 1j * np.zeros((Nx,Ny,Nt))
+    
+    for t in range(Nt):
+        # get naive image from k-space 
+        im_aux = mriAdjointOp(k_space, masks, smaps)
+        # turn into real values and transform
+        __, image_out = transform(torch.from_numpy(np.abs(im_aux[:,:,:,t]).transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')    
+        # sum coil images up for frame
+        images_out[:,:,:,t] = image_out.squeeze().permute(1,2,0).numpy()#np.sum(,0)
+    """    
+        plt.subplot(2, int(Nt/2), t+1)
+        plt.imshow(images_out[:,:,t], cmap='gray')
+        plt.title('Frame{}'.format(t+1))
+        plt.axis('off')
+    plt.tight_layout()
+    plt.savefig('Images.png') 
+    plt.close
+    """
+    return images_out
+
+# Cartesian 2D operators
+def mriAdjointOp(kspace, mask, smaps):
+    return ifft2c(kspace * mask)*np.conj(smaps)
+    #return np.sum(ifft2c(kspace * mask)*np.conj(smaps), axis=-1) 
+
+def mriForwardOp(image, mask, smaps):
+    return fft2c(smaps * image) * mask #[:,:,np.newaxis]
+
+def fft2c(image, axes=(0,1)):
+    return np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(image, axes=axes), norm='ortho', axes=axes), axes=axes)
+
+def ifft2c(kspace, axes=(0,1)):
+    return np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(kspace, axes=axes), norm='ortho', axes=axes), axes=axes)
+
+# Define Batchelor's motion operator
+# motions is now a vertical stack of sparse motion matrices
+def BatchForwardOp(image, masks, smaps, motions, use_optox=False):
+    Nx = np.shape(image)[0]
+    Ny = np.shape(image)[1]
+    Nc = np.shape(smaps)[2]
+    Nt = np.shape(masks)[-1]
+
+    kspace_out = np.zeros((Nx,Ny,Nc,Nt)) + 1j * np.zeros((Nx,Ny,Nc,Nt))
+    for t in range(Nt):
+        if use_optox:
+            im_aux = apply_sparse_motion(image,get_sparse_motion_matrix(motions[:,:,:,t]),0)
+        else:
+            im_aux = apply_sparse_motion(image,motions[t*Nx*Ny:(t+1)*Nx*Ny,:],0)
+        kspace_out[:,:,:,t] = mriForwardOp(im_aux, masks[:,:,:,t], smaps)
+    return np.sum(kspace_out,3)
+
+def BatchAdjointOp(kspace, masks, smaps, motions):
+    Nx = np.shape(kspace)[0]
+    Ny = np.shape(kspace)[1]
+    Nc = np.shape(smaps)[2]
+    Nt = np.shape(masks)[-1]
+
+    image_out = np.zeros((Nx,Ny,Nt)) + 1j * np.zeros((Nx,Ny,Nt))
+    #im_aux = np.zeros((Nx,Ny,Nc))
+    for t in range(Nt):
+        im_aux = mriAdjointOp(kspace, masks[:,:,:,t], smaps)
+        #image_out[:,:,t] = apply_sparse_motion(im_aux,get_sparse_motion_matrix(motions[:,:,:,t]),1)
+        image_out[:,:,t] = apply_sparse_motion(im_aux,motions[t*Nx*Ny:(t+1)*Nx*Ny,:],1)
+    return np.sum(image_out,2)
+
+def get_sparse_motion_matrix(flow_field):
+# creates a sparse motion matrix corresponding to the motion in the flow field
+# assuming linear interpolation
+  Ny = np.shape(flow_field)[1]
+  Nx = np.shape(flow_field)[0]
+  sparse_mot = csr_matrix((Ny*Nx,Ny*Nx))
+
+  for y in range(np.shape(flow_field)[1]):
+    for x in range(np.shape(flow_field)[0]):
+      # cartesian interpolant coordinates
+      ux = flow_field[x,y,0]
+      uy = flow_field[x,y,1]
+      y1 = math.floor(y+uy)
+      y2 = math.floor(y+uy+1)
+      x1 = math.floor(x+ux)
+      x2 = math.floor(x+ux+1)
+      # interpolants for linear interpolation
+      wx = ux-math.floor(ux)
+      wy = uy-math.floor(uy)
+      w11 = bound_weight((1-wx)*(1-wy),x1,y1,Nx,Ny)
+      w12 = bound_weight((1-wx)*wy,x1,y2,Nx,Ny)
+      w21 = bound_weight(wx*(1-wy),x2,y1,Nx,Ny)
+      w22 = bound_weight(wx*wy,x2,y2,Nx,Ny)
+      # avoiding out of FOV issues
+      y1 = bound_index(y1,Ny)
+      y2 = bound_index(y2,Ny)
+      x1 = bound_index(x1,Nx)
+      x2 = bound_index(x2,Nx)
+      # loading sparse matrix indexes
+      li = int(lin_index(x,y,Nx))
+      x1y1 = int(lin_index(x1,y1,Nx))
+      x1y2 = int(lin_index(x1,y2,Nx))
+      x2y1 = int(lin_index(x2,y1,Nx))
+      x2y2 = int(lin_index(x2,y2,Nx))
+      # assigning weights to sparse matrix
+      if w11 != 0:
+        sparse_mot[li,x1y1] = w11
+      if w12 != 0:
+        sparse_mot[li,x1y2] = w12
+      if w21 != 0:
+        sparse_mot[li,x2y1] = w21
+      if w22 != 0:
+        sparse_mot[li,x2y2] = w22
+
+  return sparse_mot
+
+# apply_sparse_motion takes a [Nx,Ny] image and a [Nx*Ny,Nx*Ny] spr_mat and applies
+# the corresponding motion. adj_flag determines if the forward or transpose motion
+# is applied (tranpose should be a good approximation of the inverse)
+def apply_sparse_motion(img,spr_mat,adj_flag):
+    # applies a motion field via the sparse representation
+    Ny = np.shape(img)[1]
+    Nx = np.shape(img)[0]
+    img = np.reshape(img,(Nx*Ny,1),order='F')
+    # flag == 1 means we apply transpose (i.e. inverse) motion
+    if adj_flag == 1:
+        spr_mat = spr_mat.transpose()
+    # apply motion
+    img_r = spr_mat * np.real(img)
+    img_i = spr_mat * np.imag(img)
+    # apply correction pertaining to errors in discrete interpolations with large jacobians
+    m_norm = np.ones((Nx*Ny,1))
+    m_norm = spr_mat * m_norm
+    np.seterr(divide='ignore', invalid='ignore')
+    img_r = np.divide(img_r,m_norm)
+    img_i = np.divide(img_i,m_norm)
+    # mind nans
+    img_r = np.nan_to_num(img_r)
+    img_i = np.nan_to_num(img_i)
+    img = np.vectorize(complex)(img_r[:,0], img_i[:,0])
+    img = np.reshape(img,(Nx,Ny),order='F')
+    return img
+
+def bound_index(x,Nx):
+  # restrict coordinate x to matrix limit [0,Nx-1]
+  if x<0:
+    x = 0
+  if x>(Nx-1):
+    x = Nx-1
+  return x
+
+def bound_weight(w,x,y,Nx,Ny):
+  # null weights outside the FOV
+  if x<0 or x> (Nx-1) or y<0 or y> (Ny-1):
+    w = 0
+  return w  
+
+def lin_index(x,y,Nx):
+  # get 1D linear index from 2D index
+  return int(x + Nx*y)    

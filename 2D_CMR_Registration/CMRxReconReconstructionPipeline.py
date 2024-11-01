@@ -24,7 +24,7 @@ parser.add_argument("--choose_loss", type=int, dest="choose_loss", default=1,
 parser.add_argument("--mode", type=int, dest="mode", default='1',
                     help="choose dataset mode: 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--model", type=int,
-                    dest="model_num", default=1, 
+                    dest="model_num", default=0, 
                     help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense Fourier-Net (3), dense Fourier-Net+ (4), dense cascaded Fourier-Net+ (5), k-space Fourier-Net (6), k-space Fourier-Net+ (7) or cascaded k-space Fourier-Net+ (8) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
@@ -36,7 +36,7 @@ parser.add_argument("--FT_size_y", type=int,
                     dest="FT_size_y", default=24,
                     help="choose size y of FT crop: Should be smaller than 84.")
 parser.add_argument("--epoch", type=int,
-                    dest="epoch", default=6, 
+                    dest="epoch", default=14, 
                     help="choose which epoch is used in the evaluation (for input 0 the best version will be chosen)")
 opt = parser.parse_args()
 
@@ -61,13 +61,14 @@ data_generator = Data.DataLoader(dataset=data_set, batch_size=1, shuffle=False, 
 H = 246
 W = 512
 input_shape = [1,1,H,W] #data_set.__getitem__(0)[0].unsqueeze(0).shape
-"""
+
 # select and import models for motion correction
 assert model_num >= 0 or model_num <= 3, f"Expected model_num to be between 0 and 3, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
-    path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+    # TODO: remove '2D_CMR_Registration/' after debugging
+    path = './2D_CMR_Registration/ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
     transform = SpatialTransform().to(device)
 elif model_num == 1:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
@@ -85,106 +86,109 @@ elif model_num == 3:
 
 if epoch == 0:
     # choose best model
-    print('Best model: {}'.format(natsorted(os.listdir(path))[-1]))
+    print('Using model: {}'.format(natsorted(os.listdir(path))[-1]))
     modelpath = path + natsorted(os.listdir(path))[-1]
 else:
     # choose model after certain epoch of training
     modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
-    print('Best model: {}'.format(basename(modelpath)))
+    print('Using model: {}'.format(basename(modelpath)))
 
 model.load_state_dict(torch.load(modelpath))
 model.eval()
 transform.eval()
-"""
 
 for data in data_generator:
-    img_fullySampled = data[0]
-    img_subSampled   = data[1]
-    mask             = data[2]
-    k_space          = data[3]
-    coil_map         = data[4]
-    
-    ksp_sli = k_space.squeeze().numpy()
-    num_coils, rows, cols = ksp_sli.shape 
-    
-    # Create and apply US pattern
-    us_pat, num_low_freqs = generate_US_pattern(ksp_sli.shape, R=4) 
-    #us_ksp = us_pat * ksp_sli # not needed because k-space is already subsampled
-    us_ksp = ksp_sli
-    coil_map_new = np.fft.fftshift(mr.app.EspiritCalib(us_ksp, calib_width=num_low_freqs, thresh=0.02, kernel_width=6, crop=0.01, max_iter=100, show_pbar=False).run(),axes=(1, 2))
+    # get frames (pytorch tensors)
+    img_fullySampled = data[0]          # list of frames with size (1,1,H,W)
+    img_subSampled   = data[1]          # list of frames with size (1,1,H,W)
+    mask             = data[2]          # list of frames with size (1,1,H,W)
+    k_space          = data[3]          # list of frames with size (1,C,H,W)
+    coil_map         = data[4]          # list of frames with size (1,C,H,W)
 
-    # perform iterative SENSE reconstruction 
-    img_recon = SENSE_iter(k_space.squeeze().numpy(),50,mask.squeeze().squeeze().numpy(),coil_map_new,img_fullySampled.squeeze().squeeze().numpy())
-    #img_recon = SENSE_iter(k_space.squeeze().numpy(),10,mask.squeeze().squeeze().numpy(),coil_map.squeeze().numpy(),img_fullySampled.squeeze().squeeze().numpy())
+    num_frames = len(img_subSampled)    # number of frames
+    num_coils = k_space[0].shape[1]     # number of coils
+    max_iter = 10                       # number of iterations
+    tol = 1e-12                         # error tolerance
 
+    """
+    # perform iterative SENSE reconstruction (no motion)
+    img_recon = SENSE_iter(k_space[0].squeeze().numpy(),max_iter,mask[0].squeeze().squeeze().numpy(),coil_map[0].squeeze().squeeze().numpy(),img_fullySampled[0].squeeze().squeeze().numpy())
     # plot the reconstructed image
     plt.subplot(1, 3, 1)
-    plt.imshow(img_subSampled.squeeze().squeeze(), cmap='gray')
+    plt.imshow(img_subSampled[0].squeeze().squeeze(), cmap='gray')
     plt.title('SubSampled')
     plt.axis('off')
     plt.subplot(1, 3, 2)
-    plt.imshow(img_fullySampled.squeeze().squeeze(), cmap='gray')
+    plt.imshow(img_fullySampled[0].squeeze().squeeze(), cmap='gray')
     plt.title('Fully Sampled')
     plt.axis('off')
     plt.subplot(1, 3, 3)
-    plt.imshow(np.abs(img_recon), cmap='gray')
+    plt.imshow(img_recon, cmap='gray')
     plt.title('Reconstruction')
     plt.axis('off')
     plt.tight_layout()
     plt.savefig('reconstructedImage.png') 
     plt.close
-
-#### Old Dataloader...
-"""
-coil_num = 10 # number of coil channels
-for patients in data_generator:    
-    k_spaces  = torch.zeros(len(patients),coil_num,len(patients[0][0]),H,W) 
-    coil_maps = torch.zeros(len(patients),coil_num,len(patients[0][0]),H,W) 
-    for slice_num, slices in enumerate(patients):
-        # unpack image paths and get Displacements
-        image_paths = slices[0]
-        images = torch.zeros(len(image_paths),H,W)
-        for image_num, image_path in enumerate(image_paths):
-            image = imread(image_path[0], as_gray=True)/255
-            images[image_num,:,:] = torch.from_numpy(image).unsqueeze(0)
-        
-        # correct for motion
-        if model_num == 3:
-            warped_img, Df_xy = model(mov_img, fix_img)
-        else:
-            V_xy, __ = model(mov_img, fix_img)
-            __, warped_img = transform(mov_img, V_xy.permute(0, 2, 3, 1), mod='nearest') 
-        
-        # load k-space data
-        k_space_paths = slices[1]
-        for num_k_space, k_space_path in enumerate(k_space_paths): 
-            k_space = torch.load(k_space_path[0])
-            #k_spaces[slice_num,:,num_k_space,:,:] = torch.view_as_complex(k_space)
-            image = fastmri.ifft2c(k_space)
-            image = fastmri.complex_abs(image) 
-            k_spaces[slice_num,:,num_k_space,:,:] = image #torch.view_as_complex(image)
-
-        # load coil maps
-        coil_map_paths = slices[2]
-        for num_coil_maps, coil_map_path in enumerate(coil_map_paths): 
-            coil_map = torch.load(coil_map_path[0])
-            coil_maps[slice_num,:,num_coil_maps,:,:] = torch.from_numpy(coil_map).permute(2,0,1)
-
-    # TODO: estimate noise matrix --> for now identity matrix with coil channels as dimensions
-    noise_cov = torch.eye(coil_num,coil_num)
-
-    # perform SENSE reconstruction --> gives back images with [Slices,Frames,H,W]
-    reconstructed_images = sense(data=k_spaces, csm=coil_maps, noise_cov=noise_cov, acceleration_rate=mode).squeeze()
-    
-    # Display reconstructed images
-    for slices in range(reconstructed_images.shape[0]):
-        for frames in range(reconstructed_images.shape[1]):
-            plt.subplot(reconstructed_images.shape[0], reconstructed_images.shape[1], slices * reconstructed_images.shape[0] + frames + 1)
-            plt.imshow(reconstructed_images[slices,frames,:,:], cmap='gray') #np.abs()
-            plt.axis('off')
-    #plt.title('Frames')
-    #plt.supylabel('Slices',fontsize=40,x=0.22)
-    plt.show()
-    plt.savefig('ReconstructedImages.png') # for saving the image
-    plt.close
     """
+    # init numpy arrays
+    flows               = np.zeros((H,W,2,num_frames))
+    images_subsampled   = np.zeros((H,W,1,num_frames))
+    images_fullysampled = np.zeros((H,W,num_frames))
+    k_spaces            = np.zeros((H,W,num_coils,num_frames))
+    coil_maps           = np.zeros((H,W,num_coils,num_frames))
+    # take one mask (should all be the same) and convert it to numpy array
+    mask = mask[0].squeeze().squeeze().numpy()
+    mask = np.repeat(mask[:,:,np.newaxis], num_coils, axis=2)
+    mask = np.repeat(mask[:,:,:,np.newaxis], num_frames, axis=3)
+    
+    for frame_num in range(num_frames):
+        # put data into time-series arrays
+        k_spaces[:,:,:,frame_num]             = k_space[frame_num].squeeze().numpy().transpose(1,2,0)
+        coil_maps[:,:,:,frame_num]            = coil_map[frame_num].squeeze().numpy().transpose(1,2,0)
+        images_subsampled[:,:,0,frame_num]    = img_subSampled[frame_num].squeeze().squeeze()
+        images_fullysampled[:,:,frame_num]    = img_fullySampled[frame_num].squeeze().squeeze()
+        
+        # get displacements relative to the first image (first entry is deliberately left empty)
+        if frame_num > 0:
+            # predict motion
+            if model_num == 3:
+                warped_mov, flow = model(img_subSampled[0].float().to(device), img_subSampled[1].float().to(device))
+            else:    
+                flow, features_disp = model(img_subSampled[0].float().to(device), img_subSampled[1].float().to(device))
+            flows[:,:,:,frame_num] = flow.squeeze().permute(1,2,0).cpu().detach().numpy()
+    
+    # old iterative SENSE code extended for motion-compensation
+    #img_recon_motion = SENSE_motion_compensated(subsampled_k_space=k_spaces,num_iter=10,mask=mask,est_sensemap=coil_maps,flow=flows,transform=transform)   
+
+    # perform motion-compensated SENSE reconstruction (takes some time...)
+    A  = ForwardOperator                                        # image space to k-space
+    AH = AdjointOperator                                        # k-space to image space
+    noisy = AH(k_spaces, mask, coil_maps, flows, transform)     # get naive starting image
+    # conjugate gradient optimization for image reconstruction
+    img_recon_motion = conjugate_gradient([noisy, k_spaces, mask, coil_maps, flows, transform], A, AH, max_iter, tol)
+    # coil combine the images
+    img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
+      
+    # plot the reconstructed motion-compensated frames
+    for frame in range(num_frames):
+        plt.subplot(3, num_frames, frame+1)
+        plt.imshow(images_subsampled[:,:,0,frame], cmap='gray')
+        #if frame == 0:
+        #   plt.title('Subsampled') # Frames
+        plt.axis('off')
+        plt.subplot(3, num_frames, num_frames+frame+1)
+        plt.imshow(images_fullysampled[:,:,frame], cmap='gray')
+        #if frame == 0:
+        #    plt.title('Fully Sampled') # Frames
+        plt.axis('off')
+        plt.subplot(3, num_frames, 2*num_frames+frame+1)
+        plt.imshow(img_recon_motion[:,:,frame], cmap='gray')
+        #if frame == 0:
+        #    plt.title('Motion-Reconstructed') # Frames
+        plt.axis('off')
+    #plt.tight_layout()
+    plt.subplots_adjust(wspace=0.00005,hspace=0.00005) 
+    plt.savefig('MotionReconstructedImage.png') 
+    plt.close
+
+    # TODO: evaluate reconstructed frames
