@@ -98,15 +98,15 @@ model.eval()
 transform.eval()
 
 for data in data_generator:
-    # get frames (numpy arrays)
-    images_fullysampled = data[0].squeeze()         # array with size (H,W,F)
-    images_subsampled   = data[1].permute(1,2,0,3)  # array with size (H,W,1,F)
-    masks               = data[2].squeeze()         # array with size (H,W,C,F)
-    k_spaces            = data[3].squeeze()         # array with size (H,W,C,F)
-    coil_maps           = data[4].squeeze()         # array with size (H,W,C,F)
+    # get data
+    images_fullysampled = data[0].squeeze().numpy()         # array with size (H,W,F)
+    images_subsampled   = data[1].permute(1,2,0,3).numpy()  # array with size (H,W,1,F)
+    masks               = data[2].squeeze().numpy()         # array with size (H,W,C,F)
+    k_spaces            = data[3].squeeze().numpy()         # array with size (H,W,C,F)
+    coil_maps           = data[4].squeeze().numpy()         # array with size (H,W,C,F)
 
-    num_frames = len(images_subsampled)  # number of frames F
-    num_coils  = k_spaces[0].shape[1]    # number of coils C
+    num_frames = k_spaces.shape[3]    # number of frames F
+    num_coils  = k_spaces.shape[2]    # number of coils C
     max_iter   = 10                      # number of iterations
     tol        = 1e-12                   # error tolerance
 
@@ -131,14 +131,14 @@ for data in data_generator:
     plt.close
     """
     # init numpy array for flow fields
-    flows               = np.zeros((H,W,2,num_frames))
+    flows = np.zeros((H,W,2,num_frames))
     
     for frame_num in range(num_frames-1):
         # get displacements relative to the first image (first entry is deliberately left empty)
         if model_num == 3:
-            warped_mov, flow = model(torch.from_numpy(images_subsampled[:,:,0,0]).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).float().to(device))
+            warped_mov, flow = model(torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device))
         else:    
-            flow, features_disp = model(torch.from_numpy(images_subsampled[:,:,0,0]).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).float().to(device))
+            flow, features_disp = model(torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device))
         flows[:,:,:,frame_num+1] = flow.squeeze().permute(1,2,0).cpu().detach().numpy()
 
     # old iterative SENSE code extended for motion-compensation
