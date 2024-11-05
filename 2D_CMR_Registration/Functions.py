@@ -711,21 +711,39 @@ class DatasetCMRxReconstruction(Data.Dataset):
         # fill list for all frames
         for i in range(len(self.pairs[index][0])):
             # read in image data
-            img_fullySampled = imread(self.pairs[index][0][i], as_gray=True)/255
-            img_subSampled   = imread(self.pairs[index][1][i], as_gray=True)/255
-            mask             = imread(self.pairs[index][2][i], as_gray=True)/255
+            image_frames_fullysampled.append(imread(self.pairs[index][0][i], as_gray=True)/255)
+            image_frames_subsampled.append(imread(self.pairs[index][1][i], as_gray=True)/255)
+            mask_frames.append(imread(self.pairs[index][2][i], as_gray=True)/255)
             
-            # convert to tensor
-            image_frames_fullysampled.append(torch.from_numpy(img_fullySampled).unsqueeze(0))
-            image_frames_subsampled.append(torch.from_numpy(img_subSampled).unsqueeze(0))
-            mask_frames.append(torch.from_numpy(mask).unsqueeze(0))
-
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
             k_space  = torch.view_as_complex(torch.load(self.pairs[index][3][i]))
             k_space_frames.append(k_space)
             coil_map = torch.from_numpy(torch.load(self.pairs[index][4][i]))
             coil_map_frames.append(coil_map)
 
+        H = image_frames_fullysampled[0].shape[0]   # image height
+        W = image_frames_fullysampled[0].shape[1]   # image width
+        num_frames = len(image_frames_subsampled)   # number of frames
+        num_coils = k_space_frames[0].shape[0]      # number of coils
+
+        # init numpy arrays
+        images_subsampled   = np.zeros((H,W,1,num_frames))
+        images_fullysampled = np.zeros((H,W,num_frames))
+        k_spaces            = np.zeros((H,W,num_coils,num_frames))
+        coil_maps           = np.zeros((H,W,num_coils,num_frames))
+        
+        # take one mask (should all be the same) and convert it to numpy array
+        mask_frames = mask_frames[0]
+        mask_frames = np.repeat(mask_frames[:,:,np.newaxis], num_coils, axis=2)
+        mask_frames = np.repeat(mask_frames[:,:,:,np.newaxis], num_frames, axis=3)
+        
+        for frame_num in range(num_frames):
+            # put data into time-series arrays
+            images_subsampled[:,:,0,frame_num]    = image_frames_subsampled[frame_num]
+            images_fullysampled[:,:,frame_num]    = image_frames_fullysampled[frame_num]
+            k_spaces[:,:,:,frame_num]             = k_space_frames[frame_num].numpy().transpose(1,2,0)
+            coil_maps[:,:,:,frame_num]            = coil_map_frames[frame_num].numpy().transpose(1,2,0)
+        
         return image_frames_fullysampled, image_frames_subsampled, mask_frames, k_space_frames, coil_map_frames
 
 class TrainDatasetOASIS(Data.Dataset):
