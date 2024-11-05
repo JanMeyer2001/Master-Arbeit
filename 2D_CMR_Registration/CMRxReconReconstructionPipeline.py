@@ -98,17 +98,17 @@ model.eval()
 transform.eval()
 
 for data in data_generator:
-    # get frames (pytorch tensors)
-    img_fullySampled = data[0]          # list of frames with size (1,1,H,W)
-    img_subSampled   = data[1]          # list of frames with size (1,1,H,W)
-    mask             = data[2]          # list of frames with size (1,1,H,W)
-    k_space          = data[3]          # list of frames with size (1,C,H,W)
-    coil_map         = data[4]          # list of frames with size (1,C,H,W)
+    # get frames (numpy arrays)
+    images_fullysampled = data[0].squeeze()         # array with size (H,W,F)
+    images_subsampled   = data[1].permute(1,2,0,3)  # array with size (H,W,1,F)
+    masks               = data[2].squeeze()         # array with size (H,W,C,F)
+    k_spaces            = data[3].squeeze()         # array with size (H,W,C,F)
+    coil_maps           = data[4].squeeze()         # array with size (H,W,C,F)
 
-    num_frames = len(img_subSampled)    # number of frames
-    num_coils = k_space[0].shape[1]     # number of coils
-    max_iter = 10                       # number of iterations
-    tol = 1e-12                         # error tolerance
+    num_frames = len(images_subsampled)  # number of frames F
+    num_coils  = k_spaces[0].shape[1]    # number of coils C
+    max_iter   = 10                      # number of iterations
+    tol        = 1e-12                   # error tolerance
 
     """
     # perform iterative SENSE reconstruction (no motion)
@@ -130,42 +130,26 @@ for data in data_generator:
     plt.savefig('reconstructedImage.png') 
     plt.close
     """
-    # init numpy arrays
+    # init numpy array for flow fields
     flows               = np.zeros((H,W,2,num_frames))
-    images_subsampled   = np.zeros((H,W,1,num_frames))
-    images_fullysampled = np.zeros((H,W,num_frames))
-    k_spaces            = np.zeros((H,W,num_coils,num_frames))
-    coil_maps           = np.zeros((H,W,num_coils,num_frames))
-    # take one mask (should all be the same) and convert it to numpy array
-    mask = mask[0].squeeze().squeeze().numpy()
-    mask = np.repeat(mask[:,:,np.newaxis], num_coils, axis=2)
-    mask = np.repeat(mask[:,:,:,np.newaxis], num_frames, axis=3)
     
-    for frame_num in range(num_frames):
-        # put data into time-series arrays
-        k_spaces[:,:,:,frame_num]             = k_space[frame_num].squeeze().numpy().transpose(1,2,0)
-        coil_maps[:,:,:,frame_num]            = coil_map[frame_num].squeeze().numpy().transpose(1,2,0)
-        images_subsampled[:,:,0,frame_num]    = img_subSampled[frame_num].squeeze().squeeze()
-        images_fullysampled[:,:,frame_num]    = img_fullySampled[frame_num].squeeze().squeeze()
-        
+    for frame_num in range(num_frames-1):
         # get displacements relative to the first image (first entry is deliberately left empty)
-        if frame_num > 0:
-            # predict motion
-            if model_num == 3:
-                warped_mov, flow = model(img_subSampled[0].float().to(device), img_subSampled[1].float().to(device))
-            else:    
-                flow, features_disp = model(img_subSampled[0].float().to(device), img_subSampled[1].float().to(device))
-            flows[:,:,:,frame_num] = flow.squeeze().permute(1,2,0).cpu().detach().numpy()
-    
+        if model_num == 3:
+            warped_mov, flow = model(torch.from_numpy(images_subsampled[:,:,0,0]).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).float().to(device))
+        else:    
+            flow, features_disp = model(torch.from_numpy(images_subsampled[:,:,0,0]).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).float().to(device))
+        flows[:,:,:,frame_num+1] = flow.squeeze().permute(1,2,0).cpu().detach().numpy()
+
     # old iterative SENSE code extended for motion-compensation
     #img_recon_motion = SENSE_motion_compensated(subsampled_k_space=k_spaces,num_iter=10,mask=mask,est_sensemap=coil_maps,flow=flows,transform=transform)   
 
     # perform motion-compensated SENSE reconstruction (takes some time...)
     A  = ForwardOperator                                        # image space to k-space
     AH = AdjointOperator                                        # k-space to image space
-    noisy = AH(k_spaces, mask, coil_maps, flows, transform)     # get naive starting image
+    noisy = AH(k_spaces, masks, coil_maps, flows, transform)     # get naive starting image
     # conjugate gradient optimization for image reconstruction
-    img_recon_motion = conjugate_gradient([noisy, k_spaces, mask, coil_maps, flows, transform], A, AH, max_iter, tol)
+    img_recon_motion = conjugate_gradient([noisy, k_spaces, masks, coil_maps, flows, transform], A, AH, max_iter, tol)
     # coil combine the images
     img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
       

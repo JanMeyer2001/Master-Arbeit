@@ -727,7 +727,7 @@ class DatasetCMRxReconstruction(Data.Dataset):
         num_coils = k_space_frames[0].shape[0]      # number of coils
 
         # init numpy arrays
-        images_subsampled   = np.zeros((H,W,1,num_frames))
+        images_subsampled   = np.zeros((H,W,num_frames))
         images_fullysampled = np.zeros((H,W,num_frames))
         k_spaces            = np.zeros((H,W,num_coils,num_frames))
         coil_maps           = np.zeros((H,W,num_coils,num_frames))
@@ -739,12 +739,12 @@ class DatasetCMRxReconstruction(Data.Dataset):
         
         for frame_num in range(num_frames):
             # put data into time-series arrays
-            images_subsampled[:,:,0,frame_num]    = image_frames_subsampled[frame_num]
-            images_fullysampled[:,:,frame_num]    = image_frames_fullysampled[frame_num]
-            k_spaces[:,:,:,frame_num]             = k_space_frames[frame_num].numpy().transpose(1,2,0)
-            coil_maps[:,:,:,frame_num]            = coil_map_frames[frame_num].numpy().transpose(1,2,0)
+            images_subsampled[:,:,frame_num]    = image_frames_subsampled[frame_num]
+            images_fullysampled[:,:,frame_num]  = image_frames_fullysampled[frame_num]
+            k_spaces[:,:,:,frame_num]           = k_space_frames[frame_num].numpy().transpose(1,2,0)
+            coil_maps[:,:,:,frame_num]          = coil_map_frames[frame_num].numpy().transpose(1,2,0)
         
-        return image_frames_fullysampled, image_frames_subsampled, mask_frames, k_space_frames, coil_map_frames
+        return images_fullysampled, images_subsampled, mask_frames, k_spaces, coil_maps
 
 class TrainDatasetOASIS(Data.Dataset):
   'OASIS dataset'
