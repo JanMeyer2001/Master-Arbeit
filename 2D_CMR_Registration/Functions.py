@@ -481,7 +481,7 @@ def get_image_pairs_CMRxRecon(subset, data_path, subfolder):
         slices = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
         for slice in slices:
             # get all frames for each slice
-            frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
+            frames = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
             if subset == 'TestSet':
                 # add pairs of the frames to a list 
                 image_pairs = image_pairs + list(zip(frames[:-1], frames[1:]))
@@ -660,38 +660,42 @@ class DatasetCMRxReconstruction(Data.Dataset):
         # choose subfolder according to mode
         assert mode >= 1 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
         if mode == 1:
-            subfolder = 'AccFactor04'
+            self.subfolder = 'AccFactor04'
         elif mode == 2:
-            subfolder = 'AccFactor08' 
+            self.subfolder = 'AccFactor08' 
         elif mode == 3:
-            subfolder = 'AccFactor10' 
+            self.subfolder = 'AccFactor10' 
         # get names and paths of training data
         if cropping == False:
-            subset='TestSet/Full' 
+            subset = 'TestSet/Full' 
         else: 
             subset = 'TestSet/Croped'
         
-        self.pairs = []  
+        self.pairs            = []    # init array for data pairs
+        self.H                = 246   # image height
+        self.W                = 512   # image width
+        self.num_coils        = 10    # number of coils
         # get folder names for patients
         patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
-        patients_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
+        patients_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, self.subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
         
         # TODO: remove [0:2] after debugging!!
         for patient in patients_fullySampled[0:2]:
             if patient in patients_subSampled:
                 # get subfolder names for image slices
                 slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
-                slices_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+                slices_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, self.subfolder, patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
                 for slice in slices_fullySampled:
                     if slice in slices_subSampled:
                         # get all frames for each slice
-                        frames_subSampled   = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
+                        frames_subSampled   = [f.path for f in scandir(join(data_path, subset, self.subfolder, patient, slice)) if isfile(join(data_path, subset, self.subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
                         frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
                         # get k-space and coil map paths
-                        k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
-                        coil_maps    = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
+                        k_space_data = [patient,slice]
+                        #k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
+                        coil_maps    = [f.path for f in scandir(join(data_path, subset, self.subfolder, patient, slice)) if isfile(join(data_path, subset, self.subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
                         # repeat mask for correct size
-                        masks = [f.path for f in scandir(join(data_path, subset, subfolder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)] * len(frames_subSampled)
+                        masks = [f.path for f in scandir(join(data_path, subset, self.subfolder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)] * len(frames_subSampled)
                         # add fully sampled, subsampled frames as well as corresponding k-space and coil map data to a list 
                         self.pairs.append([frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps])
                         #self.pairs = self.pairs + list(zip(frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps))
@@ -702,31 +706,38 @@ class DatasetCMRxReconstruction(Data.Dataset):
 
     def __getitem__(self, index):
         'Generates data for an image slice'
-        H           = 246                           # image height
-        W           = 512                           # image width
-        num_frames  = len(self.pairs[index][0])     # number of frames
-        num_coils   = 10                            # number of coils
-        
+        num_frames  = len(self.pairs[index][0])             # number of frames
+        patient     = self.pairs[index][3][0]               # number of current patient
+        slice       = int(self.pairs[index][3][1][-1])      # number of current slice
+
+        # get path for k-space
+        path_origin = join('/home/jmeyer/storage/staff/ziadalhajhemid/CMRxRecon23/MultiCoil/Cine/TestSet',self.subfolder,patient)
+        fullmulti   = readfile2numpy(join(path_origin, 'cine_sax.mat'),real=False)
+
         # init numpy arrays
-        images_subsampled   = np.zeros((H,W,num_frames))
-        images_fullysampled = np.zeros((H,W,num_frames))
-        k_spaces            = torch.zeros(H,W,num_coils,num_frames)
-        coil_maps           = torch.zeros(H,W,num_coils,num_frames)
+        images_subsampled   = np.zeros((self.H,self.W,num_frames))
+        images_fullysampled = np.zeros((self.H,self.W,num_frames))
+        k_spaces            = np.zeros((self.H,self.W,self.num_coils,num_frames), dtype=np.complex64)
+        coil_maps           = np.zeros((self.H,self.W,self.num_coils,num_frames), dtype=np.complex64)
         
         # fill list for all frames
         for i in range(num_frames):
             # read in image data
-            images_subsampled[:,:,i]    = imread(self.pairs[index][0][i], as_gray=True)/255
-            images_fullysampled[:,:,i]  = imread(self.pairs[index][1][i], as_gray=True)/255
+            images_fullysampled[:,:,i]  = imread(self.pairs[index][0][i], as_gray=True)/255
+            images_subsampled[:,:,i]    = imread(self.pairs[index][1][i], as_gray=True)/255
             mask                        = imread(self.pairs[index][2][i], as_gray=True)/255
             
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
-            k_spaces[:,:,:,i]  = torch.view_as_complex(torch.load(self.pairs[index][3][i])).permute(1,2,0)
-            coil_maps[:,:,:,i] = torch.from_numpy(torch.load(self.pairs[index][4][i])).permute(1,2,0)
+            k_space = fullmulti[i, slice]
+            #k_space = T.tensor_to_complex_np(T.to_tensor(k_space))
+            k_spaces[:,:,:,i] = k_space.transpose(1,2,0)
+            #k_spaces[:,:,:,i]  = torch.view_as_complex(torch.load(self.pairs[index][3][i])).permute(1,2,0)
+            coil_map = torch.load(self.pairs[index][4][i])
+            coil_maps[:,:,:,i] = coil_map.transpose(1,2,0)
 
         # take one mask (should all be the same) and convert it to numpy array
         mask_frames = mask
-        mask_frames = np.repeat(mask_frames[:,:,np.newaxis], num_coils, axis=2)
+        mask_frames = np.repeat(mask_frames[:,:,np.newaxis], self.num_coils, axis=2)
         mask_frames = np.repeat(mask_frames[:,:,:,np.newaxis], num_frames, axis=3)
         
         return images_fullysampled, images_subsampled, mask_frames, k_spaces, coil_maps
