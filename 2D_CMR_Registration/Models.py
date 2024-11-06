@@ -1742,7 +1742,11 @@ class Unet(nn.Module):
         # cache downsampling / upsampling operations
         MaxPooling = getattr(nn, 'MaxPool%dd' % ndims)
         self.pooling = [MaxPooling(s) for s in max_pool]
-        self.upsampling = [nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool]
+        # change upsampling for CMRxRecon
+        if inshape[0] == 246 and inshape[1] == 512:
+            self.upsampling = [nn.Upsample(size=[61,128], mode='nearest'),nn.Upsample(size=[123,256], mode='nearest'),nn.Upsample(size=[246,512], mode='nearest')]
+        else:    
+            self.upsampling = [nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool]
 
         # configure encoder (down-sampling path)
         prev_nf = infeats

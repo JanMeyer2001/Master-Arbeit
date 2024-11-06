@@ -25,12 +25,12 @@ parser.add_argument("--epochs", type=int, dest="epochs", default=50,
 parser.add_argument("--lambda", type=float, dest="smth_lambda", default=0.01,
                     help="lambda loss: suggested range 0.1 to 10")
 parser.add_argument("--dataset", type=str,
-                    dest="dataset", default='ACDC',
+                    dest="dataset", default='CMRxRecon',
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
-parser.add_argument("--mode", type=int, dest="mode", default=0,
+parser.add_argument("--mode", type=int, dest="mode", default=1,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--choose_loss", type=int,
-                    dest="choose_loss", default=1,
+                    dest="choose_loss", default=0,
                     help="choose similarity loss: MSE (0) or NCC (1)")
 parser.add_argument("--earlyStop", type=int,
                     dest="earlyStop", default=3,
