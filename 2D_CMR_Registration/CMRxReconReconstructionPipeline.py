@@ -68,20 +68,21 @@ assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but go
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
     # TODO: remove '2D_CMR_Registration/' after debugging
-    path = './2D_CMR_Registration/ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+    path  = './2D_CMR_Registration/ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
     transform = SpatialTransform().to(device)
 elif model_num == 1:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).to(device) 
-    path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+    path  = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
     transform = SpatialTransform().to(device)
 elif model_num == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
-    path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+    path  = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(dataset,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
     transform = SpatialTransform().to(device)
 elif model_num == 3:
     model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).to(device)  #, int_steps=7, int_downsize=2
+    path  = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(dataset,choose_loss,smooth,learning_rate,mode)
     transform = SpatialTransformer(input_shape, mode = 'nearest').to(device)    
 
 if epoch == 0:
@@ -97,6 +98,20 @@ model.load_state_dict(torch.load(modelpath))
 model.eval()
 transform.eval()
 
+# save test results in a csv file
+if model_num == 3:
+    csv_name = './TestResults-Reconstruction/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(dataset,choose_loss,smooth,learning_rate,mode,epoch)
+else:
+    # TODO: remove '2D_CMR_Registration/' after debugging
+    csv_name = './2D_CMR_Registration/TestResults-Reconstruction/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
+f = open(csv_name, 'w')
+with f:
+    fnames = ['SSIM','MSE','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
+    writer = csv.DictWriter(f, fieldnames=fnames)
+    writer.writeheader()
+MSE_test = []
+SSIM_test = []
+
 for data in data_generator:
     # get data
     images_fullysampled = data[0].squeeze().numpy()         # array with size (H,W,F)
@@ -107,8 +122,8 @@ for data in data_generator:
 
     num_frames = k_spaces.shape[3]    # number of frames F
     num_coils  = k_spaces.shape[2]    # number of coils C
-    max_iter   = 10                      # number of iterations
-    tol        = 1e-12                   # error tolerance
+    max_iter   = 10                   # number of iterations
+    tol        = 1e-12                # error tolerance
 
     """
     # perform iterative SENSE reconstruction (no motion)
@@ -152,27 +167,63 @@ for data in data_generator:
     img_recon_motion = conjugate_gradient([noisy, k_spaces, masks, coil_maps, flows, transform], A, AH, max_iter, tol)
     # coil combine the images
     img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
-      
+    """
+    # perform SENSE reconstruction (takes some time...)
+    A  = mriForwardOp                                        # image space to k-space
+    AH = mriAdjointOp                                        # k-space to image space
+    noisy = AH(k_spaces, masks, coil_maps)     # get naive starting image
+    # conjugate gradient optimization for image reconstruction
+    img_recon_motion = conjugate_gradient([noisy, k_spaces, masks, coil_maps], A, AH, max_iter, tol)
+    # coil combine the images
+    img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
+    """  
     # plot the reconstructed motion-compensated frames
+    plt.figure(layout='compressed', figsize=(16, 16))
+    plt.subplots_adjust(wspace=0,hspace=0) 
+    plt.subplot(num_frames+2, 2, 1)
+    plt.imshow(images_subsampled[:,:,0,0], cmap='gray')
+    if mode == 1:
+        plt.title('R=4')
+    elif mode == 2:
+        plt.title('R=8')   
+    elif mode == 3:
+        plt.title('R=10')    
+    plt.axis('off')
+    plt.subplot(num_frames+2, 2, 2)
+    plt.imshow(images_fullysampled[:,:,0], cmap='gray')
+    plt.title('R=0')
+    plt.axis('off')
     for frame in range(num_frames):
-        plt.subplot(num_frames, 3, 3*frame+1)
-        plt.imshow(images_subsampled[:,:,0,frame], cmap='gray')
-        if frame == 0:
-            plt.title('Subsampled') # Frames
-        plt.axis('off')
-        plt.subplot(num_frames, 3, 3*frame+2)
-        plt.imshow(images_fullysampled[:,:,frame], cmap='gray')
-        if frame == 0:
-            plt.title('Fully Sampled') # Frames
-        plt.axis('off')
-        plt.subplot(num_frames, 3, 3*frame+3)
+        plt.subplot(num_frames+2, 2, frame+3)
         plt.imshow(img_recon_motion[:,:,frame], cmap='gray')
-        if frame == 0:
-            plt.title('Motion-Reconstructed') # Frames
+        plt.title('t={}'.format(frame))
         plt.axis('off')
-    #plt.tight_layout()
-    plt.subplots_adjust(wspace=0.00005,hspace=0.00005) 
-    plt.savefig('MotionReconstructedImage.png') 
+    plt.savefig('MotionReconstructedImages.png') #
     plt.close
 
-    # TODO: evaluate reconstructed frames
+    # evaluate reconstructed frames
+    for frame in range(num_frames):
+        # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames
+        csv_MSE  = mean_squared_error(images_fullysampled[:,:,0], normalize_numpy(img_recon_motion[:,:,frame]))
+        csv_SSIM = structural_similarity(images_fullysampled[:,:,0], normalize_numpy(img_recon_motion[:,:,frame]), data_range=1)    
+        MSE_test.append(csv_MSE)
+        SSIM_test.append(csv_SSIM)
+        # save test results to csv file
+        f = open(csv_name, 'a')
+        with f:
+            writer = csv.writer(f)
+            writer.writerow([csv_SSIM, csv_MSE, '-', '-', '-', '-']) 
+    
+# get mean and std  
+mean_SSIM   = np.mean(SSIM_test)
+std_SSIM    = np.std(SSIM_test)
+mean_MSE    = np.mean(MSE_test)
+std_MSE     = np.std(MSE_test)
+
+# write results to csv file
+f = open(csv_name, 'a')
+with f:
+    writer = csv.writer(f)
+    writer.writerow(['-', '-', '-', mean_SSIM, std_SSIM, mean_MSE, std_MSE])
+
+print('% SSIM: {:.4f} \\pm {:.4f}\nMSE (e-3): {:.4f} \\pm {:.4f}'.format(mean_SSIM*100, std_SSIM*100, mean_MSE*100, std_MSE*100))

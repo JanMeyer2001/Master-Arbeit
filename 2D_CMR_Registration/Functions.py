@@ -63,6 +63,10 @@ def normalize(image):
     """ expects an image as tensor and normalizes the values between [0,1] """
     return (image - torch.min(image)) / (torch.max(image) - torch.min(image))
 
+def normalize_numpy(image):
+    """ expects an image as an numpy array and normalizes the values between [0,1] """
+    return (image - np.min(image)) / (np.max(image) - np.min(image))
+
 def get_image_pairs_ACDC(subset, data_path, subfolder):
     """ get the corresponding paths of image pairs for the ACDC dataset """
     image_pairs = []  
@@ -627,8 +631,8 @@ class TestDatasetCMRxReconBenchmark(Data.Dataset):
                 for slice in slices_fullySampled:
                     if slice in slices_subSampled:
                         # get all frames for each slice
-                        frames_subSampled = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f))]
-                        frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))][0:len(frames_subSampled)]
+                        frames_subSampled = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('Image_Frame') == -1)]
+                        frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f)) and not (f.name.find('Image_Frame') == -1)][0:len(frames_subSampled)]
                         # add pairs of the frames to a list 
                         self.image_pairs_fullySampled = self.image_pairs_fullySampled + list(zip(frames_fullySampled[:-1], frames_fullySampled[1:]))
                         self.image_pairs_subSampled = self.image_pairs_subSampled + list(zip(frames_subSampled[:-1], frames_subSampled[1:]))
@@ -728,12 +732,8 @@ class DatasetCMRxReconstruction(Data.Dataset):
             mask                        = imread(self.pairs[index][2][i], as_gray=True)/255
             
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
-            k_space = fullmulti[i, slice]
-            #k_space = T.tensor_to_complex_np(T.to_tensor(k_space))
-            k_spaces[:,:,:,i] = k_space.transpose(1,2,0)
-            #k_spaces[:,:,:,i]  = torch.view_as_complex(torch.load(self.pairs[index][3][i])).permute(1,2,0)
-            coil_map = torch.load(self.pairs[index][4][i])
-            coil_maps[:,:,:,i] = coil_map.transpose(1,2,0)
+            k_spaces[:,:,:,i] = fullmulti[i, slice].transpose(1,2,0)
+            coil_maps[:,:,:,i] = torch.load(self.pairs[index][4][i]).transpose(1,2,0)
 
         # take one mask (should all be the same) and convert it to numpy array
         mask_frames = mask
@@ -1890,8 +1890,8 @@ def ForwardOperator(images, masks, smaps, flow, transform):
     Forward operator (image to k-space) for iterative motion-compensated SENSE reconstruction for numpy arrays.
 
     Arguments:
-        image: image time-series data. Expected dimensions are (H,W,1,t), where (H,W) are the image 
-                dimensions and t is the time channel dimension
+        image: image time-series data. Expected dimensions are (H,W,C,t), where (H,W) are the image 
+                dimensions, C is the coil channel dimension and t is the time channel dimension
         masks: subsampling masks with size (H,W,nc,t)
         smaps: estimated coil sensitivity maps with size (H,W,nc,t)
         flow: flow fields with size (H,W,2,t-1)
@@ -1907,10 +1907,18 @@ def ForwardOperator(images, masks, smaps, flow, transform):
     kspace_out = np.zeros((Nx,Ny,Nc,Nt)) + 1j * np.zeros((Nx,Ny,Nc,Nt))
     
     for t in range(Nt):
+        # add 2 dimensions for real and imaginary values as the transformer cannot handle complex values
+        im_aux = torch.view_as_real(torch.from_numpy(images[:,:,:,t])).permute(3,2,0,1)
+        # stack flow for extra dimensions
+        new_flow = torch.stack((torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0),torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0)),dim=0).squeeze()
         # correct for motion
-        __, im_aux = transform(torch.from_numpy(images[:,:,:,t].transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')
+        __, image_out = transform(im_aux, new_flow, mod = 'nearest') 
+        #__, image_out = transform(torch.from_numpy(images[:,:,:,t].transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')
         # get k-space
-        kspace_out[:,:,:,t] = mriForwardOp(im_aux.squeeze().permute(1,2,0).numpy(), masks[:,:,:,t], smaps[:,:,:,t])
+        image_out = image_out.permute(2,3,1,0).contiguous()     # permute for correct size and call .contiguous() for stride 1
+        image_out = torch.view_as_complex(image_out)            # turn back into an complex tensor
+        kspace_out[:,:,:,t] = mriForwardOp(image_out.numpy(), masks[:,:,:,t], smaps[:,:,:,t])
+        #kspace_out[:,:,:,t] = mriForwardOp(image_out.squeeze().permute(1,2,0).numpy(), masks[:,:,:,t], smaps[:,:,:,t])
     return kspace_out #np.sum(,3)
 
 def AdjointOperator(k_space, masks, smaps, flow, transform):
@@ -1932,15 +1940,22 @@ def AdjointOperator(k_space, masks, smaps, flow, transform):
     Nx, Ny, Nc, Nt = k_space.shape
 
     # init image
-    images_out = np.zeros((Nx,Ny,Nc,Nt)) #+ 1j * np.zeros((Nx,Ny,Nt))
+    images_out = np.zeros((Nx,Ny,Nc,Nt)) + 1j * np.zeros((Nx,Ny,Nc,Nt))
     
     for t in range(Nt):
         # get naive image from k-space 
         im_aux = mriAdjointOp(k_space, masks, smaps)
+        # add 2 dimensions for real and imaginary values as the transformer cannot handle complex values
+        im_aux = torch.view_as_real(torch.from_numpy(im_aux[:,:,:,t])).permute(3,2,0,1)
+        # stack flow for extra dimensions
+        new_flow = torch.stack((torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0),torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0)),dim=0).squeeze()
         # turn into real values and transform
-        __, image_out = transform(torch.from_numpy(np.abs(im_aux[:,:,:,t]).transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')    
+        __, image_out = transform(im_aux, new_flow, mod = 'nearest')  
+        #__, image_out = transform(torch.from_numpy(np.abs(im_aux[:,:,:,t]).transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')   
         # sum coil images up for frame
-        images_out[:,:,:,t] = image_out.squeeze().permute(1,2,0).numpy()#np.sum(,0)
+        image_out = image_out.permute(2,3,1,0).contiguous()     # permute for correct size and call .contiguous() for stride 1
+        image_out = torch.view_as_complex(image_out)            # turn back into an complex tensor
+        images_out[:,:,:,t] = image_out.numpy()#np.sum(,0)
     """    
         plt.subplot(2, int(Nt/2), t+1)
         plt.imshow(images_out[:,:,t], cmap='gray')
