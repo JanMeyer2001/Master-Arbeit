@@ -31,7 +31,7 @@ for run in range(total_runs):
                 "FT_size": [40,84],
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 50,
@@ -52,7 +52,7 @@ for run in range(total_runs):
                 "FT_size": [20,42],
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 50,
@@ -73,7 +73,7 @@ for run in range(total_runs):
                 "FT_size": [24,24],
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 50,
@@ -94,7 +94,7 @@ for run in range(total_runs):
                 "FT_size": [12,12],
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
                 "epochs": 50,
@@ -104,20 +104,19 @@ for run in range(total_runs):
         
     # Copy config 
     config = wandb.config
-    use_cuda = True
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if run == 0:
         epochs = config.epochs
 
     # choose the model
-    assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"
+    assert config.model == 0 or config.model == 1 or config.model == 2, f"Expected model to be either 0, 1 or 2, but got: {config.model}"
     assert config.diffeo == 0 or config.diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {config.diffeo}"
-    if config.F_Net_plus == 0:
+    if config.model == 0:
         model = Fourier_Net(2, 2, config.start_channel, config.diffeo).cuda() 
-    elif config.F_Net_plus == 1:
+    elif config.model == 1:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Fourier_Net_plus(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
-    elif config.F_Net_plus == 2:
+    elif config.model == 2:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Cascade(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
 
@@ -130,7 +129,6 @@ for run in range(total_runs):
     elif config.choose_loss == 2:
         loss_similarity = NCC(win=9)
     elif config.choose_loss == 3:
-        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
         loss_similarity = SAD().loss
     loss_smooth = smoothloss
 
@@ -150,14 +148,14 @@ for run in range(total_runs):
             train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', config.mode) 
             training_generator = Data.DataLoader(dataset=train_set, batch_size=config.bs, shuffle=True, num_workers=4)
             validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', config.mode) 
-            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
+            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=False, num_workers=4)
             test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
         elif config.dataset == "ACDC":
             train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', config.mode) 
             training_generator = Data.DataLoader(dataset=train_set, batch_size=config.bs, shuffle=True, num_workers=4)
             validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', config.mode) 
-            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
+            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=False, num_workers=4)
             test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
         else:
@@ -165,6 +163,6 @@ for run in range(total_runs):
         
         print('Finished Loading!')
 
-        epochs = log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,True)
+        epochs = log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,device,True)
     else:
-        log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)
+        log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,device,False)

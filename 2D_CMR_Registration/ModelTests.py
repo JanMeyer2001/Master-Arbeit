@@ -22,7 +22,7 @@ parser.add_argument("--start_channel", type=int,
                     dest="start_channel", default=16,
                     help="number of start channels")
 parser.add_argument("--dataset", type=str, 
-                    dest="dataset", default="ACDC",
+                    dest="dataset", default="CMRxRecon", #ACDC
                     help="dataset for training images: Select either ACDC, CMRxRecon or OASIS")
 parser.add_argument("--choose_loss", type=int,
                     dest="choose_loss", default=1,
@@ -31,7 +31,7 @@ parser.add_argument("--mode", type=int,
                     dest="mode", default=1,
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--model", type=int,
-                    dest="model_num", default=6, 
+                    dest="model_num", default=0, 
                     help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense Fourier-Net (3), dense Fourier-Net+ (4), dense cascaded Fourier-Net+ (5), k-space Fourier-Net (6), k-space Fourier-Net+ (7) or cascaded k-space Fourier-Net+ (8) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
@@ -87,9 +87,9 @@ if dataset == 'ACDC':
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'CMRxRecon':
     # load CMRxRecon data
-    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     training_generator = Data.DataLoader(dataset=train_set, batch_size=1, shuffle=True, num_workers=4)
-    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     input_shape = train_set.__getitem__(0)[0].unsqueeze(0).shape
 elif dataset == 'OASIS':

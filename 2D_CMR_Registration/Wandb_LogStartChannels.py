@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 
 # Compare size of starting channels
 total_runs = 4
-project_name = "StartChannels_Fourier-Net+"
+project_name = "StartChannels_Fourier-Net+ACDC"
 names = ["StartChannel_8", "StartChannel_16", "StartChannel_32", "StartChannel_64"]
 
 # init array for test results
@@ -34,7 +34,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -57,7 +57,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -80,7 +80,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -103,7 +103,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -120,14 +120,14 @@ for run in range(total_runs):
         epochs = config.epochs
 
     # choose the model
-    assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"
+    assert config.model == 0 or config.model == 1 or config.model == 2, f"Expected model to be either 0, 1 or 2, but got: {config.model}"
     assert config.diffeo == 0 or config.diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {config.diffeo}"
-    if config.F_Net_plus == 0:
+    if config.model == 0:
         model = Fourier_Net(2, 2, config.start_channel, config.diffeo).cuda() 
-    elif config.F_Net_plus == 1:
+    elif config.model == 1:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Fourier_Net_plus(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
-    elif config.F_Net_plus == 2:
+    elif config.model == 2:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Cascade(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
 
@@ -175,6 +175,6 @@ for run in range(total_runs):
         
         print('Finished Loading!')
 
-        epochs = log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,True)
+        epochs = log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,True)
     else:
-        log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)
+        epochs = log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)

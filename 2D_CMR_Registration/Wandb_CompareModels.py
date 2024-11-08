@@ -10,9 +10,9 @@ warnings.filterwarnings("ignore")
 
 
 # compare Fourier-Net with Fourier-Net+
-total_runs = 6
-project_name = "Compare_Models-ACDC"
-names = ["Fourier-Net", "Fourier-Net+", "Fourier-Net+Cascade","Diff-Fourier-Net", "Diff-Fourier-Net+", "Diff-Fourier-Net+Cascade"]
+total_runs = 9
+project_name = "Compare_Models-ACDC_Acc4-8-10"
+names = ["Fourier-Net-Acc4", "Fourier-Net+-Acc4", "Fourier-Net+Cascade-Acc4","Fourier-Net-Acc8", "Fourier-Net+-Acc8", "Fourier-Net+Cascade-Acc8", "Fourier-Net-Acc10", "Fourier-Net+-Acc10", "Fourier-Net+Cascade-Acc10"] #,"Diff-Fourier-Net", "Diff-Fourier-Net+", "Diff-Fourier-Net+Cascade"
 
 # init array for test results
 results_test = np.zeros((total_runs,7))
@@ -29,15 +29,15 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 8,
+                "start_channel": 16,
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
-                "mode": 0,
-                "F_Net_plus": 0,
+                "mode": 1,
+                "model": 0,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
-                "epochs": 100,
+                "epochs": 15,
                 "diffeo": 0,
             }
         )
@@ -52,15 +52,15 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 8,
+                "start_channel": 16,
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
-                "mode": 0,
-                "F_Net_plus": 1,
+                "mode": 1,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
-                "epochs": 100,
+                "epochs": 15,
                 "diffeo": 0,
             }
         )
@@ -75,18 +75,157 @@ for run in range(total_runs):
             config={
                 "bs": 1,
                 "learning_rate": 1e-4,
-                "start_channel": 8,
+                "start_channel": 16,
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
-                "mode": 0,
-                "F_Net_plus": 2,
+                "mode": 1,
+                "model": 2,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
-                "epochs": 100,
+                "epochs": 15,
                 "diffeo": 0,
             }
         )
+    elif run == 3:  
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 2,
+                "model": 0,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    elif run == 4:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 2,
+                "model": 1,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    elif run == 5:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 2,
+                "model": 2,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    elif run == 6:  
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 3,
+                "model": 0,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    elif run == 7:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 3,
+                "model": 1,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    elif run == 8:
+        print(names[run])
+        wandb.init(
+            # Set the project where this run will be logged
+            project = project_name,
+            # pass the run name
+            name = names[run],
+            # track hyperparameters and run metadata
+            config={
+                "bs": 1,
+                "learning_rate": 1e-4,
+                "start_channel": 16,
+                "smth_lambda": 0.01,
+                "choose_loss": 1,
+                "mode": 3,
+                "model": 2,
+                "FT_size": [24,24],
+                #"dataset": "CMRxRecon",
+                "dataset": "ACDC",
+                "epochs": 15,
+                "diffeo": 0,
+            }
+        )
+    """
     elif run == 3:  
         print(names[run])
         wandb.init(
@@ -102,7 +241,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 0,
+                "model": 0,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -125,7 +264,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 1,
+                "model": 1,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -148,7 +287,7 @@ for run in range(total_runs):
                 "smth_lambda": 0.01,
                 "choose_loss": 1,
                 "mode": 0,
-                "F_Net_plus": 2,
+                "model": 2,
                 "FT_size": [24,24],
                 #"dataset": "CMRxRecon",
                 "dataset": "ACDC",
@@ -156,7 +295,7 @@ for run in range(total_runs):
                 "diffeo": 1,
             }
         )    
-        
+    """    
     # Copy your config 
     config = wandb.config
     use_cuda = True
@@ -165,14 +304,14 @@ for run in range(total_runs):
         epochs = config.epochs
 
     # choose the model
-    assert config.F_Net_plus == 0 or config.F_Net_plus == 1 or config.F_Net_plus == 2, f"Expected F_Net_plus to be either 0, 1 or 2, but got: {config.F_Net_plus}"
+    assert config.model == 0 or config.model == 1 or config.model == 2, f"Expected model to be either 0, 1 or 2, but got: {config.model}"
     assert config.diffeo == 0 or config.diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {config.diffeo}"
-    if config.F_Net_plus == 0:
+    if config.model == 0:
         model = Fourier_Net(2, 2, config.start_channel, config.diffeo).cuda() 
-    elif config.F_Net_plus == 1:
+    elif config.model == 1:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Fourier_Net_plus(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
-    elif config.F_Net_plus == 2:
+    elif config.model == 2:
         assert config.FT_size[0] > 0 and config.FT_size[0] <= 40 and config.FT_size[1] > 0 and config.FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{config.FT_size[0]}, {config.FT_size[1]}]"
         model = Cascade(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
 
@@ -185,7 +324,7 @@ for run in range(total_runs):
     elif config.choose_loss == 2:
         loss_similarity = NCC(win=9)
     elif config.choose_loss == 3:
-        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
+        #ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
         loss_similarity = SAD().loss
     loss_smooth = smoothloss
 
@@ -196,7 +335,6 @@ for run in range(total_runs):
         param.requires_grad = False
         param.volatile = True
 
-
     # load CMR training, validation and test data
     assert config.mode >= 0 and config.mode <= 3, f"Expected mode to be one of fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {config.mode}"
     if run == 0:
@@ -206,14 +344,14 @@ for run in range(total_runs):
             train_set = TrainDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', config.mode) 
             training_generator = Data.DataLoader(dataset=train_set, batch_size=config.bs, shuffle=True, num_workers=4)
             validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', config.mode) 
-            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
+            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=False, num_workers=4)
             test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
         elif config.dataset == "ACDC":
             train_set = TrainDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', config.mode) 
             training_generator = Data.DataLoader(dataset=train_set, batch_size=config.bs, shuffle=True, num_workers=4)
             validation_set = ValidationDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', config.mode) 
-            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=True, num_workers=4)
+            validation_generator = Data.DataLoader(dataset=validation_set, batch_size=config.bs, shuffle=False, num_workers=4)
             test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode=config.mode)
             test_generator = Data.DataLoader(dataset=test_set, batch_size=config.bs, shuffle=False, num_workers=2)
         else:
@@ -221,6 +359,11 @@ for run in range(total_runs):
         
         print('Finished Loading!')
 
-        epochs = log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,True)
+        epochs = 6 #log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False) #True
+        wandb.finish() 
+    elif run == 1:
+        wandb.finish() 
+    elif run == 2:
+        wandb.finish() 
     else:
-        log_TrainTest(wandb,model,config.F_Net_plus,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)
+        log_TrainTest(wandb,model,config.model,config.diffeo,config.dataset,config.FT_size,config.learning_rate,config.start_channel,config.smth_lambda,config.choose_loss,config.mode,epochs,optimizer,loss_similarity,loss_smooth,transform,training_generator,validation_generator,test_generator,False)

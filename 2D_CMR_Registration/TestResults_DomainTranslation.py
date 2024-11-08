@@ -32,7 +32,7 @@ parser.add_argument("--mode", type=int, dest="mode", default='0',
                     help="choose dataset mode: fully sampled (0), 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3)")
 parser.add_argument("--model", type=int,
                     dest="model_num", default=1, 
-                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense Fourier-Net (3), dense Fourier-Net+ (4), dense cascaded Fourier-Net+ (5), k-space Fourier-Net (6), k-space Fourier-Net+ (7) or cascaded k-space Fourier-Net+ (8) as the model")
+                    help="choose whether to use Fourier-Net (0), Fourier-Net+ (1), cascaded Fourier-Net+ (2), dense VoxelMorph (3) as the model")
 parser.add_argument("--diffeo", type=int,
                     dest="diffeo", default=0, 
                     help="choose whether to use a diffeomorphic transform (1) or not (0)")
@@ -68,8 +68,26 @@ assert indomain != outdomain, f"In- and Out-Domain need to be different!! Else u
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cuda" if gpu==1 else "cpu")
 
+if outdomain == 'ACDC':
+    # load ACDC test data
+    test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape[1:3]
+elif outdomain == 'CMRxRecon':
+    # load CMRxRecon test data
+    test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape[1:3]
+elif outdomain == 'OASIS':
+    # path for OASIS test dataset
+    test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
+    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
+    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape[1:3]
+else:
+    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % outdomain)
+
 # choose the model
-assert model_num >= 0 or model_num <= 8, f"Expected F_Net_plus to be between 0 and 8, but got: {model_num}"
+assert model_num >= 0 or model_num <= 3, f"Expected F_Net_plus to be between 0 and 3, but got: {model_num}"
 assert diffeo == 0 or diffeo == 1, f"Expected diffeo to be either 0 or 1, but got: {diffeo}"
 if model_num == 0:
     model = Fourier_Net(2, 2, start_channel, diffeo).to(device) 
@@ -79,26 +97,17 @@ elif model_num == 1:
 elif model_num == 2:
     assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
     model = Cascade(2, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 3:
-    model = Fourier_Net_dense(2, 2, start_channel, diffeo).to(device) 
-elif model_num == 4:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus_dense(2, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 5:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade_dense(2, 2, start_channel, diffeo, FT_size).to(device)  
-elif model_num == 6:
-    model = Fourier_Net_kSpace(4, 2, start_channel, diffeo).to(device) 
-elif model_num == 7:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Fourier_Net_plus_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
-elif model_num == 8:
-    assert FT_size[0] > 0 and FT_size[0] <= 40 and FT_size[1] > 0 and FT_size[1] <= 84, f"Expected FT size smaller or equal to [40, 84] and larger than [0, 0], but got: [{FT_size[0]}, {FT_size[1]}]"
-    model = Cascade_kSpace(4, 2, start_channel, diffeo, FT_size).to(device) 
+elif model_num == 3:  
+    # use dense voxelmorph
+    model = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).to(device)  #, int_steps=7, int_downsize=2
+    model.train()      
 
 transform = SpatialTransform().to(device)
 
-path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(indomain,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
+if model_num == 3:
+    path = './ModelParameters-{}/Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}/'.format(indomain,choose_loss-1,smooth,learning_rate,mode)
+else:
+    path = './ModelParameters-{}/Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Pth/'.format(indomain,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode)
 
 if epoch == 0:
     # choose best model
@@ -123,24 +132,6 @@ if outdomain != 'CMRxRecon':
     Dice_test_full = []
     Dice_test_noBackground = []
 
-if outdomain == 'ACDC':
-    # load ACDC test data
-    test_set = TestDatasetACDC('/home/jmeyer/storage/students/janmeyer_711878/data/ACDC', mode) 
-    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
-    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
-elif outdomain == 'CMRxRecon':
-    # load CMRxRecon test data
-    test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
-    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
-    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
-elif outdomain == 'OASIS':
-    # path for OASIS test dataset
-    test_set = TestDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS') 
-    test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
-    input_shape = test_set.__getitem__(0)[0].unsqueeze(0).shape
-else:
-    raise ValueError('Dataset should be "ACDC", "CMRxRecon" or "OASIS", but found "%s"!' % outdomain)
-
 csv_name = './TestResults-DomainTranslation/TestMetrics-Domain_{}-{}_Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(indomain,outdomain,model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
 f = open(csv_name, 'w')
 with f:
@@ -157,10 +148,10 @@ for i, image_pairs in enumerate(test_generator):
     with torch.no_grad():
         mov_img_fullySampled = image_pairs[0].float().to(device)
         fix_img_fullySampled = image_pairs[1].float().to(device)
-        if outdomain == 'CMRxRecon' and model_num != 0:
+        if outdomain == 'CMRxRecon' and model_num != 0 and model_num != 3:
             mov_img_subSampled = image_pairs[2].float().to(device)
             fix_img_subSampled = image_pairs[3].float().to(device)
-        elif outdomain == 'CMRxRecon' and model_num == 0:
+        elif outdomain == 'CMRxRecon' and (model_num == 0 or model_num == 3):
             mov_img_fullySampled = F.interpolate(mov_img_fullySampled, (256,512), mode='bilinear')
             fix_img_fullySampled = F.interpolate(fix_img_fullySampled, (256,512), mode='bilinear')
             mov_img_subSampled   = image_pairs[2].float().to(device)
@@ -172,27 +163,36 @@ for i, image_pairs in enumerate(test_generator):
             fix_seg = image_pairs[3].float().to(device)
 
         if model_num == 3:
-            # ensure that all images and segmentations have the same size for dense F-Net
-            mov_img_fullySampled = F.interpolate(mov_img_fullySampled, [224,256], mode='nearest') 
-            fix_img_fullySampled = F.interpolate(fix_img_fullySampled, [224,256], mode='nearest')
-            mov_seg = F.interpolate(mov_seg, [224,256], mode='nearest') 
-            fix_seg = F.interpolate(fix_seg, [224,256], mode='nearest')    
-
-        start = time.time()
-        # calculate displacement on subsampled data
-        if outdomain == 'CMRxRecon':
-            V_xy, __ = model(mov_img_subSampled, fix_img_subSampled)
+            start = time.time()
+            # calculate displacement on subsampled data
+            if outdomain == 'CMRxRecon':
+                warped_mov_img_subSampled, Df_xy = model(mov_img_subSampled, fix_img_subSampled)
+                warped_mov_img_fullySampled = transform(mov_img_fullySampled, Df_xy)
+            else:
+                warped_mov_img_fullySampled, Df_xy = model(mov_img_fullySampled, fix_img_fullySampled)
+            
+            # get inference time
+            inference_time = time.time()-start
+            times.append(inference_time)
+                
+            if outdomain != 'CMRxRecon':
+                warped_mov_seg = transform(mov_seg, Df_xy) 
         else:
-            V_xy, __ = model(mov_img_fullySampled, fix_img_fullySampled)
-        
-        # get inference time
-        inference_time = time.time()-start
-        times.append(inference_time)
-        
-        # but warp fully sampled data
-        __, warped_mov_img_fullySampled = transform(mov_img_fullySampled, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
-        if outdomain != 'CMRxRecon':
-            __, warped_mov_seg = transform(mov_seg, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+            start = time.time()
+            # calculate displacement on subsampled data
+            if outdomain == 'CMRxRecon':
+                V_xy, __ = model(mov_img_subSampled, fix_img_subSampled)
+            else:
+                V_xy, __ = model(mov_img_fullySampled, fix_img_fullySampled)
+            
+            # get inference time
+            inference_time = time.time()-start
+            times.append(inference_time)
+            
+            # but warp fully sampled data
+            __, warped_mov_img_fullySampled = transform(mov_img_fullySampled, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
+            if outdomain != 'CMRxRecon':
+                __, warped_mov_seg = transform(mov_seg, V_xy.permute(0, 2, 3, 1), mod = 'nearest')
         
         # calculate MSE, SSIM and Dice 
         if outdomain == 'OASIS':

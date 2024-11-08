@@ -65,6 +65,7 @@ elif dataset == 'CMRxRecon':
     validation_set = ValidationDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     validation_generator = Data.DataLoader(dataset=validation_set, batch_size=1, shuffle=False, num_workers=4)
     #input_shape = [82,170] # for crops
+    #input_shape = [246,512] # full
 elif dataset == 'OASIS':
     # path for OASIS dataset
     train_set = TrainDatasetOASIS('/imagedata/Learn2Reg_Dataset_release_v1.1/OASIS',trainingset = 4) 

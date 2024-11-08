@@ -49,7 +49,7 @@ if dataset == 'ACDC':
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
 elif dataset == 'CMRxRecon':
     # load CMRxRecon test data
-    test_set = TestDatasetCMRxRecon('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', mode) 
+    test_set = TestDatasetCMRxReconBenchmark('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
     test_generator = Data.DataLoader(dataset=test_set, batch_size=1, shuffle=False, num_workers=4)
 elif dataset == 'OASIS':
     # path for OASIS test dataset

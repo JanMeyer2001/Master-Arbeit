@@ -64,6 +64,7 @@ FT_size = [opt.FT_size_x,opt.FT_size_y]
 earlyStop = opt.earlyStop
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print('Working on device: ', device)
 torch.autograd.set_detect_anomaly(True)
 
 transform = SpatialTransform().to(device)
