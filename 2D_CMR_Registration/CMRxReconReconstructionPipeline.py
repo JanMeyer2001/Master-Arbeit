@@ -109,23 +109,35 @@ with f:
     fnames = ['SSIM','MSE','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
     writer = csv.DictWriter(f, fieldnames=fnames)
     writer.writeheader()
-MSE_test = []
-SSIM_test = []
+MSE_test   = []
+SSIM_test  = []
 
 for data in data_generator:
     # get data
-    images_fullysampled = data[0].squeeze().numpy()         # array with size (H,W,F)
-    images_subsampled   = data[1].permute(1,2,0,3).numpy()  # array with size (H,W,1,F)
-    masks               = data[2].squeeze().numpy()         # array with size (H,W,C,F)
-    k_spaces            = data[3].squeeze().numpy()         # array with size (H,W,C,F)
-    coil_maps           = data[4].squeeze().numpy()         # array with size (H,W,C,F)
+    images_fullysampled = data[0].squeeze()                              # tensor with size (H,W,F)
+    images_subsampled   = data[1].permute(0,3,1,2)                       # tensor with size (1,F,H,W)
+    masks               = data[2].unsqueeze(dim=0).permute(0,1,4,5,2,3)  # tensor with size (1,1,C,F,H,W)
+    k_spaces            = data[3].unsqueeze(dim=0).permute(0,1,4,5,2,3)  # tensor with size (1,1,C,F,H,W)
+    coil_maps           = data[4].unsqueeze(dim=0).permute(0,1,4,5,2,3)  # tensor with size (1,1,C,F,H,W)
 
     num_frames = k_spaces.shape[3]    # number of frames F
     num_coils  = k_spaces.shape[2]    # number of coils C
     max_iter   = 10                   # number of iterations
     tol        = 1e-12                # error tolerance
-
+    
     """
+    # get data
+    images_fullysampled = data[0].squeeze()#.numpy()         # array with size (H,W,F)
+    images_subsampled   = data[1].permute(1,2,0,3)#.numpy()  # array with size (H,W,1,F)
+    masks               = data[2].squeeze()#.numpy()         # array with size (H,W,C,F)
+    k_spaces            = data[3].squeeze()#.numpy()         # array with size (H,W,C,F)
+    coil_maps           = data[4].squeeze()#.numpy()         # array with size (H,W,C,F)
+
+    num_frames = k_spaces.shape[3]    # number of frames F
+    num_coils  = k_spaces.shape[2]    # number of coils C
+    max_iter   = 50                   # number of iterations
+    tol        = 1e-12                # error tolerance
+    
     # perform iterative SENSE reconstruction (no motion)
     img_recon = SENSE_iter(k_space[0].squeeze().numpy(),max_iter,mask[0].squeeze().squeeze().numpy(),coil_map[0].squeeze().squeeze().numpy(),img_fullySampled[0].squeeze().squeeze().numpy())
     # plot the reconstructed image
@@ -144,21 +156,21 @@ for data in data_generator:
     plt.tight_layout()
     plt.savefig('reconstructedImage.png') 
     plt.close
-    """
+    
     # init numpy array for flow fields
     flows = np.zeros((H,W,2,num_frames))
     
     for frame_num in range(num_frames-1):
         # get displacements relative to the first image (first entry is deliberately left empty)
         if model_num == 3:
-            warped_mov, flow = model(torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device))
+            warped_mov, flow = model(torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device))
         else:    
-            flow, features_disp = model(torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device))
+            flow, features_disp = model(torch.from_numpy(images_subsampled[:,:,0,frame_num+1]).unsqueeze(0).unsqueeze(0).float().to(device), torch.from_numpy(images_subsampled[:,:,0,0]).unsqueeze(0).unsqueeze(0).float().to(device))
         flows[:,:,:,frame_num+1] = flow.squeeze().permute(1,2,0).cpu().detach().numpy()
-
+   
     # old iterative SENSE code extended for motion-compensation
     #img_recon_motion = SENSE_motion_compensated(subsampled_k_space=k_spaces,num_iter=10,mask=mask,est_sensemap=coil_maps,flow=flows,transform=transform)   
-
+    
     # perform motion-compensated SENSE reconstruction (takes some time...)
     A  = ForwardOperator                                        # image space to k-space
     AH = AdjointOperator                                        # k-space to image space
@@ -166,8 +178,9 @@ for data in data_generator:
     # conjugate gradient optimization for image reconstruction
     img_recon_motion = conjugate_gradient([noisy, k_spaces, masks, coil_maps, flows, transform], A, AH, max_iter, tol)
     # coil combine the images
-    img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
-    """
+    img_recon_motion = np.sum(np.abs(img_recon_motion),2)
+    #img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
+    
     # perform SENSE reconstruction (takes some time...)
     A  = mriForwardOp                                        # image space to k-space
     AH = mriAdjointOp                                        # k-space to image space
@@ -177,6 +190,57 @@ for data in data_generator:
     # coil combine the images
     img_recon_motion = np.sqrt(np.sum(np.abs(img_recon_motion)**2,2))
     """  
+
+    # init torch tensor for flow fields
+    flows = torch.zeros(1,1,num_frames,H,W,2)
+    
+    for frame_num in range(num_frames-1):
+        # get displacements relative to the first image (first entry is deliberately left empty)
+        if model_num == 3:
+            warped_mov, flow = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
+        else:    
+            flow, features_disp = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
+        flows[:,:,frame_num+1,:,:,:] = flow.squeeze().permute(1,2,0)
+    
+    # reconstruct images
+    recon = ReconDCPMMotion(max_iter=max_iter, coil_axis=2)
+    img_recon_motion = torch.abs(recon(images_subsampled, k_spaces, masks, coil_maps, flows, transform, num_frames))
+
+    # plot the reconstructed motion-compensated frames
+    plt.figure(layout='compressed', figsize=(16, 16))
+    plt.subplots_adjust(wspace=0,hspace=0) 
+    plt.subplot(3, 2, 1)
+    plt.imshow(images_subsampled[0,0,:,:].cpu().detach().numpy(), cmap='gray')
+    if mode == 1:
+        plt.title('R=4')
+    elif mode == 2:
+        plt.title('R=8')   
+    elif mode == 3:
+        plt.title('R=10')    
+    plt.axis('off')
+    plt.subplot(3, 2, 2)
+    plt.imshow(images_fullysampled[:,:,0].cpu().detach().numpy(), cmap='gray')
+    plt.title('R=0')
+    plt.axis('off')
+    plt.subplot(3, 2, 3)
+    plt.imshow(img_recon_motion[0,0,:,:].cpu().detach().numpy(), cmap='gray')
+    plt.title('t=0')
+    plt.axis('off')
+    plt.subplot(3, 2, 4)
+    plt.imshow(img_recon_motion[0,2,:,:].cpu().detach().numpy(), cmap='gray')
+    plt.title('t=2')
+    plt.axis('off')
+    plt.subplot(3, 2, 5)
+    plt.imshow(img_recon_motion[0,4,:,:].cpu().detach().numpy(), cmap='gray')
+    plt.title('t=4')
+    plt.axis('off')
+    plt.subplot(3, 2, 6)
+    plt.imshow(img_recon_motion[0,10,:,:].cpu().detach().numpy(), cmap='gray')
+    plt.title('t=10')
+    plt.axis('off')
+    plt.savefig('MotionReconstructedImagesNewCG.png') #
+    plt.close
+    """
     # plot the reconstructed motion-compensated frames
     plt.figure(layout='compressed', figsize=(16, 16))
     plt.subplots_adjust(wspace=0,hspace=0) 
@@ -200,7 +264,7 @@ for data in data_generator:
         plt.axis('off')
     plt.savefig('MotionReconstructedImages.png') #
     plt.close
-
+    """
     # evaluate reconstructed frames
     for frame in range(num_frames):
         # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames

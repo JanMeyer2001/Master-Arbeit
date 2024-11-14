@@ -1,9 +1,3 @@
-"""
-Helper functions from https://github.com/zhangjun001/ICNet.
-
-Some functions has been modified.
-"""
-
 import numpy as np
 import torch.utils.data as Data
 import nibabel as nib
@@ -735,7 +729,7 @@ class DatasetCMRxReconstruction(Data.Dataset):
             k_spaces[:,:,:,i] = fullmulti[i, slice].transpose(1,2,0)
             coil_maps[:,:,:,i] = torch.load(self.pairs[index][4][i]).transpose(1,2,0)
 
-        # take one mask (should all be the same) and convert it to numpy array
+        # take one mask and select deleted lines
         mask_frames = mask
         mask_frames = np.repeat(mask_frames[:,:,np.newaxis], self.num_coils, axis=2)
         mask_frames = np.repeat(mask_frames[:,:,:,np.newaxis], num_frames, axis=3)
@@ -1856,33 +1850,403 @@ def pytorch_sense_estimation_ls(Y, X, basis_funct, uspat, device):
 def rmse(pred, gt):
     return np.linalg.norm(pred.flatten() - gt.flatten()) ** 2 / np.linalg.norm(gt.flatten()) ** 2
 
+# MCMR pipeline
+class ReconDCPM(torch.nn.Module):
+    def __init__(self, max_iter, weight_init=1e12, tol=1e-12):
+
+        super().__init__()
+        self.A = MulticoilForwardOp(center=True, coil_axis=-4, channel_dim_defined=False)
+        self.AH = MulticoilAdjointOp(center=True, coil_axis=-4, channel_dim_defined=False)
+
+        self.DC = DCPM(self.A, self.AH, weight_init=weight_init, max_iter=max_iter, tol=tol, weight_scale=1.0, requires_grad=False)
+
+    def forward(self, img, kspace, mask, smaps):
+        if img is None:
+            img = self.AH(kspace, mask, smaps)
+        recon_im = self.DC([img, kspace, mask, smaps])
+        return recon_im
+
+
+class ReconDCPMMotion(torch.nn.Module):
+    def __init__(self, max_iter, coil_axis, weight_init=1e-12, tol=1e-12):
+        super().__init__()
+        self.A_motion = MulticoilMotionForwardOp(center=True, coil_axis=coil_axis, channel_dim_defined=False)
+        self.AH_motion = MulticoilMotionAdjointOp(center=True, coil_axis=coil_axis, channel_dim_defined=False)
+
+        self.DC = DCPM(self.A_motion, self.AH_motion, weight_init=weight_init, max_iter=max_iter, tol=tol, weight_scale=1.0)
+
+    def forward(self, recon_image, kspace, mask, smaps, flow, transform, recon_frames=None, recon_neighbor_frames='all'):
+
+        # modify the input size to fit the DCPM
+        if flow.dim() != 6:
+            flow = flow[None, ...]
+            assert flow.dim() == 6
+        if recon_frames is None:
+            recon_frames = range(flow.shape[2])    # number of frames is the last dimension
+        if recon_image.dim() != 4:
+            recon_image = recon_image[None, ...]
+        if kspace.dim() != 6:
+            kspace_expand = torch.zeros((1, kspace.shape[1], *flow.shape[1:-1])).type(torch.complex64).cuda()
+            for idx, slc in enumerate(recon_frames):
+                neighbor_kspace = neighboring_frame_select(kspace, slc, recon_neighbor_frames, frame_dim=2)
+                neighbor_kspace = neighbor_kspace[:, :, None, ...]
+                kspace_expand[:, :, idx:idx+1] = neighbor_kspace
+            kspace = kspace_expand
+        if mask.dim() != 6:
+            mask_expand = torch.zeros((*mask.shape[:2], *flow.shape[1:-1])).cuda()
+            for idx, slc in enumerate(recon_frames):
+                neighbor_mask = neighboring_frame_select(mask, slc, recon_neighbor_frames, frame_dim=2)
+                neighbor_mask = neighbor_mask[:, :, None, ...]
+                mask_expand[:, :, idx:idx+1] = neighbor_mask
+            mask = mask_expand
+        if smaps.dim() != 6:
+            smaps = smaps[:, :, None, ...]
+
+        recon_im = self.DC([recon_image, kspace, mask, smaps, flow, transform])
+        return recon_im
+    
+def neighboring_frame_select(input, slc, neighboring_frame, frame_dim=1):
+    """
+    the input is regarded as cyclic.
+    :param input:
+    :param slc:
+    :param neighboring_frame:
+    :param frame_dim:
+    :return:
+    """
+    nfr = input.shape[frame_dim]
+    if isinstance(neighboring_frame, int): assert 2*neighboring_frame+1 <= nfr
+    # alternative: for neighboring_frame == 'all' we can also shift nothing
+    shift_offset = int(nfr/2) - slc if neighboring_frame == 'all' else neighboring_frame - slc
+
+    input_shifted = torch.roll(input, shift_offset, dims=frame_dim)
+    output = torch.swapaxes(input_shifted, frame_dim, 0)
+    if isinstance(neighboring_frame, int):
+        output = output[:2*neighboring_frame+1, ...]
+    output = torch.swapaxes(output, 0, frame_dim)
+    return output
+
+def fft2(x, dim=(-2,-1)):
+    return torch.fft.fft2(x, dim=dim, norm='ortho')
+
+
+def ifft2(X, dim=(-2,-1)):
+    return torch.fft.ifft2(X, dim=dim, norm='ortho')
+
+
+def fft2c(x, dim=(-2,-1)):
+    return torch.fft.fftshift(fft2(torch.fft.ifftshift(x, dim), dim), dim)
+
+
+def ifft2c(x, dim=(-2,-1)):
+    return torch.fft.fftshift(ifft2(torch.fft.ifftshift(x, dim), dim), dim)
+
+
+class MulticoilForwardOp(torch.nn.Module):
+    def __init__(self, center=False, coil_axis=-3, channel_dim_defined=True):
+        super().__init__()
+        if center:
+            self.fft2 = fft2c
+        else:
+            self.fft2 = fft2
+        self.coil_axis = coil_axis
+        self.channel_dim_defined = channel_dim_defined
+
+    def forward(self, image, mask, smaps):
+        if self.channel_dim_defined:
+            coilimg = torch.unsqueeze(image[:,0], self.coil_axis) * smaps
+        else:
+            coilimg = torch.unsqueeze(image, self.coil_axis) * smaps
+        kspace = self.fft2(coilimg)
+        masked_kspace = kspace * mask
+        return masked_kspace
+
+
+class MulticoilAdjointOp(torch.nn.Module):
+    def __init__(self, center=False, coil_axis=-3, channel_dim_defined=True):
+        super().__init__()
+        if center:
+            self.ifft2 = ifft2c
+        else:
+            self.ifft2 = ifft2
+        self.coil_axis = coil_axis
+        self.channel_dim_defined = channel_dim_defined
+
+    def forward(self, kspace, mask, smaps):
+        masked_kspace = kspace * mask
+        coilimg = self.ifft2(masked_kspace)
+        img = torch.sum(torch.conj(smaps) * coilimg, self.coil_axis)
+
+        if self.channel_dim_defined:
+            return torch.unsqueeze(img, 1)
+        else:
+            return img
+        
+class MulticoilMotionForwardOp(torch.nn.Module):
+    def __init__(self, center=False, coil_axis=-3, channel_dim_defined=True):
+        super().__init__()
+        self.W = WarpForward()
+        self.A = MulticoilForwardOp(center=center, coil_axis=coil_axis, channel_dim_defined=False)
+        self.channel_dim_defined = channel_dim_defined
+
+    def forward(self, x, mask, smaps, u, transform):
+        if self.channel_dim_defined:
+            x = self.W(x[:,0], u)
+        else:
+            x = self.W(x, u)
+        y = self.A(x, mask, smaps)
+        return y
+
+
+class MulticoilMotionAdjointOp(torch.nn.Module):
+    def __init__(self, center=False, coil_axis=-3, channel_dim_defined=True):
+        super().__init__()
+        self.AH = MulticoilAdjointOp(center=center, coil_axis=coil_axis, channel_dim_defined=False)
+        self.WH = WarpAdjoint()
+        self.channel_dim_defined = channel_dim_defined
+
+    def forward(self, y, mask, smaps, u, transform):
+        x = self.AH(y, mask, smaps)
+        x = self.WH(x, u, transform)
+        if self.channel_dim_defined:
+            return torch.unsqueeze(x, 1)
+        else:
+            return x
+
+class WarpForward(torch.nn.Module):
+    def forward(self, x, u):
+        # we assume that the input does not have any channel dimension
+        # x [batch, frames, M, N]
+        # u [batch, frames_all, frames, M, N, 2]
+        out_shape = u.shape[:-1]
+        H, W = u.shape[-3:-1]
+        x = torch.repeat_interleave(torch.unsqueeze(x, -3), repeats=u.shape[-5], dim=-3)
+        x = torch.reshape(x, (-1, 1, H, W)) # [batch * frames * frames_all, 1, M, N]
+        u = torch.reshape(u, (-1, H, W, 2)) # [batch * frames * frames_all, M, N, 2]
+        x_re = torch.real(x).contiguous()
+        x_im = torch.imag(x).contiguous()
+        out_re = warp_torch(x_re.float(), u.permute(0, 3, 1, 2).float())
+        out_im = warp_torch(x_im.float(), u.permute(0, 3, 1, 2).float())
+        Wx = torch.complex(out_re, out_im)
+
+        return torch.reshape(Wx, out_shape)
+
+def warp_torch(x, flo):
+    """
+    warp an image/tensor (im2) back to im1, according to the optical flow
+    x: [B, C, H, W] (im2)
+    flo: [B, 2, H, W] flow
+    """
+    B, C, H, W = x.size()
+    # mesh grid
+    xx = torch.arange(0, W).view(1, -1).repeat(H, 1)
+    yy = torch.arange(0, H).view(-1, 1).repeat(1, W)
+    xx = xx.view(1, 1, H, W).repeat(B, 1, 1, 1)
+    yy = yy.view(1, 1, H, W).repeat(B, 1, 1, 1)
+    grid = torch.cat((xx, yy), 1).float()
+
+    mask = torch.ones(x.size(), dtype=x.dtype)
+    if x.is_cuda:
+        grid = grid.cuda()
+        mask = mask.cuda()
+
+    # flo = torch.flip(flo, dims=[1])
+    # vgrid = Variable(grid) + flo
+    vgrid = grid + flo
+
+    # scale grid to [-1,1]
+    vgrid[:, 0, :, :] = 2.0 * vgrid[:, 0, :, :].clone() / max(W - 1, 1) - 1.0
+    vgrid[:, 1, :, :] = 2.0 * vgrid[:, 1, :, :].clone() / max(H - 1, 1) - 1.0
+
+    vgrid = vgrid.permute(0, 2, 3, 1)
+    output = torch.nn.functional.grid_sample(x, vgrid, align_corners=True)
+    
+    #mask = torch.nn.functional.grid_sample(mask, vgrid, align_corners=True)
+    #mask[mask < 0.9999] = 0
+    #mask[mask > 0] = 1
+
+    # return output * mask
+    return output
+
+class WarpAdjoint(torch.nn.Module):
+    def forward(self, x, u, transform):
+        # we assume that the input does not have any channel dimension
+        # x [batch, frames, frames_all, H, W]
+        # u [batch, frames, frames_all, H, W, 2]
+        # transform is the spatial transformer
+        out_shape = u.shape[:-1]
+        H, W = u.shape[-3:-1]
+        x = torch.reshape(x, (-1, 1, H, W)) # [batch * frames * frames_all, 1, M, N]
+        u = torch.reshape(u, (-1, H, W, 2)) # [batch * frames * frames_all, M, N, 2]
+        x_re = torch.real(x).contiguous()
+        x_im = torch.imag(x).contiguous()
+        grid, out_re = transform(x_re.float(), u.float()) 
+        grid, out_im = transform(x_im.float(), u.float()) 
+        x_warpT = torch.complex(out_re, out_im)
+        x_warpT = torch.reshape(x_warpT, out_shape)
+        x_warpT = torch.sum(x_warpT, -3) # unnecessary?
+        return x_warpT
+
+class DCPM(torch.nn.Module):
+    def __init__(self, A, AH, weight_init=1.0, weight_scale=1.0, requires_grad=False, **kwargs):
+        super().__init__()
+
+        self.A = A
+        self.AH = AH
+
+        self.weight_scale = weight_scale
+        self.weight_init = weight_init
+        self._weight = torch.tensor(1, dtype=torch.float32) * weight_init
+        # self._weight = torch.nn.Parameter(torch.tensor(1, dtype=torch.float32)*weight_init)
+        # self._weight.requires_grad_(requires_grad)
+        # self._weight.proj = lambda: self._weight.data.clamp_(1e-4, 1000)
+
+        max_iter = kwargs.get('max_iter', 10)
+        tol = kwargs.get('tol', 1e-10)
+        self.prox = CGClass(A, AH, max_iter=max_iter, tol=tol)
+
+    @property
+    def weight(self):
+        return self._weight * self.weight_scale
+
+    def forward(self, inputs, scale=1.0):
+        x = inputs[0]           # subsampled images
+        y = inputs[1]           # k-space
+        constants = inputs[2:]  # masks, smaps, flows and spatial transformer
+        lambdaa = 1.0 / torch.max(self.weight * scale, torch.ones_like(self.weight)*1e-9)
+        return self.prox(lambdaa, x, y, *constants)
+
+    def __repr__(self):
+        return f'DCPD(lambda_init={self.weight_init:.4g}, weight_scale={self.weight_scale}, requires_grad={self._weight.requires_grad})'
+
+class CGClass(torch.nn.Module):
+    def __init__(self, A, AH, max_iter=10, tol=1e-10):
+        super().__init__()
+        self.A = A
+        self.AH = AH
+        self.max_iter = max_iter
+        self.tol = tol
+
+        self.cg = ComplexCG()
+
+    def forward(self, lambdaa, x, y, *constants):
+        out = torch.zeros_like(x)
+        out = self.cg(self.A, self.AH, self.max_iter, self.tol, lambdaa, x, y, *[c for c in constants])
+        """
+        for n in range(x.shape[0]):
+            cg_out = self.cg(self.A, self.AH, self.max_iter, self.tol, lambdaa, x[n::1], y[n::1], *[c[n::1] for c in constants])
+            out[n] = cg_out[0]
+        """
+        return out
+
+class ComplexCG(torch.nn.Module):
+
+    def dotp(self, data1, data2):
+        if data1.is_complex():
+            mult = torch.conj(data1) * data2
+        else:
+            mult = data1 * data2
+        return torch.sum(mult)
+
+    def solve(self, x0, M, tol, max_iter):
+        x = torch.zeros_like(x0)    # size [1,F,H,W]
+        r = x0.clone()              # size [1,F,H,W]
+        p = x0.clone()              # size [1,F,H,W]
+
+        rTr = torch.norm(r).pow(2)
+
+        it = 0
+        while rTr > tol and it < max_iter:
+            it += 1
+            q = M(p)                        # size [1,F,H,W]
+            alpha = rTr / self.dotp(p, q)
+            x = x + alpha * p
+            r = r - alpha * q
+
+            rTrNew = torch.norm(r).pow(2)
+
+            beta = rTrNew / rTr
+
+            p = r.clone() + beta * p
+            rTr = rTrNew.clone()
+        return x
+
+    def forward(self, A, AH, max_iter, tol, lambdaa, x, y, *constants):
+        def M(p):
+            return AH(A(p, *constants), *constants) + lambdaa * p
+
+        rhs = AH(y, *constants) + lambdaa * x
+        return self.solve(rhs, M, tol, max_iter)
+
 # Conjugate gradient solver for linear inverse problem
 def conjugate_gradient(inputs, A, AH, max_iter=10, tol=1e-12):
-    #x0 = inputs[0]
+    # y is the noisy image, constants the other inputs like k-spaces, flows, etc.
     y = inputs[1]
     constants = inputs[2:]
 
-    #xk = x0
+    # init array for results
+    results = []
+
+    # rhs is the reconstructed image (H,W,C,F)
     rhs = AH(y, *constants)
     def M(p):
         return AH(A(p, *constants), *constants)
 
+    # x is variable for images (H,W,C,F)
     x = np.zeros_like(rhs)
-    i, r, p = 0, rhs, rhs
+    r, p = rhs, rhs
+    # error calculation (float)
     rTr = np.real(np.sum(np.conj(r) * r))
+    tol = 1e12
     num_iter = 0
-    while (num_iter < max_iter) and (rTr > tol):
+
+    while (num_iter < max_iter) and (rTr <= tol):
         Ap = M(p)
+        """
+        plt.figure(layout='compressed', figsize=(16, 16))
+        plt.subplots_adjust(wspace=0,hspace=0) 
+        plt.subplot(2, 2, 1)
+        plt.imshow(np.sum(np.abs(Ap[:,:,5]),2), cmap='gray') 
+        plt.title('Ap')
+        plt.axis('off')
+        """
+        # alpha is float for correction
         alpha = rTr / np.real(np.sum(np.conj(p) * Ap))
+        # adjust x and r, both (H,W,C,F)
         x = x + p * alpha
+        results.append(x)
+        """
+        plt.subplot(2, 2, 2)
+        plt.imshow(np.sum(np.abs(x[:,:,5]),2), cmap='gray') 
+        plt.title('x')
+        plt.axis('off')
+        """
         r = r - Ap * alpha
+        """
+        plt.subplot(2, 2, 3)
+        plt.imshow(np.sum(np.abs(r[:,:,5]),2), cmap='gray') 
+        plt.title('r')
+        plt.axis('off')
+        """
+        if rTr < tol:
+            tol = rTr
+        # re-calculate the error (float)
         rTrNew = np.real(np.sum(np.conj(r) * r))
         beta = rTrNew / rTr
         rTr = rTrNew
+        # adjust p (H,W,C,F)
         p = r + p * beta
+        """
+        plt.subplot(2, 2, 4)
+        plt.imshow(np.sum(np.abs(p[:,:,5]),2), cmap='gray') 
+        plt.title('p')
+        plt.axis('off')
+        plt.savefig('TestImages.png')
+        plt.close
+        """
         num_iter += 1
 
-    return x
+    return results[num_iter-2]
 
 # define own motion operator using Spatial Transformer
 def ForwardOperator(images, masks, smaps, flow, transform):
@@ -1913,12 +2277,10 @@ def ForwardOperator(images, masks, smaps, flow, transform):
         new_flow = torch.stack((torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0),torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0)),dim=0).squeeze()
         # correct for motion
         __, image_out = transform(im_aux, new_flow, mod = 'nearest') 
-        #__, image_out = transform(torch.from_numpy(images[:,:,:,t].transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')
         # get k-space
         image_out = image_out.permute(2,3,1,0).contiguous()     # permute for correct size and call .contiguous() for stride 1
         image_out = torch.view_as_complex(image_out)            # turn back into an complex tensor
         kspace_out[:,:,:,t] = mriForwardOp(image_out.numpy(), masks[:,:,:,t], smaps[:,:,:,t])
-        #kspace_out[:,:,:,t] = mriForwardOp(image_out.squeeze().permute(1,2,0).numpy(), masks[:,:,:,t], smaps[:,:,:,t])
     return kspace_out #np.sum(,3)
 
 def AdjointOperator(k_space, masks, smaps, flow, transform):
@@ -1951,20 +2313,14 @@ def AdjointOperator(k_space, masks, smaps, flow, transform):
         new_flow = torch.stack((torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0),torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0)),dim=0).squeeze()
         # turn into real values and transform
         __, image_out = transform(im_aux, new_flow, mod = 'nearest')  
+        __, image_out = transform(im_aux, new_flow, mod = 'nearest')  
+        #__, image_out = transform(torch.from_numpy(np.abs(im_aux[:,:,:,t]).transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')   
+        __, image_out = transform(im_aux, new_flow, mod = 'nearest')    
         #__, image_out = transform(torch.from_numpy(np.abs(im_aux[:,:,:,t]).transpose(2,0,1)).unsqueeze(dim=0), torch.from_numpy(flow[:,:,:,t]).unsqueeze(dim=0), mod = 'nearest')   
         # sum coil images up for frame
         image_out = image_out.permute(2,3,1,0).contiguous()     # permute for correct size and call .contiguous() for stride 1
         image_out = torch.view_as_complex(image_out)            # turn back into an complex tensor
         images_out[:,:,:,t] = image_out.numpy()#np.sum(,0)
-    """    
-        plt.subplot(2, int(Nt/2), t+1)
-        plt.imshow(images_out[:,:,t], cmap='gray')
-        plt.title('Frame{}'.format(t+1))
-        plt.axis('off')
-    plt.tight_layout()
-    plt.savefig('Images.png') 
-    plt.close
-    """
     return images_out
 
 # Cartesian 2D operators
@@ -1974,13 +2330,13 @@ def mriAdjointOp(kspace, mask, smaps):
 
 def mriForwardOp(image, mask, smaps):
     return fft2c(smaps * image) * mask #[:,:,np.newaxis]
-
+"""
 def fft2c(image, axes=(0,1)):
     return np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(image, axes=axes), norm='ortho', axes=axes), axes=axes)
 
 def ifft2c(kspace, axes=(0,1)):
     return np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(kspace, axes=axes), norm='ortho', axes=axes), axes=axes)
-
+"""
 # Define Batchelor's motion operator
 # motions is now a vertical stack of sparse motion matrices
 def BatchForwardOp(image, masks, smaps, motions, use_optox=False):
