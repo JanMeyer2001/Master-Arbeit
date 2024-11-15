@@ -195,9 +195,9 @@ plt.imshow(img_recon_motion[10,:,:], cmap='gray')
 plt.title('t=10')
 plt.axis('off')
 if model_num == 3:
-    plt.savefig('Images-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(dataset,choose_loss,smooth,learning_rate,mode,epoch))
+    plt.savefig('./TestResults-Reconstruction/Images-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(dataset,choose_loss,smooth,learning_rate,mode,epoch))
 else:
-    plt.savefig('Images-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch))
+    plt.savefig('./TestResults-Reconstruction/Images-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch))
 plt.close
 
 """

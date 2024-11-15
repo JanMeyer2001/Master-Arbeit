@@ -723,10 +723,24 @@ class DatasetCMRxReconstruction(Data.Dataset):
             images_fullysampled[i,:,:]  = imread(self.pairs[index][0][i], as_gray=True)/255
             images_subsampled[i,:,:]    = imread(self.pairs[index][1][i], as_gray=True)/255
             mask                        = imread(self.pairs[index][2][i], as_gray=True)/255
+            if mask.shape[0] != 246 or mask.shape[1] != 512:
+                mask = F.interpolate(torch.from_numpy(mask).unsqueeze(0).unsqueeze(0), (246,512), mode='bilinear').squeeze(0).squeeze(0).numpy()
             
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
-            k_spaces[0,:,i,:,:]  = fullmulti[i, slice]#.transpose(1,2,0)
-            coil_maps[0,:,i,:,:] = torch.load(self.pairs[index][4][i])#.transpose(1,2,0)
+            k_space = fullmulti[i, slice]
+            if k_space.shape[1] == 246 and k_space.shape[2] == 512:
+                k_spaces[0,:,i,:,:] = k_space
+            else:    
+                k_space_real = F.interpolate(torch.real(torch.from_numpy(k_space)).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+                k_space_imag = F.interpolate(torch.imag(torch.from_numpy(k_space)).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+                k_spaces[0,:,i,:,:] = torch.complex(k_space_real, k_space_imag).numpy()
+            coil_map = torch.load(self.pairs[index][4][i])    
+            if coil_map.shape[1] == 246 and coil_map.shape[2] == 512:
+                coil_maps[0,:,i,:,:] = coil_map
+            else:    
+                coil_map_real = F.interpolate(torch.real(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+                coil_map_imag = F.interpolate(torch.imag(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='bilinear').squeeze(0)
+                coil_maps[0,:,i,:,:] = torch.complex(coil_map_real, coil_map_imag).numpy()
 
         # take one mask and repeat it to correct size
         mask_frames = mask
