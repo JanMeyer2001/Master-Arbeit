@@ -677,8 +677,7 @@ class DatasetCMRxReconstruction(Data.Dataset):
         patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
         patients_subSampled   = [basename(f.path) for f in scandir(join(data_path, subset, self.subfolder)) if f.is_dir() and not (f.name.find('P') == -1)]
         
-        # TODO: remove [0:2] after debugging!!
-        for patient in patients_fullySampled[0:2]:
+        for patient in patients_fullySampled: #[0:2]
             if patient in patients_subSampled:
                 # get subfolder names for image slices
                 slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
