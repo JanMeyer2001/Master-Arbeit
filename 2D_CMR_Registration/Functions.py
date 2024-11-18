@@ -724,10 +724,10 @@ class DatasetCMRxReconstruction(Data.Dataset):
             images_subsampled[i,:,:]    = imread(self.pairs[index][1][i], as_gray=True)/255
             mask                        = imread(self.pairs[index][2][i], as_gray=True)/255
             if mask.shape[0] != 246 or mask.shape[1] != 512:
-                padx  = int((246-mask.shape[1])/2)      # calculate padding for x axis
-                pady  = int((512-mask.shape[2])/2)      # calculate padding for y axis
+                padx  = int((246-mask.shape[0])/2)      # calculate padding for x axis
+                pady  = int((512-mask.shape[1])/2)      # calculate padding for y axis
                 padxy = (pady, pady, padx, padx)        # adaptive padding
-                mask  =  F.pad(mask, padxy, "constant", 0).numpy()
+                mask  = F.pad(torch.from_numpy(mask), padxy, "constant", 0).numpy()
                 
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
             k_space = fullmulti[i, slice]
@@ -737,7 +737,7 @@ class DatasetCMRxReconstruction(Data.Dataset):
                 padx  = int((246-k_space.shape[1])/2) # calculate padding for x axis
                 pady  = int((512-k_space.shape[2])/2) # calculate padding for y axis
                 padxy = (pady, pady, padx, padx)      # adaptive padding
-                k_spaces[0,:,i,:,:] = F.pad(k_space, padxy, "constant", 0).numpy()
+                k_spaces[0,:,i,:,:] = F.pad(torch.from_numpy(k_space), padxy, "constant", 0).numpy()
             coil_map = torch.load(self.pairs[index][4][i])    
             if coil_map.shape[1] == 246 and coil_map.shape[2] == 512:
                 coil_maps[0,:,i,:,:] = coil_map
