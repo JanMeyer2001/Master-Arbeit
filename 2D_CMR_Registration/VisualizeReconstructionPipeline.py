@@ -105,71 +105,38 @@ model.load_state_dict(torch.load(modelpath))
 model.eval()
 transform.eval()
 
-# save test results in a csv file
-if model_num == 3:
-    csv_name = './TestResults-Reconstruction/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(choose_loss,smooth,learning_rate,mode,epoch)
-else:
-    csv_name = './TestResults-Reconstruction/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
-f = open(csv_name, 'w')
-with f:
-    fnames = ['HaarPSI','PSNR','SSIM','MSE','Mean HaarPSI','Std HaarPSI','Mean PSNR','Std PSNR','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
-    writer = csv.DictWriter(f, fieldnames=fnames)
-    writer.writeheader()
-
-HaarPSI_test = []
-PSNR_test    = []
-SSIM_test    = []
-MSE_test     = []
-
-print('Begin Reconstruction on {}.'.format(time.ctime()))
+print('Begin plotting...')
 for i, data in enumerate(data_generator):
-    # get data
-    images_fullysampled = data[0].squeeze()     # tensor with size (F,H,W)
-    images_subsampled   = data[1]               # tensor with size (1,F,H,W)
-    masks               = data[2]               # tensor with size (1,1,C,F,H,W)
-    k_spaces            = data[3]               # tensor with size (1,1,C,F,H,W)
-    coil_maps           = data[4]               # tensor with size (1,1,C,F,H,W)
-
-    num_frames = k_spaces.shape[3]    # number of frames F
-    num_coils  = k_spaces.shape[2]    # number of coils C
-    max_iter   = 10                   # number of iterations
-    tol        = 1e-12                # error tolerance
-    
-    # init torch tensor for flow fields
-    flows = torch.zeros(1,1,num_frames,H,W,2)
-    
-    for frame_num in range(num_frames-1):
-        # get displacements relative to the first image (first entry is deliberately left empty)
-        if model_num == 3:
-            warped_mov, flow = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
-        else:    
-            flow, features_disp = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
-        flows[:,:,frame_num+1,:,:,:] = flow.squeeze().permute(1,2,0)
-    
-    # init pipeline and reconstruct images
-    recon = ReconDCPMMotion(max_iter=max_iter, coil_axis=2)
-    img_recon_motion = torch.abs(recon(images_subsampled, k_spaces, masks, coil_maps, flows, transform, num_frames)).squeeze()
-    # normalize (just to be sure)
-    img_recon_motion = normalize(img_recon_motion)
-    
-    # evaluate reconstructed frames
-    for frame in range(num_frames):
-        # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
-        csv_HaarPSI = haarpsi(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-        csv_PSNR    = psnr(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-        csv_SSIM    = ssim(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-        csv_MSE     = mean_squared_error(images_fullysampled[0,:,:].cpu().detach().numpy(), img_recon_motion[frame,:,:].cpu().detach().numpy())
-        HaarPSI_test.append(csv_HaarPSI)
-        PSNR_test.append(csv_PSNR)
-        SSIM_test.append(csv_SSIM)
-        MSE_test.append(csv_MSE)
-        # save test results to csv file
-        f = open(csv_name, 'a')
-        with f:
-            writer = csv.writer(f)
-            writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
-
     if i == 0:
+        # get data
+        images_fullysampled = data[0].squeeze()     # tensor with size (F,H,W)
+        images_subsampled   = data[1]               # tensor with size (1,F,H,W)
+        masks               = data[2]               # tensor with size (1,1,C,F,H,W)
+        k_spaces            = data[3]               # tensor with size (1,1,C,F,H,W)
+        coil_maps           = data[4]               # tensor with size (1,1,C,F,H,W)
+
+        num_frames = k_spaces.shape[3]    # number of frames F
+        num_coils  = k_spaces.shape[2]    # number of coils C
+        max_iter   = 10                   # number of iterations
+        tol        = 1e-12                # error tolerance
+        
+        # init torch tensor for flow fields
+        flows = torch.zeros(1,1,num_frames,H,W,2)
+        
+        for frame_num in range(num_frames-1):
+            # get displacements relative to the first image (first entry is deliberately left empty)
+            if model_num == 3:
+                warped_mov, flow = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
+            else:    
+                flow, features_disp = model(images_subsampled[0,frame_num+1,:,:].unsqueeze(0).unsqueeze(0).float().to(device), images_subsampled[0,0,:,:].unsqueeze(0).unsqueeze(0).float().to(device))
+            flows[:,:,frame_num+1,:,:,:] = flow.squeeze().permute(1,2,0)
+        
+        # init pipeline and reconstruct images
+        recon = ReconDCPMMotion(max_iter=max_iter, coil_axis=2)
+        img_recon_motion = torch.abs(recon(images_subsampled, k_spaces, masks, coil_maps, flows, transform, num_frames)).squeeze()
+        # normalize (just to be sure)
+        img_recon_motion = normalize(img_recon_motion)
+        
         # plot the reconstructed motion-compensated frames
         plt.figure(layout='compressed', figsize=(16, 16))
         plt.subplots_adjust(wspace=0,hspace=0) 
@@ -207,23 +174,6 @@ for i, data in enumerate(data_generator):
         else:
             plt.savefig('./TestResults-Reconstruction/Images-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(model_num,diffeo,choose_loss,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch))
         plt.close
-
-print('Finished reconstruction on {}.\nEvaluation results:'.format(time.ctime()))
-
-# get mean and std  
-mean_HaarPSI = np.mean(HaarPSI_test)*100
-std_HaarPSI  = np.std(HaarPSI_test)*100
-mean_PSNR    = np.mean(PSNR_test)
-std_PSNR     = np.std(PSNR_test)
-mean_SSIM    = np.mean(SSIM_test)*100
-std_SSIM     = np.std(SSIM_test)*100
-mean_MSE     = np.mean(MSE_test)*100
-std_MSE      = np.std(MSE_test)*100
-
-# write results to csv file
-f = open(csv_name, 'a')
-with f:
-    writer = csv.writer(f)
-    writer.writerow(['-', '-', '-', '-', mean_HaarPSI, std_HaarPSI, mean_PSNR, std_PSNR, mean_SSIM, std_SSIM, mean_MSE, std_MSE])
-
-print('   % HaarPSI: {:.4f} \\pm {:.4f}\n   PSNR (dB): {:.4f} \\pm {:.4f}\n   % SSIM: {:.4f} \\pm {:.4f}\n   MSE (e-3): {:.4f} \\pm {:.4f}'.format(mean_HaarPSI, std_HaarPSI, mean_PSNR, std_PSNR, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+        print('  saved plot!')
+    else:
+        break
