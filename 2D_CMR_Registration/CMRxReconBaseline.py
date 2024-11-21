@@ -46,7 +46,7 @@ for mode in modes:
     SSIM_test    = []
     MSE_test     = []
 
-    for data, i in enumerate(data_generator):
+    for i, data in enumerate(data_generator):
         # get data
         images_fullysampled = data[0].squeeze()     # tensor with size (F,H,W)
         images_subsampled   = data[1]               # tensor with size (1,F,H,W)
@@ -139,4 +139,4 @@ for mode in modes:
         writer = csv.writer(f)
         writer.writerow(['-', '-', '-', '-', mean_HaarPSI, std_HaarPSI, mean_PSNR, std_PSNR, mean_SSIM, std_SSIM, mean_MSE, std_MSE])
 
-    print('   % HaarPSI: {:.4f} \\pm {:.4f}\n   PSNR (dB): {:.4f} \\pm {:.4f}\n   % SSIM: {:.4f} \\pm {:.4f}\n   MSE (e-3): {:.4f} \\pm {:.4f}'.format(mean_HaarPSI, std_HaarPSI, mean_PSNR, std_PSNR, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
+    print('   % HaarPSI: {:.3f} \\pm {:.3f}\n   PSNR (dB): {:.3f} \\pm {:.3f}\n   % SSIM: {:.3f} \\pm {:.3f}\n   MSE (e-3): {:.3f} \\pm {:.3f}'.format(mean_HaarPSI, std_HaarPSI, mean_PSNR, std_PSNR, mean_SSIM, std_SSIM, mean_MSE, std_MSE))
