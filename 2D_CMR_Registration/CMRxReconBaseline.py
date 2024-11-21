@@ -8,6 +8,14 @@ from natsort import natsorted
 import sigpy.mri as mr
 import warnings
 warnings.filterwarnings("ignore")
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--z", type=int,
+                    dest="z", default=16, 
+                    help="choose how many lines are dropped for the simulated motion (either 16 or 32)")
+opt = parser.parse_args()
+z = opt.z
 
 dataset = 'CMRxRecon'
 device  = torch.device("cpu") #torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -17,6 +25,12 @@ W = 512
 
 transform = SpatialTransform().to(device)
 transform.eval()
+
+assert z == 16 or z == 32, f"Expected z to either 16 or 32, but got: {z}"
+if z == 16:
+    folder = 'z=16'
+elif z == 32:
+    folder = 'z=32'    
 
 modes = [1,2,3]     # Acc factors 4, 8, 10
 
@@ -30,11 +44,11 @@ for mode in modes:
         print('R=10')
 
     # import image/k-space data and coil sensitivity maps for all slices and frames
-    data_set = DatasetCMRxReconstruction('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode) 
+    data_set = DatasetMotionReconstruction('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode, z) 
     data_generator = Data.DataLoader(dataset=data_set, batch_size=1, shuffle=False, num_workers=4)
 
     # save test results in a csv file
-    csv_name = './TestResults-Reconstruction/TestBaseline_Mode_{}.csv'.format(mode)
+    csv_name = join('./TestResults-Reconstruction',folder,'TestBaseline_Mode_{}.csv'.format(mode))
     f = open(csv_name, 'w')
     with f:
         fnames = ['HaarPSI','PSNR','SSIM','MSE','Mean HaarPSI','Std HaarPSI','Mean PSNR','Std PSNR','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
@@ -71,10 +85,10 @@ for mode in modes:
         # evaluate reconstructed frames
         for frame in range(num_frames):
             # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
-            csv_HaarPSI = haarpsi(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_PSNR    = psnr(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_SSIM    = ssim(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_MSE     = mean_squared_error(images_fullysampled[0,:,:].cpu().detach().numpy(), img_recon_motion[frame,:,:].cpu().detach().numpy())
+            csv_HaarPSI = haarpsi(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_PSNR    = psnr(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_SSIM    = ssim(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_MSE     = mean_squared_error(images_fullysampled[frame,:,:].cpu().detach().numpy(), img_recon_motion[frame,:,:].cpu().detach().numpy())
             HaarPSI_test.append(csv_HaarPSI)
             PSNR_test.append(csv_PSNR)
             SSIM_test.append(csv_SSIM)
@@ -89,36 +103,39 @@ for mode in modes:
             # plot the reconstructed motion-compensated frames
             plt.figure(layout='compressed', figsize=(16, 16))
             plt.subplots_adjust(wspace=0,hspace=0) 
-            plt.subplot(3, 2, 1)
-            plt.imshow(images_subsampled[0,0,:,:].cpu().detach().numpy(), cmap='gray')
-            if mode == 1:
-                plt.title('R=4')
-            elif mode == 2:
-                plt.title('R=8')   
-            elif mode == 3:
-                plt.title('R=10')    
+            plt.subplot(4, 2, 1)
+            plt.imshow(images_subsampled[0,0,:,:].cpu().detach().numpy(), cmap='gray') 
+            plt.title('t=0 Corrupted')  
             plt.axis('off')
-            plt.subplot(3, 2, 2)
+            plt.subplot(4, 2, 2)
+            plt.imshow(images_subsampled[0,10,:,:].cpu().detach().numpy(), cmap='gray') 
+            plt.title('t=10 Corrupted')  
+            plt.axis('off')
+            plt.subplot(4, 2, 3)
             plt.imshow(images_fullysampled[0,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('R=0')
+            plt.title('t=0 Original')
             plt.axis('off')
-            plt.subplot(3, 2, 3)
+            plt.subplot(4, 2, 4)
+            plt.imshow(images_fullysampled[10,:,:].cpu().detach().numpy(), cmap='gray')
+            plt.title('t=10 Original')
+            plt.axis('off')
+            plt.subplot(4, 2, 5)
             plt.imshow(img_recon_motion[0,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=0')
+            plt.title('t=0 Reconstruction')
             plt.axis('off')
-            plt.subplot(3, 2, 4)
-            plt.imshow(img_recon_motion[2,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=2')
-            plt.axis('off')
-            plt.subplot(3, 2, 5)
-            plt.imshow(img_recon_motion[4,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=4')
-            plt.axis('off')
-            plt.subplot(3, 2, 6)
+            plt.subplot(4, 2, 6)
             plt.imshow(img_recon_motion[10,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=10')
+            plt.title('t=10 Reconstruction')
             plt.axis('off')
-            plt.savefig('./TestResults-Reconstruction/Images-Baseline_Mode_{}.png'.format(mode))
+            plt.subplot(4, 2, 7)
+            plt.imshow(np.abs(img_recon_motion[0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
+            plt.title('t=0 Difference')
+            plt.axis('off')
+            plt.subplot(4, 2, 8)
+            plt.imshow(np.abs(img_recon_motion[10,:,:].cpu().detach().numpy()-images_fullysampled[10,:,:].cpu().detach().numpy()), cmap='gray')
+            plt.title('t=10 Difference')
+            plt.axis('off')
+            plt.savefig(join('./TestResults-Reconstruction',folder,'Images-Baseline_Mode_{}.png'.format(mode)))
             plt.close
 
     print('Finished reconstruction on {}.\nEvaluation results:'.format(time.ctime()))
