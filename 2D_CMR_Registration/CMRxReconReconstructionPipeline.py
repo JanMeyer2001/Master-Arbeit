@@ -115,7 +115,7 @@ for mode in modes:
 
     # save test results in a csv file
     if model_num == 3:
-        csv_name = join('./TestResults-Reconstruction',folder,'/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(0,smooth,learning_rate,mode,epoch))
+        csv_name = join('./TestResults-Reconstruction',folder,'TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(0,smooth,learning_rate,mode,epoch))
     else:
         csv_name = join('./TestResults-Reconstruction',folder,'TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch))
     f = open(csv_name, 'w')
