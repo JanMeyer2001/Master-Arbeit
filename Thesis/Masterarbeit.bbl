@@ -3351,5 +3351,139 @@
     \field{month}{07}
     \field{year}{2018}
   \endentry
+
+  \entry{HaarPSI}{article}{}
+    \name{author}{4}{}{%
+      {{hash=RR}{%
+         family={Reisenhofer},
+         familyi={R\bibinitperiod},
+         given={Rafael},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=BS}{%
+         family={Bosse},
+         familyi={B\bibinitperiod},
+         given={Sebastian},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=KG}{%
+         family={Kutyniok},
+         familyi={K\bibinitperiod},
+         given={Gitta},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=WT}{%
+         family={Wiegand},
+         familyi={W\bibinitperiod},
+         given={Thomas},
+         giveni={T\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {arXiv}%
+    }
+    \keyw{Computer Vision and Pattern Recognition (cs.CV), FOS: Computer and
+  information sciences, FOS: Computer and information sciences}
+    \strng{namehash}{RR+1}
+    \strng{fullhash}{RRBSKGWT1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.48550/ARXIV.1607.06140
+    \endverb
+    \field{title}{A Haar Wavelet-Based Perceptual Similarity Index for Image
+  Quality Assessment}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/A Haar Wavelet-Based Perceptual Similarity
+    \verb  Index for Image Quality Assesment.pdf:PDF
+    \endverb
+    \field{year}{2016}
+  \endentry
+
+  \entry{Oksuz2020}{article}{}
+    \name{author}{9}{}{%
+      {{hash=OI}{%
+         family={Oksuz},
+         familyi={O\bibinitperiod},
+         given={Ilkay},
+         giveni={I\bibinitperiod},
+      }}%
+      {{hash=CJR}{%
+         family={Clough},
+         familyi={C\bibinitperiod},
+         given={James\bibnamedelima R.},
+         giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod},
+      }}%
+      {{hash=RB}{%
+         family={Ruijsink},
+         familyi={R\bibinitperiod},
+         given={Bram},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=AEP}{%
+         family={Anton},
+         familyi={A\bibinitperiod},
+         given={Esther\bibnamedelima Puyol},
+         giveni={E\bibinitperiod\bibinitdelim P\bibinitperiod},
+      }}%
+      {{hash=BA}{%
+         family={Bustin},
+         familyi={B\bibinitperiod},
+         given={Aurelien},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=CG}{%
+         family={Cruz},
+         familyi={C\bibinitperiod},
+         given={Gastao},
+         giveni={G\bibinitperiod},
+      }}%
+      {{hash=PC}{%
+         family={Prieto},
+         familyi={P\bibinitperiod},
+         given={Claudia},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=KAP}{%
+         family={King},
+         familyi={K\bibinitperiod},
+         given={Andrew\bibnamedelima P.},
+         giveni={A\bibinitperiod\bibinitdelim P\bibinitperiod},
+      }}%
+      {{hash=SJA}{%
+         family={Schnabel},
+         familyi={S\bibinitperiod},
+         given={Julia\bibnamedelima A.},
+         giveni={J\bibinitperiod\bibinitdelim A\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{2}{%
+      {Institute of Electrical}%
+      {Electronics Engineers (IEEE)}%
+    }
+    \strng{namehash}{OI+1}
+    \strng{fullhash}{OICJRRBAEPBACGPCKAPSJA1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \verb{doi}
+    \verb 10.1109/tmi.2020.3008930
+    \endverb
+    \field{issn}{1558-254X}
+    \field{number}{12}
+    \field{pages}{4001\bibrangedash 4010}
+    \field{title}{Deep Learning-Based Detection and Correction of Cardiac MR
+  Motion Artefacts During Reconstruction for High-Quality Segmentation}
+    \field{volume}{39}
+    \verb{file}
+    \verb :C\:/Users/janme/Universität/Master Medizinische Informatik/4. Semes
+    \verb ter/Masterarbeit/Literatur/Deep Learning Based Detection and Correcti
+    \verb on of Cardiac MR Motion Artefacts During Reconstruction for High-Qual
+    \verb ity Segmentation.pdf:PDF
+    \endverb
+    \field{journaltitle}{IEEE Transactions on Medical Imaging}
+    \field{month}{12}
+    \field{year}{2020}
+  \endentry
 \enddatalist
 \endinput

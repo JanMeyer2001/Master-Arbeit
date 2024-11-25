@@ -652,6 +652,11 @@ The mean squared error (MSE) is calculated between a fixed (ground truth) image 
 	\text{MSE} = \frac{1}{N} \sum_{i=1}^{N} |F(x,y) - W(x,y)|^2,
 \end{equation}
 where $F$ is the fixed image and $W$ is the warped image with $N$ being the number of pixels in the images. The lower the MSE the higher the similarity with 0 being a perfect match (the images are exactly the same).\\
+The MSE can also be used to calculate another useful metric - the preak SNR (PSNR), which describes the ratio between the maximum possible power of a signal and the power of corrupting noise. It is defined as:
+\begin{equation}
+	\text{PSNR} = 20 \cdot \log_{10} \bigg(\frac{2^B - 1}{\sqrt{\text{MSE}}} \bigg),
+\end{equation}
+with $B$ being the bit depth of the image and the metric being defined in decibel (dB) due to the logarithmic scale.\\
 %Another common image metric is the normalized cross-correlation (NCC). 
 %\begin{equation}
 %	\text{NCC} = \frac{1}{N} \sum_{i=1}^{N} \frac{1}{\sigma_F \cdot \sigma_W} F(x,y) \cdot W(x,y),
@@ -1658,7 +1663,6 @@ For $R=8$, the displacements for all methods become more global due to the stron
 		\multirow{6}{*}{\rotatebox{90}{$R=0$}} & Baseline & $70.85 \pm 18.27$  & $60.35 \pm 25.24$ & $86.39 \pm 4.08$ & $0.33 \pm 0.23$ & - & -\\  
 		 & NR & \textcolor{red}{$70.74 \pm 13.77$} & \textcolor{red}{$57.56 \pm 18.86$} & $91.26 \pm 3.18$ & \textcolor{red}{$1.94 \pm 1.61$} & \textcolor{blue}{$0.00 \pm 0.02$} & 122.52\\
 		 & VM & $75.84 \pm 13.46$ & $68.25 \pm 18.36$ & \textcolor{blue}{$93.53 \pm 3.30$} & \textcolor{blue}{$0.06 \pm 0.04$} & $49.98 \pm 0.73$ & 0.1845\\ 
-		 %& LAPNet & $0.xxxx \pm 0.xxxx$ & $0.xxxx \pm 0.xxxx$  & $0.xxxxxx \pm 0.xxxxxx$ & $0.xxxxx \pm 0.xxxxx$  & -\\
 		 & F-Net & \textcolor{blue}{$78.31 \pm 13.96$} & \textcolor{blue}{$71.17 \pm 18.99$} & $91.53 \pm 3.49$ & $0.09 \pm 0.07$ & $0.24 \pm 0.25$ & 0.1918\\ 
 		 & F-Net+ & $76.88 \pm 13.86$ & $67.86 \pm 19.06$ & $88.67 \pm 3.88$ & $0.20 \pm 0.15$ & $0.02 \pm 0.08$ & \textcolor{blue}{0.0893} \\ 
 		 & 4xF-Net+ & $77.90 \pm 13.92$ & $69.21 \pm 19.02$  & $88.89 \pm 4.05$ & $0.19 \pm 0.14$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.3262\\ 
@@ -1670,13 +1674,7 @@ For $R=8$, the displacements for all methods become more global due to the stron
 		 & VM & $71.78 \pm 14.57$ & $63.15 \pm 18.98$ & \textcolor{blue}{$90.73 \pm 4.72$} & \textcolor{blue}{$0.04 \pm 0.03$} & $49.36 \pm 1.20$ & 0.1264\\  	
 		 & F-Net & $76.55 \pm 13.89$ & \textcolor{blue}{$67.90 \pm 19.44$} & $82.93 \pm 8.12$ & $0.10 \pm 0.06$ & $0.19 \pm 0.23$ & 0.1006\\ 
 		 & F-Net+ & $76.20 \pm 13.57$ & $66.30 \pm 19.01$ & $77.74 \pm 10.69$ & $0.19 \pm 0.14$ & $0.01 \pm 0.03$ & \textcolor{blue}{0.0294}\\ 
-		 & 4xF-Net+ & \textcolor{blue}{$77.23 \pm 13.73$} & $67.67 \pm 18.97$ & $77.96 \pm 10.57$ & $0.18 \pm 0.13$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.1131\\ 
-		  
-%%%% Old Values %%%%		 
-%		 & VoxelMorph & \textcolor{blue}{$73.45 \pm 13.40$} & \textcolor{blue}{$63.75 \pm 18.51$} & $78.56 \pm 7.32$ & \textcolor{blue}{$0.15 \pm 0.08$} & 0.1858\\  	
-%		 & Fourier-Net & $72.30 \pm 14.04$ & $61.87 \pm 19.32$ & $78.77 \pm 7.22$ & $0.16 \pm 0.10$ & 0.1890\\ 
-%		 & Fourier-Net+ & \textcolor{red}{$70.18 \pm 17.43$} & \textcolor{red}{$59.36 \pm 23.90$} & \textcolor{red}{$75.78 \pm 10.63$} & $0.28 \pm 0.19$ & \textcolor{blue}{0.0935}\\ 
-%		 & 4xFourier-Net+ & \textcolor{red}{$70.36 \pm 16.63$} & \textcolor{red}{$59.47 \pm 22.80$} & \textcolor{red}{$75.91 \pm 10.72$} & $0.27 \pm 0.19$ & 0.3462\\  
+		 & 4xF-Net+ & \textcolor{blue}{$77.23 \pm 13.73$} & $67.67 \pm 18.97$ & $77.96 \pm 10.57$ & $0.18 \pm 0.13$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.1131\\   
 		
 		% 8x Accelerated (R=8) 
 		\midrule
@@ -1687,13 +1685,6 @@ For $R=8$, the displacements for all methods become more global due to the stron
 		 & F-Net+ & $75.76 \pm 13.43$ & $65.45 \pm 18.63$ & $86.30 \pm 4.18$ & $0.13 \pm 0.11$ & $0.03 \pm 0.11$ & \textcolor{blue}{0.1482}\\ 
 		 & 4xF-Net+ & \textcolor{blue}{$76.56 \pm 13.47$} & $66.81 \pm 18.77$ & $86.29 \pm 4.23$ & $0.13 \pm 0.11$ & \textcolor{blue}{$0.00 \pm 0.02$} & 0.5283\\ 
 		 	 
-%%%% Old Values %%%%
-%		 & VoxelMorph & $72.94 \pm 14.20$ & \textcolor{blue}{$64.27 \pm 18.97$} & $88.32 \pm 3.01$ & \textcolor{blue}{$0.09 \pm 0.06$} & 0.1725\\	
-%		 & Fourier-Net & \textcolor{red}{$66.07 \pm 13.72$} & \textcolor{red}{$53.76 \pm 17.03$} & \textcolor{red}{$73.34 \pm 3.83$} & \textcolor{red}{$0.26 \pm 0.09$} & 0.2109\\ 
-%		 & Fourier-Net+ & $71.13 \pm 15.37$ & \textcolor{red}{$60.10 \pm 21.34$} & \textcolor{red}{$84.02 \pm 4.36$} & $0.21 \pm 0.16$ & \textcolor{blue}{0.1487}\\ 
-%		 & 4xFourier-Net+ & \textcolor{blue}{$73.13 \pm 15.26$} & $62.61 \pm 21.39$ & \textcolor{red}{$84.61 \pm 4.44$} & $0.19 \pm 0.15$ & 0.5373\\ 	
-		 	 
-		 	 
 		% 10x Accelerated (R=10) 		 		
 		\midrule		
 		\multirow{6}{*}{\rotatebox{90}{$R=10$}} & Baseline & $70.85 \pm 18.27$ & $60.35 \pm 25.24$ & $89.17 \pm 3.58$ & $0.20 \pm 0.17$ & - & -\\ 
@@ -1702,14 +1693,7 @@ For $R=8$, the displacements for all methods become more global due to the stron
 		 & F-Net & $76.87 \pm 13.97$ & \textcolor{blue}{$68.24 \pm 19.27$} & $92.77 \pm 2.74$ & $0.05 \pm 0.04$ & $0.11 \pm 0.15$ & 0.0296\\ 
 		 & F-Net+ & $76.10 \pm 13.83$ & $66.27 \pm 19.20$ & $90.32 \pm 3.29$ & $0.12 \pm 0.12$ & $0.01 \pm 0.05$ & \textcolor{blue}{0.0059}\\ 
 		 & 4xF-Net+ & \textcolor{blue}{$76.98 \pm 13.57$} & $67.40 \pm 18.90$ & $90.42 \pm 3.33$ & $0.11 \pm 0.11$ & \textcolor{blue}{$0.00 \pm 0.03$} & 0.0275\\ 
-		 
-%%%% Old Values %%%%
-%		 & VoxelMorph &  $72.46 \pm 13.20$ & \textcolor{blue}{$62.82 \pm 18.08$} & \textcolor{red}{$88.27 \pm 2.36$} & \textcolor{blue}{$0.10 \pm 0.06$} & 0.1173\\	
-%		 & Fourier-Net & $72.28 \pm 14.65$ & $62.58 \pm 19.99$ & $90.68 \pm 2.93$ & \textcolor{blue}{$0.10 \pm 0.08$} & 0.1088\\ 
-%		 & Fourier-Net+ & $71.83 \pm 15.91$ & $61.10 \pm 22.07$ & \textcolor{red}{$87.77 \pm 3.50$} & $0.19 \pm 0.15$ & \textcolor{blue}{0.0438}\\ 
-%		 & 4xFourier-Net+ & \textcolor{blue}{$72.55 \pm 15.66$} & $62.00 \pm 21.97$ & \textcolor{red}{$89.13 \pm 3.47$} & $0.17 \pm 0.15$ & 0.1539\\ 		 
-		 
-		\bottomrule
+		 \bottomrule
 	\end{tabular}
 \end{table}
 
@@ -1914,6 +1898,72 @@ Compared \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} train
 		Time [s] 	  & 0.0029 & 0.0043 & 0.0120  \\
 		\bottomrule
 	\end{tabular}	
+\end{table}
+
+\subsection{Reconstruction Pipeline}
+After ensuring that the previous results were translatable to the new data, the reconstruction pipeline had to be evaluated. As the \emph{CMRxRecon} dataset does not include segmentations for Dice calculation, image similarity metrics need to be utilized. For this, SSIM and MSE were used again, however, the PSNR (see section~\ref{SubSec:TestingEvalutionMetrics}) and HaarPSI~\cite{HaarPSI} were also added. After ensuring that the reconstruction pipeline worked, the input images were further corrupted as the cardiac motion present was not deemed severe enough. To simulate motion or mis-triggering a similar strategy to~\cite{Oksuz2020} was used, swapping $z=\{16,32\}$ k-space lines between the frames. Results for the motion-compensated reconstruction using \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} is shown in Table~\ref{tab:ComparisonReconstructionCMRxRecon}.
+
+\begin{table}[h] %tpb
+	\centering
+	\caption{Reconstruction results \emph{VoxelMorph}, \emph{Fourier-Net}, \emph{Fourier-Net+} and \emph{4xFourier-Net+} on the \emph{CMRxRecon} test data for $R=4$, $R=8$ and $R=10$ as well as an baseline without motino-correction. The best results for each metric and subsampling are highlighted in blue, while values worse than the unaligned baseline are marked with red.}
+	\label{tab:ComparisonReconstructionCMRxRecon}
+	\begin{tabular}{c c c c c c} 
+		\toprule
+		 & \multirow{2}{*}{Methods} & \multicolumn{4}{c}{Motion-correction for motion $z=16$} \\
+		\cline{3-6} 
+		 & & $\%$ HaarPSI & PSNR [dB] & $\%$ SSIM & MSE (m)\\
+		
+		% 4x Accelerated (R=4) 				 		
+		\midrule
+		\multirow{5}{*}{\rotatebox{90}{$R=4$}} & Baseline & $56.884 \pm 8.129$ & $28.703 \pm 2.388$ & $78.079 \pm 5.887$ & \textcolor{blue}{$0.160 \pm 0.125$} \\  
+		 & VoxelMorph & $56.909 \pm 8.118$ & \textcolor{blue}{$28.709 \pm 2.404$} & $78.090 \pm 5.903$ & \textcolor{red}{$0.160 \pm 0.126$} \\  
+		 & Fourier-Net & \textcolor{blue}{$56.918 \pm 8.160$} & $28.706 \pm 2.401$ & \textcolor{blue}{$78.123 \pm 5.893$} & \textcolor{red}{$0.160 \pm 0.126$} \\  
+		 & Fourier-Net+ & \textcolor{red}{$56.854 \pm 8.158$} & $28.699 \pm 2.399$ & \textcolor{red}{$78.071 \pm 5.951$} & \textcolor{red}{$0.160 \pm 0.126$} \\   
+		 & 4xFourier-Net+ & $56.903 \pm 8.109$ & \textcolor{red}{$28.702 \pm 2.380$} & $78.085 \pm 5.877$ & \textcolor{blue}{$0.160 \pm 0.125$} \\  
+		
+		% 8x Accelerated (R=8) 
+		\midrule
+		\multirow{5}{*}{\rotatebox{90}{$R=8$}} & Baseline & $53.318 \pm 7.641$ & $28.104 \pm 2.383$ & $77.311 \pm 5.934$ & $0.183 \pm 0.135$ \\  
+		 & VoxelMorph & $53.342 \pm 7.687$ & $28.110 \pm 2.405$ & $77.341 \pm 5.900$ & \textcolor{red}{$0.183 \pm 0.139$} \\  
+		 & Fourier-Net & \textcolor{blue}{$53.394 \pm 7.681$} & $28.128 \pm 2.398$ & \textcolor{blue}{$77.416 \pm 5.927$} & \textcolor{red}{$0.183 \pm 0.138$} \\  
+		 & Fourier-Net+ & $53.388 \pm 7.664$ & $28.118 \pm 2.404$ & $77.398 \pm 5.906$ & \textcolor{red}{$0.183 \pm 0.138$} \\   
+		 & 4xFourier-Net+ & $53.376 \pm 7.688$ & \textcolor{blue}{$28.133 \pm 2.398$} & $77.402 \pm 5.936$ & \textcolor{blue}{$0.182 \pm 0.138$} \\ 
+		 	 
+		% 10x Accelerated (R=10) 		 		
+		\midrule		
+		\multirow{5}{*}{\rotatebox{90}{$R=10$}} & Baseline & $52.211 \pm 7.388$ & $27.906 \pm 2.364$ & $77.192 \pm 5.843$ & $0.191 \pm 0.140$ \\  
+		 & VoxelMorph & $52.211 \pm 7.393$ & $27.907 \pm 2.368$ & $77.194 \pm 5.863$ & $0.191 \pm 0.140$ \\  
+		 & Fourier-Net & \textcolor{red}{$52.192 \pm 7.361$} & \textcolor{red}{$27.895 \pm 2.362$} & \textcolor{red}{$77.160 \pm 5.815$} & $0.191 \pm 0.139$ \\  
+		 & Fourier-Net+ & $52.240 \pm 7.379$ & $27.924 \pm 2.357$ & $77.244 \pm 5.866$ & $0.189 \pm 0.139$ \\   
+		 & 4xFourier-Net+ & \textcolor{blue}{$52.272 \pm 7.330$} & \textcolor{blue}{$27.931 \pm 2.349$} & \textcolor{blue}{$77.262 \pm 5.816$} & \textcolor{blue}{$0.189 \pm 0.137$} \\ 
+		 
+		 \midrule	
+		 & & \multicolumn{4}{c}{Motion-correction for motion $z=32$} \\
+		% 4x Accelerated (R=4) 				 		
+		\midrule
+		\multirow{5}{*}{\rotatebox{90}{$R=4$}} & Baseline & $52.754 \pm 7.725$ & $27.534 \pm 2.175$ & $74.379 \pm 5.869$ & $0.202 \pm 0.129$ \\  
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net+ & $-$ & $-$ & $-$ & $-$ \\   
+		 & 4xFourier-Net+ & $-$ & $-$ & $-$ & $-$ \\  
+		
+		% 8x Accelerated (R=8) 
+		\midrule
+		\multirow{5}{*}{\rotatebox{90}{$R=8$}} & Baseline & $50.071 \pm 7.259$ & $27.153 \pm 2.199$ & $74.033 \pm 5.844$ & $0.221 \pm 0.138$ \\  
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net+ & $-$ & $-$ & $-$ & $-$ \\   
+		 & 4xFourier-Net+ & $-$ & $-$ & $-$ & $-$ \\ 
+		 	 
+		% 10x Accelerated (R=10) 		 		
+		\midrule		
+		\multirow{5}{*}{\rotatebox{90}{$R=10$}} & Baseline & $49.311 \pm 7.049$ & $27.037 \pm 2.182$ & $74.029 \pm 5.782$ & $0.227 \pm 0.143$ \\  
+		 & VoxelMorph & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net & $-$ & $-$ & $-$ & $-$ \\  
+		 & Fourier-Net+ & $-$ & $-$ & $-$ & $-$ \\   
+		 & 4xFourier-Net+ & $-$ & $-$ & $-$ & $-$ \\ 
+		 \bottomrule
+	\end{tabular}
 \end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%

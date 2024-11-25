@@ -95,5 +95,6 @@
 \contentsline {subsection}{Contrastive Learning}{64}{section*.93}%
 \contentsline {section}{\numberline {8.4}Integration into a Motion-Compensated Reconstruction Pipeline}{65}{section.8.4}%
 \contentsline {subsection}{Training Networks}{65}{section*.96}%
-\contentsline {chapter}{\numberline {9}Conclusion}{67}{chapter.9}%
-\contentsline {chapter}{Bibliography}{68}{chapter*.98}%
+\contentsline {subsection}{Reconstruction Pipeline}{66}{section*.98}%
+\contentsline {chapter}{\numberline {9}Conclusion}{68}{chapter.9}%
+\contentsline {chapter}{Bibliography}{69}{chapter*.100}%
