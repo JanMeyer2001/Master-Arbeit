@@ -11,11 +11,11 @@ warnings.filterwarnings("ignore")
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument("--z", type=int,
-                    dest="z", default=16, 
-                    help="choose how many lines are dropped for the simulated motion (either 16 or 32)")
+parser.add_argument("--L", type=int,
+                    dest="L", default=4, 
+                    help="number of simulated lung movement frames")
 opt = parser.parse_args()
-z = opt.z
+L = opt.L
 
 dataset = 'CMRxRecon'
 device  = torch.device("cpu") #torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,12 +25,6 @@ W = 512
 
 transform = SpatialTransform().to(device)
 transform.eval()
-
-assert z == 16 or z == 32, f"Expected z to either 16 or 32, but got: {z}"
-if z == 16:
-    folder = 'z=16'
-elif z == 32:
-    folder = 'z=32'    
 
 modes = [1,2,3]     # Acc factors 4, 8, 10
 
@@ -44,11 +38,11 @@ for mode in modes:
         print('R=10')
 
     # import image/k-space data and coil sensitivity maps for all slices and frames
-    data_set = DatasetMotionReconstruction('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode, z) 
+    data_set = DatasetMotionReconstruction('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode, transform, L) 
     data_generator = Data.DataLoader(dataset=data_set, batch_size=1, shuffle=False, num_workers=4)
 
     # save test results in a csv file
-    csv_name = join('./TestResults-Reconstruction',folder,'TestBaseline_Mode_{}.csv'.format(mode))
+    csv_name = join('./TestResults-Reconstruction/TestBaseline_Mode_{}.csv'.format(mode))
     f = open(csv_name, 'w')
     with f:
         fnames = ['HaarPSI','PSNR','SSIM','MSE','Mean HaarPSI','Std HaarPSI','Mean PSNR','Std PSNR','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
@@ -60,82 +54,91 @@ for mode in modes:
     SSIM_test    = []
     MSE_test     = []
 
-    for i, data in enumerate(data_generator):
+    for data_num, data in enumerate(data_generator):
         # get data
-        images_fullysampled = data[0].squeeze()     # tensor with size (F,H,W)
-        images_subsampled   = data[1]               # tensor with size (1,F,H,W)
-        masks               = data[2]               # tensor with size (1,1,C,F,H,W)
-        k_spaces            = data[3]               # tensor with size (1,1,C,F,H,W)
-        coil_maps           = data[4]               # tensor with size (1,1,C,F,H,W)
+        images_fullysampled = data[0].squeeze()     # tensor with size (F/2,H,W)
+        images_subsampled   = data[1].squeeze()     # tensor with size (L+1,F/2,H,W) --> L is the number of simulated lung movement
+        masks               = data[2]               # tensor with size (1,1,C,L+1*F/2,H,W)
+        k_spaces            = data[3]               # tensor with size (1,1,C,L+1*F/2,H,W)
+        coil_maps           = data[4]               # tensor with size (1,1,C,L+1*F/2,H,W)
 
-        num_frames = k_spaces.shape[3]    # number of frames F
-        num_coils  = k_spaces.shape[2]    # number of coils C
-        max_iter   = 10                   # number of iterations
-        tol        = 1e-12                # error tolerance
+        num_frames = images_fullysampled.shape[0]   # number of frames F/2
+        num_coils  = k_spaces.shape[2]              # number of coils C
+        max_iter   = 10                             # number of iterations
+        tol        = 1e-12                          # error tolerance
         
-        # set flow fields to zero for no motion-correction
-        flows = torch.zeros(1,1,num_frames,H,W,2)
-        
+        # zero flows for the baseline
+        flows = torch.zeros(5,num_frames,H,W,2)
+    
+        # reshape tensor into correct size for the reconstruction pipeline
+        images_subsampled = torch.reshape(images_subsampled, ((L+1)*num_frames,H,W)).unsqueeze(0)
+        flows = torch.reshape(flows, ((L+1)*num_frames,H,W,2)).unsqueeze(0).unsqueeze(0)
+
         # init pipeline and reconstruct images
         recon = ReconDCPMMotion(max_iter=max_iter, coil_axis=2)
         img_recon_motion = torch.abs(recon(images_subsampled, k_spaces, masks, coil_maps, flows, transform, num_frames)).squeeze()
         # normalize (just to be sure)
         img_recon_motion = normalize(img_recon_motion)
+
+        # reshape reconstructed images back 
+        images_subsampled = torch.reshape(images_subsampled, (L+1,num_frames,H,W))
+        img_recon_motion  = torch.reshape(img_recon_motion, (L+1,num_frames,H,W))
         
         # evaluate reconstructed frames
         for frame in range(num_frames):
-            # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
-            csv_HaarPSI = haarpsi(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_PSNR    = psnr(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_SSIM    = ssim(img_recon_motion[frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-            csv_MSE     = mean_squared_error(images_fullysampled[frame,:,:].cpu().detach().numpy(), img_recon_motion[frame,:,:].cpu().detach().numpy())
-            HaarPSI_test.append(csv_HaarPSI)
-            PSNR_test.append(csv_PSNR)
-            SSIM_test.append(csv_SSIM)
-            MSE_test.append(csv_MSE)
-            # save test results to csv file
-            f = open(csv_name, 'a')
-            with f:
-                writer = csv.writer(f)
-                writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
+            for i in range(L):    
+                # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
+                csv_HaarPSI = haarpsi(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+                csv_PSNR    = psnr(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+                csv_SSIM    = ssim(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+                csv_MSE     = mean_squared_error(images_fullysampled[frame,:,:].cpu().detach().numpy(), img_recon_motion[i+1,frame,:,:].cpu().detach().numpy())
+                HaarPSI_test.append(csv_HaarPSI)
+                PSNR_test.append(csv_PSNR)
+                SSIM_test.append(csv_SSIM)
+                MSE_test.append(csv_MSE)
+                # save test results to csv file
+                f = open(csv_name, 'a')
+                with f:
+                    writer = csv.writer(f)
+                    writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
 
-        if i == 0:
+        if data_num == 0:
             # plot the reconstructed motion-compensated frames
             plt.figure(layout='compressed', figsize=(16, 16))
             plt.subplots_adjust(wspace=0,hspace=0) 
             plt.subplot(4, 2, 1)
-            plt.imshow(images_subsampled[0,0,:,:].cpu().detach().numpy(), cmap='gray') 
-            plt.title('t=0 Corrupted')  
+            plt.imshow(images_subsampled[1,0,:,:].cpu().detach().numpy(), cmap='gray') 
+            plt.title('L=1 Corrupted')  
             plt.axis('off')
             plt.subplot(4, 2, 2)
-            plt.imshow(images_subsampled[0,10,:,:].cpu().detach().numpy(), cmap='gray') 
-            plt.title('t=10 Corrupted')  
+            plt.imshow(images_subsampled[2,0,:,:].cpu().detach().numpy(), cmap='gray') 
+            plt.title('L=2 Corrupted')  
             plt.axis('off')
             plt.subplot(4, 2, 3)
             plt.imshow(images_fullysampled[0,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=0 Original')
+            plt.title('Original')
             plt.axis('off')
             plt.subplot(4, 2, 4)
-            plt.imshow(images_fullysampled[10,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=10 Original')
+            plt.imshow(images_fullysampled[0,:,:].cpu().detach().numpy(), cmap='gray')
+            plt.title('Original')
             plt.axis('off')
             plt.subplot(4, 2, 5)
-            plt.imshow(img_recon_motion[0,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=0 Reconstruction')
+            plt.imshow(img_recon_motion[1,0,:,:].cpu().detach().numpy(), cmap='gray')
+            plt.title('L=1 Reconstruction')
             plt.axis('off')
             plt.subplot(4, 2, 6)
-            plt.imshow(img_recon_motion[10,:,:].cpu().detach().numpy(), cmap='gray')
-            plt.title('t=10 Reconstruction')
+            plt.imshow(img_recon_motion[2,0,:,:].cpu().detach().numpy(), cmap='gray')
+            plt.title('L=2 Reconstruction')
             plt.axis('off')
             plt.subplot(4, 2, 7)
-            plt.imshow(np.abs(img_recon_motion[0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
-            plt.title('t=0 Difference')
+            plt.imshow(np.abs(img_recon_motion[1,0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
+            plt.title('L=1 Difference')
             plt.axis('off')
             plt.subplot(4, 2, 8)
-            plt.imshow(np.abs(img_recon_motion[10,:,:].cpu().detach().numpy()-images_fullysampled[10,:,:].cpu().detach().numpy()), cmap='gray')
-            plt.title('t=10 Difference')
+            plt.imshow(np.abs(img_recon_motion[2,0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
+            plt.title('L=2 Difference')
             plt.axis('off')
-            plt.savefig(join('./TestResults-Reconstruction',folder,'Images-Baseline_Mode_{}.png'.format(mode)))
+            plt.savefig(join('./TestResults-Reconstruction/Images-Baseline_Mode_{}.png'.format(mode)))
             plt.close
 
     print('Finished reconstruction on {}.\nEvaluation results:'.format(time.ctime()))

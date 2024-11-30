@@ -756,7 +756,7 @@ class DatasetCMRxReconstruction(Data.Dataset):
 
 class DatasetMotionReconstruction(Data.Dataset):
     'Dataset of subsampled CMRxRecon data that is artificially motion-corrupted'
-    def __init__(self, data_path, cropping, mode, z):
+    def __init__(self, data_path, cropping, mode, transform, L):
         'Initialization'
         # choose subfolder according to mode
         assert mode >= 1 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
@@ -772,10 +772,11 @@ class DatasetMotionReconstruction(Data.Dataset):
         else: 
             subset = 'TestSet/Croped'
         
-        self.pairs            = []    # init array for data pairs
-        self.z                = z     # number of lines that will be swapped to simulate motion
-        self.H                = 246   # image height
-        self.W                = 512   # image width
+        self.pairs            = []                  # init array for data pairs
+        self.H                = 246                 # image height
+        self.W                = 512                 # image width
+        self.transform        = transform           # select transformation
+        self.L                = L                   # number of channels with synthetic lung movement corruption
         
         # get folder names for patients
         patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
@@ -809,45 +810,42 @@ class DatasetMotionReconstruction(Data.Dataset):
         fullmulti   = readfile2numpy(join(path_origin, 'cine_sax.mat'),real=False)
         [num_frames, num_slices, num_coils, ny, nx] = fullmulti.shape
 
-        # init numpy arrays
-        images_subsampled   = np.zeros((num_frames,self.H,self.W))
-        images_fullysampled = np.zeros((num_frames,self.H,self.W))
-        k_spaces            = np.zeros((1,num_coils,num_frames,self.H,self.W), dtype=np.complex64)
-        coil_maps           = np.zeros((1,num_coils,num_frames,self.H,self.W), dtype=np.complex64)
+        # init numpy arrays and torch tensors
+        images_subsampled   = np.zeros((self.L+1,int(num_frames/2),self.H,self.W))
+        images_fullysampled = np.zeros((int(num_frames/2),self.H,self.W))
+        k_spaces            = torch.zeros(1,num_coils,int(num_frames/2),self.H,self.W,dtype=torch.complex64)
+        coil_maps           = torch.zeros(1,num_coils,int(num_frames/2)*(self.L+1),self.H,self.W,dtype=torch.complex64)
+        k_spaces_motion     = torch.zeros(self.L+1,num_coils,int(num_frames/2),self.H,self.W,dtype=torch.complex64) 
         
-        # fill list for all frames
-        for frame in range(num_frames):
+        # select every second frame
+        frames_selected = np.arange(0,num_frames,2)
+
+        # fill list for all selected frames
+        for i, frame in enumerate(frames_selected):
             # read in image data
-            images_fullysampled[frame,:,:] = imread(self.pairs[index][0][frame], as_gray=True)/255
+            images_fullysampled[i,:,:] = imread(self.pairs[index][0][frame], as_gray=True)/255
                 
             # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
             k_space = fullmulti[frame, slice]
             if k_space.shape[1] == 246 and k_space.shape[2] == 512:
-                k_spaces[0,:,frame,:,:] = k_space
+                k_spaces[0,:,i,:,:] = torch.from_numpy(k_space)
             else:    
                 padx  = int((246-k_space.shape[1])/2) # calculate padding for x axis
                 pady  = int((512-k_space.shape[2])/2) # calculate padding for y axis
                 padxy = (pady, pady, padx, padx)      # adaptive padding
-                k_spaces[0,:,frame,:,:] = F.pad(torch.from_numpy(k_space), padxy, "constant", 0).numpy()
+                k_spaces[0,:,i,:,:] = F.pad(torch.from_numpy(k_space), padxy, "constant", 0)
             
             coil_map = torch.load(self.pairs[index][3][frame])    
             if coil_map.shape[1] == 246 and coil_map.shape[2] == 512:
-                coil_maps[0,:,frame,:,:] = coil_map
+                coil_map = np.repeat(coil_map[:,np.newaxis,:,:], self.L+1, axis=1)
+                coil_maps[0,:,(i*(self.L+1)):((i+1)*(self.L+1)),:,:] = torch.from_numpy(coil_map)
             else:    
-                coil_map_real = F.interpolate(torch.real(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
-                coil_map_imag = F.interpolate(torch.imag(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
-                coil_maps[0,:,frame,:,:] = torch.complex(coil_map_real, coil_map_imag).numpy()
+                coil_map_real   = F.interpolate(torch.real(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+                coil_map_imag   = F.interpolate(torch.imag(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+                coil_maps_inter = torch.complex(coil_map_real, coil_map_imag)
+                coil_map        = np.repeat(coil_maps_inter.numpy()[:,np.newaxis,:,:], self.L+1, axis=1)
+                coil_maps[0,:,(i*(self.L+1)):((i+1)*(self.L+1)),:,:] = torch.from_numpy(coil_map)
         
-        # add motion artifacts to the k-space data 
-        k_spaces_motion = k_spaces
-        for frame in range(num_frames):
-            # get random numbers for the original line, the new line to replace it and the frame to use
-            original_lines  = random.sample(range(self.H), self.z)
-            new_lines       = random.sample(range(self.H), self.z)
-            for i, line in enumerate(original_lines):
-                new_frame = random.sample(range(num_frames), 1)
-                k_spaces_motion[0,:,frame,line,:] = k_spaces[0,:,new_frame,new_lines[i],:] 
-
         # take one mask and repeat it to correct size
         mask = imread(self.pairs[index][1][0], as_gray=True)/255
         if mask.shape[0] != 246 or mask.shape[1] != 512:
@@ -856,16 +854,33 @@ class DatasetMotionReconstruction(Data.Dataset):
             padxy = (pady, pady, padx, padx)        # adaptive padding
             mask  = F.pad(torch.from_numpy(mask), padxy, "constant", 0).numpy()
         mask = np.repeat(mask[np.newaxis,:,:], num_coils, axis=0)
-        mask = np.repeat(mask[np.newaxis,:,np.newaxis,:,:], num_frames, axis=2)
+        mask = np.repeat(mask[np.newaxis,:,np.newaxis,:,:], int(num_frames/2)*(self.L+1), axis=2)
         
-        # subsampled motion-corrupted k-spaces
-        k_spaces_motion_subsampled = k_spaces_motion * mask
+        # subsample and add motion artifacts to the k-space data 
+        k_spaces_motion[0,...] = k_spaces * mask[:,:,0:len(frames_selected),:,:]
+        for k, frame in enumerate(frames_selected):
+            for i in range(self.L+1):
+                if i == 0:
+                    # reconstruct images
+                    image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(torch.view_as_real(k_spaces_motion[0,:,k,:,:]))), dim=0)
+                    images_subsampled[i,k,:,:] = normalize(image)
+                else:
+                    # get and save random displacement
+                    random_disp = random_smooth_Displacement((self.H,self.W),0.1)
+                    # get images for all coils
+                    coil_images = fastmri.complex_abs(fastmri.ifft2c(torch.view_as_real(k_spaces_motion[0,:,k,:,:])))
+                    # motion corrupt the coil images
+                    grid, coil_images_motion = self.transform(coil_images.unsqueeze(0).float(),torch.from_numpy(random_disp).unsqueeze(0).float())
+                    # save rss image
+                    images_subsampled[i,k,:,:] = normalize(fastmri.rss(coil_images_motion.squeeze(), dim=0)) 
+                    # convert back to obtain motion corrupted k-space
+                    coil_images = torch.zeros(num_coils,self.H,self.W,2)
+                    coil_images[:,:,:,0] = coil_images_motion.squeeze()
+                    k_spaces_motion[i,:,k,:,:] = torch.view_as_complex(fastmri.fft2c(coil_images))
+        #reshape motion k-space to the correct dimensions
+        k_spaces_motion = torch.reshape(k_spaces_motion, (num_coils,int(num_frames/2)*(self.L+1),self.H,self.W)).unsqueeze(0)
 
-        # get subsampled images from the motion-corrupted k-space data
-        image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(T.to_tensor(k_spaces_motion_subsampled[0,:,:,:,:]))), dim=0)
-        images_subsampled = normalize(image)
-
-        return images_fullysampled, images_subsampled, mask, k_spaces_motion_subsampled, coil_maps
+        return images_fullysampled, images_subsampled, mask, k_spaces_motion, coil_maps
 
 class TrainDatasetOASIS(Data.Dataset):
   'OASIS dataset'
@@ -2045,3 +2060,30 @@ class ComplexCG(torch.nn.Module):
 
         rhs = AH(y, *constants) + lambdaa * x
         return self.solve(rhs, M, tol, max_iter)
+
+######################
+## Code from LAPNet ##
+######################
+
+def random_smooth_Displacement(img_size, amplitude=1):
+    """ random smoothed displacements """
+    H, W = img_size
+    u = -1 + 2 * np.random.rand(H, W, 2)
+    # u = np.random.normal(0, 1, (M, N, 2))
+    cut_off = 0.01
+    w_x_cut = math.floor(cut_off / (1 / H) + (H + 1) / 2)
+    w_y_cut = math.floor(cut_off / (1 / W) + (W + 1) / 2)
+
+    LowPass_win = np.zeros((H, W))
+    LowPass_win[(H - w_x_cut): w_x_cut, (W - w_y_cut): w_y_cut] = 1
+
+    u[..., 0] = (np.fft.ifft2(np.fft.fft2(u[..., 0]) * np.fft.ifftshift(LowPass_win))).real
+    # also equal to u[..., 0] =
+    # (np.fft.ifft2(np.fft.ifftshift(np.fft.fftshift(np.fft.fft2(u[..., 0])) * LowPass_win))).real
+    u[..., 1] = (np.fft.ifft2(np.fft.fft2(u[..., 1]) * np.fft.ifftshift(LowPass_win))).real
+
+    u1 = u[..., 0].flatten()
+    u2 = u[..., 1].flatten()
+    amplitude = amplitude / max(np.linalg.norm(np.vstack([u1, u2]), axis=0))
+    u = u * amplitude
+    return u
