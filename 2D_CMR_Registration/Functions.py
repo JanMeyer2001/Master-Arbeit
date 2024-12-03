@@ -753,9 +753,121 @@ class DatasetCMRxReconstruction(Data.Dataset):
         mask_frames = np.repeat(mask_frames[np.newaxis,:,np.newaxis,:,:], num_frames, axis=2)
         
         return images_fullysampled, images_subsampled, mask_frames, k_spaces, coil_maps
+    
+class DatasetMotionReconstruction_LineSwapping(Data.Dataset):
+    'Dataset of subsampled CMRxRecon data that is artificially motion-corrupted via k-space line swapping'
+    def __init__(self, data_path, cropping, mode, z):
+        'Initialization'
+        # choose subfolder according to mode
+        assert mode >= 1 and mode <= 3, f"Expected mode for CMRxRecon test benchmark to be one of 4x accelerated (1), 8x accelerated (2) or 10x accelerated (3), but got: {mode}"
+        if mode == 1:
+            self.subfolder = 'AccFactor04'
+        elif mode == 2:
+            self.subfolder = 'AccFactor08' 
+        elif mode == 3:
+            self.subfolder = 'AccFactor10' 
+        # get names and paths of training data
+        if cropping == False:
+            subset = 'TestSet/Full' 
+        else: 
+            subset = 'TestSet/Croped'
+        
+        self.pairs            = []    # init array for data pairs
+        self.z                = z     # number of lines that will be swapped to simulate motion
+        self.H                = 246   # image height
+        self.W                = 512   # image width
+        
+        # get folder names for patients
+        patients_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled')) if f.is_dir() and not (f.name.find('P') == -1)]
+        
+        for patient in patients_fullySampled: #[0:2]
+            # get subfolder names for image slices
+            slices_fullySampled = [basename(f.path) for f in scandir(join(data_path, subset, 'FullySampled', patient)) if f.is_dir() and not (f.name.find('Slice') == -1)]
+            for slice in slices_fullySampled:
+                frames_fullySampled = [f.path for f in scandir(join(data_path, subset, 'FullySampled', patient, slice)) if isfile(join(data_path, subset, 'FullySampled', patient, slice, f))]
+                # get k-space and coil map paths
+                k_space_data = [patient,slice]
+                #k_space_data = [f.path for f in scandir(join(data_path, subset, subfolder, patient, slice)) if isfile(join(data_path, subset, subfolder, patient, slice, f)) and not (f.name.find('k-space_Frame') == -1)]
+                coil_maps    = [f.path for f in scandir(join(data_path, subset, self.subfolder, patient, slice)) if isfile(join(data_path, subset, self.subfolder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
+                # repeat mask for correct size
+                masks = [f.path for f in scandir(join(data_path, subset, self.subfolder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)] # * len(frames_fullySampled)
+                # add fully sampled, subsampled frames as well as corresponding k-space and coil map data to a list 
+                self.pairs.append([frames_fullySampled,masks,k_space_data,coil_maps])
+                #self.pairs = self.pairs + list(zip(frames_fullySampled,frames_subSampled,masks,k_space_data,coil_maps))
 
-class DatasetMotionReconstruction(Data.Dataset):
-    'Dataset of subsampled CMRxRecon data that is artificially motion-corrupted'
+    def __len__(self):
+        'number of samples'
+        return len(self.pairs)
+
+    def __getitem__(self, index):
+        'Generates data for an image slice'
+        patient     = self.pairs[index][2][0]               # number of current patient
+        slice       = int(self.pairs[index][2][1][-1])      # number of current slice
+
+        # get path for fully sampled k-space
+        path_origin = join('/home/jmeyer/storage/staff/ziadalhajhemid/CMRxRecon23/MultiCoil/Cine/TestSet/FullSample',patient)
+        fullmulti   = readfile2numpy(join(path_origin, 'cine_sax.mat'),real=False)
+        [num_frames, num_slices, num_coils, ny, nx] = fullmulti.shape
+
+        # init numpy arrays and torch tensors
+        images_subsampled   = np.zeros((num_frames,self.H,self.W))
+        images_fullysampled = np.zeros((num_frames,self.H,self.W))
+        k_spaces            = np.zeros((1,num_coils,num_frames,self.H,self.W), dtype=np.complex64)
+        coil_maps           = np.zeros((1,num_coils,num_frames,self.H,self.W), dtype=np.complex64)
+        
+        for frame in range(num_frames):
+            # read in image data
+            images_fullysampled[frame,:,:] = imread(self.pairs[index][0][frame], as_gray=True)/255
+                
+            # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
+            k_space = fullmulti[frame, slice]
+            if k_space.shape[1] == 246 and k_space.shape[2] == 512:
+                k_spaces[0,:,frame,:,:] = k_space
+            else:    
+                padx  = int((246-k_space.shape[1])/2) # calculate padding for x axis
+                pady  = int((512-k_space.shape[2])/2) # calculate padding for y axis
+                padxy = (pady, pady, padx, padx)      # adaptive padding
+                k_spaces[0,:,frame,:,:] = F.pad(torch.from_numpy(k_space), padxy, "constant", 0).numpy()
+            
+            coil_map = torch.load(self.pairs[index][3][frame])    
+            if coil_map.shape[1] == 246 and coil_map.shape[2] == 512:
+                coil_maps[0,:,frame,:,:] = coil_map
+            else:    
+                coil_map_real = F.interpolate(torch.real(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+                coil_map_imag = F.interpolate(torch.imag(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+                coil_maps[0,:,frame,:,:] = torch.complex(coil_map_real, coil_map_imag).numpy()
+        
+        # add motion artifacts to the k-space data via line swapping
+        k_spaces_motion = k_spaces
+        for frame in range(num_frames):
+            # get random numbers for the original line, the new line to replace it and the frame to use
+            original_lines  = random.sample(range(self.H), self.z)
+            new_lines       = random.sample(range(self.H), self.z)
+            for i, line in enumerate(original_lines):
+                new_frame = random.sample(range(num_frames), 1)
+                k_spaces_motion[0,:,frame,line,:] = k_spaces[0,:,new_frame,new_lines[i],:] 
+
+        # take one mask and repeat it to correct size
+        mask = imread(self.pairs[index][1][0], as_gray=True)/255
+        if mask.shape[0] != 246 or mask.shape[1] != 512:
+            padx  = int((246-mask.shape[0])/2)      # calculate padding for x axis
+            pady  = int((512-mask.shape[1])/2)      # calculate padding for y axis
+            padxy = (pady, pady, padx, padx)        # adaptive padding
+            mask  = F.pad(torch.from_numpy(mask), padxy, "constant", 0).numpy()
+        mask = np.repeat(mask[np.newaxis,:,:], num_coils, axis=0)
+        mask = np.repeat(mask[np.newaxis,:,np.newaxis,:,:], num_frames, axis=2)
+        
+        # subsampling motion-corrupted k-spaces
+        k_spaces_motion_subsampled = k_spaces_motion * mask
+
+        # get subsampled images from the motion-corrupted k-space data
+        image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(T.to_tensor(k_spaces_motion_subsampled[0,:,:,:,:]))), dim=0)
+        images_subsampled = normalize(image)
+        
+        return images_fullysampled, images_subsampled, mask, k_spaces_motion_subsampled, coil_maps
+
+class DatasetMotionReconstruction_LungMovement(Data.Dataset):
+    'Dataset of subsampled CMRxRecon data that is artificially motion-corrupted with simulated lung movement'
     def __init__(self, data_path, cropping, mode, transform, L):
         'Initialization'
         # choose subfolder according to mode
@@ -1728,6 +1840,101 @@ def espirit_proj(x, esp):
 
 def rmse(pred, gt):
     return np.linalg.norm(pred.flatten() - gt.flatten()) ** 2 / np.linalg.norm(gt.flatten()) ** 2
+
+
+def total_variation(image):
+    """
+    Compute the Total Variation (TV) of the image.
+    """
+    tv_h = torch.abs(image[ 1:, :] - image[:-1, :]).sum()
+    tv_w = torch.abs(image[:, 1:] - image[:, :-1]).sum()
+    return tv_h + tv_w
+
+def reconstruct_denoised_image(reconstructed_images, k_space, flow_fields, sensitivity_maps, undersampling_mask, num_frames, num_repeats, coils, height, width, lr=1e-3, num_iters=100):
+    """
+    Reconstruct denoised images with TV regularization.
+    Args:
+        k_space: Input undersampled k-space, shape (num_frames * num_repeats, coils, height, width).
+        flow_fields: Flow fields, shape (num_frames * num_repeats, height, width, 2).
+        sensitivity_maps: Sensitivity maps, shape (coils, height, width).
+        undersampling_mask: Binary undersampling mask, shape (height, width).
+        num_frames: Number of cardiac frames.
+        num_repeats: Number of respiratory motion repeats.
+        lr: Learning rate for the Adam optimizer.
+        num_iters: Number of optimization iterations.
+    Returns:
+        Reconstructed denoised images: shape (num_frames, height, width).
+    """
+    device = k_space.device
+
+    # Initialize reconstructed images (num_frames, height, width)
+    #reconstructed_images = torch.zeros(num_frames, height, width, device=device, requires_grad=True)
+
+    optimizer = torch.optim.Adam([reconstructed_images], lr=lr)
+
+    for iter in range(num_iters):
+        optimizer.zero_grad()
+
+        # Apply flow fields and reconstruct x * n images
+        deformed_images = []
+        for i in range(num_frames):
+            base_image = reconstructed_images[i]
+            for j in range(num_repeats):
+                flow_field = flow_fields[i * num_repeats + j]
+                grid = (torch.stack(torch.meshgrid(torch.linspace(-1, 1, height, device=device),torch.linspace(-1, 1, width, device=device),),dim=-1,) + flow_field)
+                deformed_image = F.grid_sample(base_image.unsqueeze(0).unsqueeze(0).float(),grid.unsqueeze(0).float(),mode="bilinear",padding_mode="zeros",align_corners=True,).squeeze()
+                deformed_images.append(deformed_image)
+        deformed_images = torch.stack(deformed_images)  # Shape: (num_frames * num_repeats, height, width)
+
+        # Apply sensitivity maps
+        predicted_k_space = []
+        for i in range(num_frames * num_repeats):
+            image = deformed_images[i].unsqueeze(0)
+            coil_images = image * sensitivity_maps  # Shape: (coils, height, width)
+            k_space_pred = fft2(coil_images)  # Fourier Transform
+            undersampled_k_space_pred = k_space_pred * undersampling_mask
+            predicted_k_space.append(undersampled_k_space_pred)
+        predicted_k_space = torch.stack(predicted_k_space)  # Shape: (num_frames * num_repeats, coils, height, width)
+
+        # Compute data consistency loss
+        data_consistency_loss = torch.norm(predicted_k_space - k_space) ** 2
+
+        # Compute total variation loss
+        tv_loss = sum(total_variation(reconstructed_images[i]) for i in range(num_frames))
+
+        # Total loss
+        total_loss = data_consistency_loss + tv_loss #
+
+        # Backward and optimize
+        total_loss.requires_grad = True
+        total_loss.backward(retain_graph=True)
+        optimizer.step()
+        
+        if iter == 0:
+            plt.subplot(2, 2, 1)
+            plt.imshow(reconstructed_images[0,:,:].cpu().detach().numpy(), cmap='gray')  
+            plt.axis('off')
+            plt.title('Iter 1')
+        elif iter == 9:
+            plt.subplot(2, 2, 2)
+            plt.imshow(reconstructed_images[0,:,:].cpu().detach().numpy(), cmap='gray')  
+            plt.axis('off')
+            plt.title('Iter 10')
+        elif iter == 49:
+            plt.subplot(2, 2, 3)
+            plt.imshow(reconstructed_images[0,:,:].cpu().detach().numpy(), cmap='gray')  
+            plt.axis('off')
+            plt.title('Iter 50')
+        elif iter == 99:
+            plt.subplot(2, 2, 4)
+            plt.imshow(reconstructed_images[0,:,:].cpu().detach().numpy(), cmap='gray')  
+            plt.axis('off')
+            plt.title('Iter 100')
+    plt.savefig('TestIterativeMotion.png')
+    plt.close
+
+    return reconstructed_images
+
 
 ############################################################
 ## MCMR pipeline taken/adapted from                       ##

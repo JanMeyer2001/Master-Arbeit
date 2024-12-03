@@ -76,7 +76,7 @@ for mode in modes:
         print('R=10')
 
     # import image/k-space data and coil sensitivity maps for all slices and frames
-    data_set = DatasetMotionReconstruction('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode, transform, L) 
+    data_set = DatasetMotionReconstruction_LungMovement('/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon', False, mode, transform, L) 
     data_generator = Data.DataLoader(dataset=data_set, batch_size=1, shuffle=False, num_workers=4)
 
     # select and import models for motion correction
@@ -97,22 +97,20 @@ for mode in modes:
 
     if epoch == 0:
         # choose best model
-        #print('   Using parameters: {}'.format(natsorted(os.listdir(path))[-1]))
         modelpath = path + natsorted(os.listdir(path))[-1]
     else:
         # choose model after certain epoch of training
         modelpath = [f.path for f in scandir(path) if f.is_file() and not (f.name.find('Epoch_{:04d}'.format(epoch)) == -1)][0]
-        #print('   Using parameters: {}'.format(basename(modelpath)))
-
+        
     model.load_state_dict(torch.load(modelpath))
     model.eval()
     transform.eval()
 
     # save test results in a csv file
     if model_num == 3:
-        csv_name = join('./TestResults-Reconstruction/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(0,smooth,learning_rate,mode,epoch))
+        csv_name = './TestResults-Reconstruction/LungMovement/TestMetrics-Voxelmorph_Loss_{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(0,smooth,learning_rate,mode,epoch)
     else:
-        csv_name = join('./TestResults-Reconstruction/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch))
+        csv_name = './TestResults-Reconstruction/LungMovement/TestMetrics-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.csv'.format(model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)
     f = open(csv_name, 'w')
     with f:
         fnames = ['HaarPSI','PSNR','SSIM','MSE','Mean HaarPSI','Std HaarPSI','Mean PSNR','Std PSNR','Mean SSIM','Std SSIM','Mean MSE','Std MSE']
@@ -144,10 +142,11 @@ for mode in modes:
         for frame_num in range(num_frames):
             for i in range(L):
                 if model_num == 3:
-                    warped_mov, flow = model(images_subsampled[i+1,frame_num,:,:].unsqueeze(0).unsqueeze(0).float(), images_subsampled[0,frame_num,:,:].unsqueeze(0).unsqueeze(0).float())
+                    images_subsampled[i+1,frame_num,:,:], flow = model(images_subsampled[i+1,frame_num,:,:].unsqueeze(0).unsqueeze(0).float(), images_subsampled[0,frame_num,:,:].unsqueeze(0).unsqueeze(0).float())
                     flows[i+1,frame_num,:,:,:] = flow.squeeze().permute(1,2,0)
                 else:    
                     flow, features_disp = model(images_subsampled[i+1,frame_num,:,:].unsqueeze(0).unsqueeze(0).float(), images_subsampled[0,frame_num,:,:].unsqueeze(0).unsqueeze(0).float())
+                    grid, images_subsampled[i+1,frame_num,:,:] = transform(images_subsampled[i+1,frame_num,:,:].unsqueeze(0).unsqueeze(0).float(), flows[i+1,frame_num,:,:,:].unsqueeze(0).float())
                     flows[i+1,frame_num,:,:,:] = flow.squeeze().permute(1,2,0)
 
         # reshape tensor into correct size for the reconstruction pipeline
@@ -161,7 +160,7 @@ for mode in modes:
         img_recon_motion = normalize(img_recon_motion)
 
         # reshape reconstructed images back 
-        images_subsampled = torch.reshape(images_subsampled, (L+1,num_frames,H,W))
+        #images_subsampled = torch.reshape(images_subsampled, (L+1,num_frames,H,W))
         img_recon_motion  = torch.reshape(img_recon_motion, (L+1,num_frames,H,W))
         
         # evaluate reconstructed frames
@@ -181,40 +180,32 @@ for mode in modes:
                 with f:
                     writer = csv.writer(f)
                     writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
-
+        """
         if data_num == 0:
             # plot the reconstructed motion-compensated frames
             plt.figure(layout='compressed', figsize=(16, 16))
             plt.subplots_adjust(wspace=0,hspace=0) 
-            plt.subplot(4, 2, 1)
-            plt.imshow(images_subsampled[1,0,:,:].cpu().detach().numpy(), cmap='gray') 
-            plt.title('L=1 Corrupted')  
-            plt.axis('off')
-            plt.subplot(4, 2, 2)
-            plt.imshow(images_subsampled[2,0,:,:].cpu().detach().numpy(), cmap='gray') 
-            plt.title('L=2 Corrupted')  
-            plt.axis('off')
-            plt.subplot(4, 2, 3)
+            plt.subplot(3, 2, 1)
             plt.imshow(images_fullysampled[0,:,:].cpu().detach().numpy(), cmap='gray')
             plt.title('Original')
             plt.axis('off')
-            plt.subplot(4, 2, 4)
+            plt.subplot(3, 2, 2)
             plt.imshow(images_fullysampled[0,:,:].cpu().detach().numpy(), cmap='gray')
             plt.title('Original')
             plt.axis('off')
-            plt.subplot(4, 2, 5)
+            plt.subplot(3, 2, 3)
             plt.imshow(img_recon_motion[1,0,:,:].cpu().detach().numpy(), cmap='gray')
             plt.title('L=1 Reconstruction')
             plt.axis('off')
-            plt.subplot(4, 2, 6)
+            plt.subplot(3, 2, 4)
             plt.imshow(img_recon_motion[2,0,:,:].cpu().detach().numpy(), cmap='gray')
             plt.title('L=2 Reconstruction')
             plt.axis('off')
-            plt.subplot(4, 2, 7)
+            plt.subplot(3, 2, 5)
             plt.imshow(np.abs(img_recon_motion[1,0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
             plt.title('L=1 Difference')
             plt.axis('off')
-            plt.subplot(4, 2, 8)
+            plt.subplot(3, 2, 6)
             plt.imshow(np.abs(img_recon_motion[2,0,:,:].cpu().detach().numpy()-images_fullysampled[0,:,:].cpu().detach().numpy()), cmap='gray')
             plt.title('L=2 Difference')
             plt.axis('off')
@@ -223,7 +214,7 @@ for mode in modes:
             else:
                 plt.savefig(join('./TestResults-Reconstruction/Images-Model_{}_Diffeo_{}_Loss_{}_Chan_{}_FT_{}-{}_Smth_{}_LR_{}_Mode_{}_Epoch{}.png'.format(model_num,diffeo,1,start_channel,FT_size[0],FT_size[1],smooth,learning_rate,mode,epoch)))
             plt.close
-
+        """
     print('Finished reconstruction on {}.\nEvaluation results:'.format(time.ctime()))
 
     # get mean and std  
