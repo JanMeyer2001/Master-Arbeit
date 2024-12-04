@@ -16,7 +16,7 @@ import nibabel
 import flow_vis
 
 parser = ArgumentParser()
-parser.add_argument("--start_channel", type=int, dest="start_channel", default=8,
+parser.add_argument("--start_channel", type=int, dest="start_channel", default=16,
                     help="number of start channels")
 parser.add_argument("--FT_size_x", type=int,
                     dest="FT_size_x", default=24,
@@ -78,7 +78,7 @@ fixed_seg = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/3
 
 # read in nifti segmentations from folder 
 warped_seg_nifti  = nibabel.load(pathname2_nifti)
-warped_seg_nifti  = np.array(warped_seg_nifti.get_fdata(), dtype='float32')
+warped_seg_nifti  = np.array(warped_seg_nifti.get_fdata()*3, dtype='uint32')/3
 
 # read in nifti grids from folder 
 grid_nifti  = nibabel.load(pathname3_nifti)
@@ -110,7 +110,7 @@ warped_seg_nifti    = F.interpolate(warped_seg_nifti.unsqueeze(0).unsqueeze(0), 
 
 # init different models
 model_voxelmorph         = VxmDense(inshape=input_shape, nb_unet_features=32, bidir=False, nb_unet_levels=4).to(device)
-model_f_net              = Fourier_Net(2, 2, start_channel, diffeo).to(device)
+model_f_net              = Fourier_Net(2, 2, start_channel, diffeo, True).to(device)
 model_f_net_plus         = Fourier_Net_plus(2, 2, start_channel, diffeo, FT_size).to(device) 
 model_f_net_plus_cascade = Cascade(2, 2, start_channel, diffeo, FT_size).to(device)
 
