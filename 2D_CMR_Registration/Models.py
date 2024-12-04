@@ -652,14 +652,17 @@ class Cascade_kSpace(nn.Module):
         return Df_xy
 
 class Fourier_Net(nn.Module):
-    def __init__(self, in_channel, n_classes, start_channel, diffeo):
+    def __init__(self, in_channel, n_classes, start_channel, diffeo, old=False):
         self.in_channel = in_channel
         self.n_classes = n_classes
         self.start_channel = start_channel
         self.diffeo = diffeo
 
         super(Fourier_Net, self).__init__()
-        self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
+        if old == True:
+            self.model = SYMNet_Old(self.in_channel, self.n_classes, self.start_channel)
+        else:    
+            self.model = SYMNet(self.in_channel, self.n_classes, self.start_channel) #Net_1_4
         if self.diffeo == 1:
             self.diff_transform = DiffeomorphicTransform(time_step=7).cuda()
         
@@ -1139,7 +1142,122 @@ class Net_1_4(nn.Module):
         f_xy = self.dc9(d1)
 
         return f_xy[:,0:1,:,:], f_xy[:,1:2,:,:]
+    
+class SYMNet_Old(nn.Module):
+    def __init__(self, in_channel, n_classes, start_channel):
+        self.in_channel = in_channel
+        self.n_classes = n_classes
+        self.start_channel = start_channel
 
+        bias_opt = True
+
+        super(SYMNet_Old, self).__init__()
+        self.eninput = self.encoder(self.in_channel, self.start_channel, bias=bias_opt)
+        self.ec1 = self.encoder(self.start_channel, self.start_channel, bias=bias_opt)
+        self.ec2 = self.encoder(self.start_channel, self.start_channel * 2, stride=2, bias=bias_opt)
+        self.ec3 = self.encoder(self.start_channel * 2, self.start_channel * 2, bias=bias_opt)
+        self.ec4 = self.encoder(self.start_channel * 2, self.start_channel * 4, stride=2, bias=bias_opt)
+        self.ec5 = self.encoder(self.start_channel * 4, self.start_channel * 4, bias=bias_opt)
+        self.ec6 = self.encoder(self.start_channel * 4, self.start_channel * 8, stride=2, bias=bias_opt)
+        self.ec7 = self.encoder(self.start_channel * 8, self.start_channel * 8, bias=bias_opt)
+        self.ec8 = self.encoder(self.start_channel * 8, self.start_channel * 16, stride=2, bias=bias_opt)
+        self.ec9 = self.encoder(self.start_channel * 16, self.start_channel * 8, bias=bias_opt)
+
+        self.r_dc1 = self.encoder(self.start_channel * 8 + self.start_channel * 8, self.start_channel * 8, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+        self.r_dc2 = self.encoder(self.start_channel * 8, self.start_channel * 4, kernel_size=3, stride=1, bias=bias_opt)
+        self.r_dc3 = self.encoder(self.start_channel * 4 + self.start_channel * 4, self.start_channel * 4, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+        self.r_dc4 = self.encoder(self.start_channel * 4, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.r_dc5 = self.encoder(self.start_channel * 2 + self.start_channel * 2, self.start_channel * 4, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+        self.r_dc6 = self.encoder(self.start_channel * 4, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.r_dc7 = self.encoder(self.start_channel * 2 + self.start_channel * 1, self.start_channel * 2, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+        self.r_dc8 = self.encoder(self.start_channel * 2, self.start_channel * 2, kernel_size=3, stride=1, bias=bias_opt)
+        self.rr_dc9 = self.outputs(self.start_channel * 2, self.n_classes, kernel_size=3, stride=1, padding=1, bias=False)
+
+        # needed for removed layer for ACDC dataset    
+        self.r_new = self.encoder(self.start_channel * 12, self.start_channel * 8, kernel_size=3,
+                                  stride=1, bias=bias_opt)
+
+        self.r_up1 = self.decoder(self.start_channel * 8, self.start_channel * 8)
+        self.r_up2 = self.decoder(self.start_channel * 4, self.start_channel * 4)
+        self.r_up3 = self.decoder(self.start_channel * 2, self.start_channel * 2)
+        self.r_up4 = self.decoder(self.start_channel * 2, self.start_channel * 2)
+        
+
+    def encoder(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1,
+                bias=False, batchnorm=False):
+        if batchnorm:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(out_channels),
+                nn.PReLU())
+        else:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.PReLU())
+        return layer
+
+    def decoder(self, in_channels, out_channels, kernel_size=2, stride=2, padding=0,
+                output_padding=0, bias=True):
+        layer = nn.Sequential(
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride=stride,
+                               padding=padding, output_padding=output_padding, bias=bias),
+            nn.PReLU())
+        return layer
+
+    def outputs(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0,
+                bias=False, batchnorm=False):
+        if batchnorm:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(out_channels),
+                nn.Tanh())
+        else:
+            layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias))#,
+        return layer
+
+    def forward(self, x, y):
+        x_in = torch.cat((x, y), 1)
+        e0 = self.eninput(x_in)
+        e0 = self.ec1(e0)
+
+        e1 = self.ec2(e0)
+        e1 = self.ec3(e1)
+
+        e2 = self.ec4(e1)
+        e2 = self.ec5(e2)
+
+        e3 = self.ec6(e2)
+        e3 = self.ec7(e3)
+        """
+        # remove layer as it leads to problems
+        e4 = self.ec8(e3)
+        e4 = self.ec9(e4)
+        r_d0 = torch.cat((self.r_up1(e4), e3), 1)
+        """
+        r_d0 = torch.cat((self.r_up1(e3), e2), 1)
+
+        #r_d0 = self.r_dc1(r_d0)
+        #r_d0 = self.r_dc2(r_d0)
+        
+        r_d0 = self.r_new(r_d0)
+        r_d0 = self.r_dc2(r_d0)
+        r_d0 = self.r_dc4(r_d0)
+
+        #r_d1 = torch.cat((self.r_up2(r_d0), e2), 1)
+        r_d1 = torch.cat((self.r_up3(r_d0), e1), 1)
+
+        #r_d1 = self.r_dc3(r_d1)
+        r_d1 = self.r_dc4(r_d1)
+
+        f_r = self.rr_dc9(r_d1) * 64   
+        
+        return f_r[:,0:1,:,:], f_r[:,1:2,:,:], r_d1
+    
 class SYMNet(nn.Module):
     def __init__(self, in_channel, n_classes, start_channel):
         self.in_channel = in_channel
