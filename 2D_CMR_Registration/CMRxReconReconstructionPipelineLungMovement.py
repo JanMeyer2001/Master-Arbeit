@@ -160,26 +160,24 @@ for mode in modes:
         img_recon_motion = normalize(img_recon_motion)
 
         # reshape reconstructed images back 
-        #images_subsampled = torch.reshape(images_subsampled, (L+1,num_frames,H,W))
         img_recon_motion  = torch.reshape(img_recon_motion, (L+1,num_frames,H,W))
         
         # evaluate reconstructed frames
         for frame in range(num_frames):
-            for i in range(L):    
-                # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
-                csv_HaarPSI = haarpsi(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-                csv_PSNR    = psnr(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-                csv_SSIM    = ssim(img_recon_motion[i+1,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
-                csv_MSE     = mean_squared_error(images_fullysampled[frame,:,:].cpu().detach().numpy(), img_recon_motion[i+1,frame,:,:].cpu().detach().numpy())
-                HaarPSI_test.append(csv_HaarPSI)
-                PSNR_test.append(csv_PSNR)
-                SSIM_test.append(csv_SSIM)
-                MSE_test.append(csv_MSE)
-                # save test results to csv file
-                f = open(csv_name, 'a')
-                with f:
-                    writer = csv.writer(f)
-                    writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
+            # get MSE and SSIM between first fully sampled frame and all motion-corrected reconstructed frames      
+            csv_HaarPSI = haarpsi(img_recon_motion[0,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_PSNR    = psnr(img_recon_motion[0,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_SSIM    = ssim(img_recon_motion[0,frame,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled[frame,:,:].unsqueeze(0).unsqueeze(0), data_range=1).item()
+            csv_MSE     = mean_squared_error(images_fullysampled[frame,:,:].cpu().detach().numpy(), img_recon_motion[0,frame,:,:].cpu().detach().numpy())
+            HaarPSI_test.append(csv_HaarPSI)
+            PSNR_test.append(csv_PSNR)
+            SSIM_test.append(csv_SSIM)
+            MSE_test.append(csv_MSE)
+            # save test results to csv file
+            f = open(csv_name, 'a')
+            with f:
+                writer = csv.writer(f)
+                writer.writerow([csv_HaarPSI,csv_PSNR, csv_SSIM, csv_MSE, '-', '-', '-', '-', '-', '-', '-', '-']) 
         """
         if data_num == 0:
             # plot the reconstructed motion-compensated frames
