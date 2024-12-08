@@ -6,7 +6,6 @@ import torch.utils.data as Data
 from skimage.metrics import mean_squared_error
 from piq import psnr, ssim, haarpsi
 from natsort import natsorted
-import sigpy.mri as mr
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -137,7 +136,7 @@ for mode in modes:
         tol        = 1e-12                          # error tolerance
         
         # init torch tensor for flow fields
-        flows = torch.zeros(5,num_frames,H,W,2)
+        flows = torch.zeros(L+1,num_frames,H,W,2)
     
         for frame_num in range(num_frames):
             for i in range(L):

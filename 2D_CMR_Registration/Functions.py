@@ -25,6 +25,9 @@ from skimage.util import view_as_windows
 from scipy.sparse import csr_matrix
 import math
 import random
+import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 def rotate_image(image):
     [w, h] = image.shape
@@ -994,6 +997,93 @@ class DatasetMotionReconstruction_LungMovement(Data.Dataset):
 
         return images_fullysampled, images_subsampled, mask, k_spaces_motion, coil_maps
 
+def getExampleMotionCorruptedData(folder,patient,slice,H,W,L,transform):
+    # get path for fully sampled k-space
+    path_rawData    = '/home/jmeyer/storage/staff/ziadalhajhemid/CMRxRecon23/MultiCoil/Cine/TestSet/'
+    path_fullsample = join(path_rawData,'FullSample',patient)
+    fullmulti       = readfile2numpy(join(path_fullsample, 'cine_sax.mat'),real=False)
+    [num_frames, num_slices, num_coils, ny, nx] = fullmulti.shape
+    slice_num       = int(slice[-1])      # number of current slice
+
+    # get paths for fully sampled ground truth images, masks and coils
+    data_path                = '/home/jmeyer/storage/students/janmeyer_711878/data/CMRxRecon/TestSet/Full/'
+    paths_images_groundtruth = [f.path for f in scandir(join(data_path, 'FullySampled', patient, slice)) if isfile(join(data_path, 'FullySampled', patient, slice, f))]
+    paths_coils              = [f.path for f in scandir(join(data_path, folder, patient, slice)) if isfile(join(data_path, folder, patient, slice, f)) and not (f.name.find('SensitivityMaps_Frame') == -1)]
+    path_masks               = [f.path for f in scandir(join(data_path, folder, patient)) if f.is_file() and not (f.name.find('Mask') == -1)]
+
+    # init numpy arrays and torch tensors
+    images_subsampled   = torch.zeros((L+1,int(num_frames/2),H,W))
+    images_fullysampled = torch.zeros((int(num_frames/2),H,W))
+    k_spaces            = torch.zeros(1,num_coils,int(num_frames/2),H,W,dtype=torch.complex64)
+    coil_maps           = torch.zeros(1,num_coils,int(num_frames/2)*(L+1),H,W,dtype=torch.complex64)
+    k_spaces_motion     = torch.zeros(L+1,num_coils,int(num_frames/2),H,W,dtype=torch.complex64) 
+    
+    # select every second frame
+    frames_selected = np.arange(0,num_frames,2)
+
+    # fill list for all selected frames
+    for i, frame in enumerate(frames_selected):
+        # read in image data
+        images_fullysampled[i,:,:] = torch.from_numpy(imread(paths_images_groundtruth[frame], as_gray=True)/255)
+            
+        # load k-space data and coil maps (size of [C,H,W] with C being coil channels)
+        k_space = fullmulti[frame, slice_num]
+        if k_space.shape[1] == 246 and k_space.shape[2] == 512:
+            k_spaces[0,:,i,:,:] = torch.from_numpy(k_space)
+        else:    
+            padx  = int((246-k_space.shape[1])/2) # calculate padding for x axis
+            pady  = int((512-k_space.shape[2])/2) # calculate padding for y axis
+            padxy = (pady, pady, padx, padx)      # adaptive padding
+            k_spaces[0,:,i,:,:] = F.pad(torch.from_numpy(k_space), padxy, "constant", 0)
+        
+        coil_map = torch.load(paths_coils[frame])    
+        if coil_map.shape[1] == 246 and coil_map.shape[2] == 512:
+            coil_map = np.repeat(coil_map[:,np.newaxis,:,:], L+1, axis=1)
+            coil_maps[0,:,(i*(L+1)):((i+1)*(L+1)),:,:] = torch.from_numpy(coil_map)
+        else:    
+            coil_map_real   = F.interpolate(torch.real(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+            coil_map_imag   = F.interpolate(torch.imag(torch.from_numpy(coil_map)).unsqueeze(0), (246,512), mode='nearest').squeeze(0)
+            coil_maps_inter = torch.complex(coil_map_real, coil_map_imag)
+            coil_map        = np.repeat(coil_maps_inter.numpy()[:,np.newaxis,:,:], L+1, axis=1)
+            coil_maps[0,:,(i*(L+1)):((i+1)*(L+1)),:,:] = torch.from_numpy(coil_map)
+    
+    # take one mask and repeat it to correct size
+    mask = imread(path_masks[0])/255
+    if mask.shape[0] != 246 or mask.shape[1] != 512:
+        padx  = int((246-mask.shape[0])/2)      # calculate padding for x axis
+        pady  = int((512-mask.shape[1])/2)      # calculate padding for y axis
+        padxy = (pady, pady, padx, padx)        # adaptive padding
+        mask  = F.pad(torch.from_numpy(mask), padxy, "constant", 0).numpy()
+    mask = np.repeat(mask[np.newaxis,:,:], num_coils, axis=0)
+    mask = torch.from_numpy(np.repeat(mask[np.newaxis,:,np.newaxis,:,:], int(num_frames/2)*(L+1), axis=2))
+    
+    # subsample and add motion artifacts to the k-space data 
+    k_spaces_motion[0,...] = k_spaces * mask[:,:,0:len(frames_selected),:,:]
+    for k, frame in enumerate(frames_selected):
+        for i in range(L+1):
+            if i == 0:
+                # reconstruct images
+                image = fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(torch.view_as_real(k_spaces_motion[0,:,k,:,:]))), dim=0)
+                images_subsampled[i,k,:,:] = normalize(image)
+            else:
+                # get and save random displacement
+                random_disp = random_smooth_Displacement((H,W),0.1)
+                # get images for all coils
+                coil_images = fastmri.complex_abs(fastmri.ifft2c(torch.view_as_real(k_spaces_motion[0,:,k,:,:])))
+                # motion corrupt the coil images
+                grid, coil_images_motion = transform(coil_images.unsqueeze(0).float(),torch.from_numpy(random_disp).unsqueeze(0).float())
+                # save rss image
+                images_subsampled[i,k,:,:] = normalize(fastmri.rss(coil_images_motion.squeeze(), dim=0)) 
+                # convert back to obtain motion corrupted k-space
+                coil_images = torch.zeros(num_coils,H,W,2)
+                coil_images[:,:,:,0] = coil_images_motion.squeeze()
+                k_spaces_motion[i,:,k,:,:] = torch.view_as_complex(fastmri.fft2c(coil_images))
+    #reshape motion k-space to the correct dimensions
+    k_spaces_motion = torch.reshape(k_spaces_motion, (num_coils,int(num_frames/2)*(L+1),H,W)).unsqueeze(0)
+
+    return images_fullysampled, images_subsampled, mask, k_spaces_motion, coil_maps
+
+
 class TrainDatasetOASIS(Data.Dataset):
   'OASIS dataset'
   def __init__(self, data_path, trainingset = 1):
@@ -1597,9 +1687,9 @@ def extract_differences(images, frames, slices, H, W):
     return diffs_slices
 
 
-##############################################
-### Helper Functions for creating boxplots ###
-##############################################
+################################################################
+### Helper Functions for creating boxplots and other figures ###
+################################################################
 
 def set_box_color(bp, color):
     plt.setp(bp['boxes'], color=color)
@@ -1717,6 +1807,109 @@ def crop2D(mov, fix, u, pos, crop_size):
     #ref_mov = np.stack((ref_tmp, mov_tmp), axis=-1)
     #flow_out = flowCrop(u, x_pos, y_pos, crop_size)
     return mov, fix #ref_mov, flow_out
+
+def display_and_compare_images(ground_truth, method_images, method_titles, metrics, mode, boldpos, figname="test.png"):
+    """ display images (numpy arrays) with metrics"""
+    num_methods = len(method_images)
+    fig, axes = plt.subplots(2, num_methods + 1, figsize=(20, 5))
+    plt.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0.0, top=1)
+
+    H, W = ground_truth.shape
+    crop = [int(H / 4), int(W / 4)]
+    ground_truth_crop = ground_truth[crop[0] : -crop[0], crop[1] : -crop[1]]
+    #ground_truth_crop = normalize_numpy(ground_truth_crop)
+
+    #ground_truth = normalize_numpy(ground_truth)
+    # Display ground truth
+    axes[0, 0].imshow(
+        #ground_truth[crop_glob:-crop_glob, crop_glob:-crop_glob],
+        ground_truth_crop,
+        cmap="gray",
+        vmin=0,
+        vmax=1,
+    )
+    axes[0, 0].set_title("Ground Truth", fontsize=24, fontfamily="serif")
+    axes[0, 0].margins(0, 0)
+    axes[0, 0].axis("off")
+
+    # Compute and display metrics for ground truth (no errors)
+    axes[0, 0].axis("off")
+    empyt_img = np.ones_like(ground_truth)
+    im = axes[1, 0].imshow(empyt_img, cmap="magma", alpha=0.0)
+    axes[1, 0].axis("off")
+    # Text for mode of the figure
+    if mode == 1:
+        text = "R=4"
+    elif mode == 2:
+        text = "R=8"
+    elif mode == 3:
+        text = "R=10"
+    axes[1, 0].set_title(text, fontsize=50, weight="bold", fontfamily="serif", y=0.57)
+
+    # Loop through the method images
+    for i in range(num_methods):
+        # Display the method image
+        method_image = method_images[i]
+        method_img_crop = method_image[crop[0] : -crop[0], crop[1] : -crop[1]]
+        #method_img_crop = normalize_numpy(method_img_crop)
+        # Normalize contrast for better visualization
+        # method_img_eq = exposure.equalize_hist(method_img)
+        #method_image = normalize_numpy(method_image)
+        im = axes[0, i + 1].imshow(
+            #method_image[crop_glob:-crop_glob, crop_glob:-crop_glob],
+            method_img_crop,
+            cmap="gray",
+            vmin=0,
+            vmax=1,
+        )
+        if i == boldpos:
+            axes[0, i + 1].set_title(
+                method_titles[i], fontsize=24, weight="bold", fontfamily="serif"
+            )
+        else:
+            axes[0, i + 1].set_title(method_titles[i], fontsize=24, fontfamily="serif")
+        axes[0, i + 1].margins(0, 0)
+        axes[0, i + 1].axis("off")
+
+        # display metrics for each method image 
+        info_text = f"% HaarPSI: {metrics[i][0]:.2f}  % SSIM: {metrics[i][1]:.2f}\nPSNR: {metrics[i][2]:.2f}  MSE (e-3): {metrics[i][3]:.2f}"
+        text = axes[0, i + 1].text(
+            10,
+            156,
+            info_text,
+            fontsize=14,
+            color="black",
+            fontfamily="serif",
+            bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
+        )
+        axes[0, i + 1].margins(0, 0)
+        axes[0, i + 1].axis("off")
+
+        # Compute and display the difference (error) between method image and ground truth
+        #error_img = np.abs(ground_truth[crop_glob:-crop_glob, crop_glob:-crop_glob]-method_image[crop_glob:-crop_glob, crop_glob:-crop_glob])
+        error_img = np.abs(ground_truth_crop-method_img_crop)
+        cax = axes[1, i + 1].imshow(error_img, cmap="cividis", vmin=0, vmax=0.1)
+        axes[1, i + 1].axis("off")
+
+    sm = cm.ScalarMappable(cmap="cividis")  # , norm=plt.Normalize(vmin=0, vmax=0.2))
+    sm.set_array([])
+    divider = make_axes_locatable(axes[1, 0])
+    cax = divider.append_axes("bottom", size="12%", pad=0.1)  # 0.10
+    cbar = fig.colorbar(sm, cax=cax, orientation="horizontal", cmap="cividis")
+    # set ticks to "min", "max"
+    cbarticks = ["min", "max"]
+    # but the axis label o top of the colorbar
+    cbar.set_ticks([0, 1.0])
+    cbar.set_ticklabels(cbarticks, fontsize=20)
+    cbar.ax.xaxis.set_label_position("top")
+    cbar.ax.xaxis.tick_top()
+    cbar.ax.set_xlabel("Error", rotation=0, fontsize=20, labelpad=0, fontfamily="serif")
+    cbar.ax.tick_params(axis="both", labelsize=16)
+    cbar.ax.tick_params(labelsize="large")
+
+    plt.tight_layout(h_pad=0.1, w_pad=0.3, pad=0)
+    plt.show()
+    fig.savefig(figname, dpi=600, pad_inches=0.05, bbox_inches="tight")
 
 #############
 ## ESPIRiT ##
