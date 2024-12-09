@@ -29,13 +29,16 @@ def show_coils(data, slice_nums, cmap=None, vmax = 0.0005):
     '''
     plot the figures along the first dims.
     '''
-    fig = plt.figure()
+    fig = plt.figure(figsize=(6,10))
     for i, num in enumerate(slice_nums):
         plt.subplot(1, len(slice_nums), i + 1)
-        plt.imshow(data[num], cmap=cmap,vmax=vmax)
+        plt.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0.0, top=1)
+        plt.imshow(data[num], cmap="gray",vmax=vmax)
         plt.axis('off')
         
-    plt.savefig('./Thesis/Images/Coils.png') 
+    plt.show()
+    plt.tight_layout(h_pad=0.1, w_pad=0.3, pad=0)
+    plt.savefig('./Images/Coils.png', dpi=600, pad_inches=0.05, bbox_inches="tight") 
     plt.close
 
 
@@ -46,7 +49,7 @@ names = [f.path for f in os.scandir(data_path) if f.is_dir() and f.name.endswith
 
 # read files from mat to numpy
 fullmulti = readfile2numpy(os.path.join(data_path, names[0], 'cine_sax.mat'))
-[nframe, nslice, ncoil, ny, nx] = fullmulti.shape
+[nframe, nslice, ncoil, nx, ny] = fullmulti.shape
 
 # choose frame and slice
 slice_kspace = fullmulti[0,0] 
@@ -56,8 +59,11 @@ slice_kspace = T.to_tensor(slice_kspace)
 image = fastmri.ifft2c(slice_kspace)
 # Compute absolute value to get a real image      
 image = fastmri.complex_abs(image) 
+crop = [int(nx / 4), int(ny / 4)]
+image_crop = image[:,crop[0] : -crop[0], crop[1] : -crop[1]]
+show_coils(image_crop,[0,3,6])
 # combine the coil images to a coil-combined one
-image = fastmri.rss(image, dim=0)
+image = fastmri.rss(image, dim=0, cmap='gray', vmax=1)
 # normalize images have data range [0,1]
 image = (image - torch.min(image)) / (torch.max(image) - torch.min(image))
 # interpolate images to be the same size
@@ -70,8 +76,8 @@ plt.imshow(image, cmap='gray') # for plotting coresponding reconstructed image
 #plt.title('Fully Sampled')
 plt.axis('off')
 plt.tight_layout()
-#plt.savefig('./Thesis/Images/k-space_fullysampled.png') # for saving the k-space plot
-plt.savefig('./Thesis/Images/image_fullysampled.png') # for saving the image
+#plt.savefig('./Images/k-space_fullysampled.png') # for saving the k-space plot
+plt.savefig('./Images/image_fullysampled.png') # for saving the image
 plt.close
 
 # Data from CMRxRecon
@@ -105,6 +111,6 @@ plt.imshow(image, cmap='gray') # for plotting coresponding reconstructed image
 #plt.title('Subsampled')
 plt.axis('off')
 plt.tight_layout()
-#plt.savefig('./Thesis/Images/k-space_subsampled.png') # for saving the k-space plot
-plt.savefig('./Thesis/Images/image_subsampled.png') # for saving the image
+#plt.savefig('./Images/k-space_subsampled.png') # for saving the k-space plot
+plt.savefig('./Images/image_subsampled.png') # for saving the image
 plt.close
