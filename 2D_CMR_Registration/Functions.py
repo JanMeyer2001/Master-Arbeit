@@ -1872,7 +1872,7 @@ def display_and_compare_images(ground_truth, method_images, method_titles, metri
         axes[0, i + 1].axis("off")
 
         # display metrics for each method image 
-        info_text = f"% HaarPSI: {metrics[i][0]:.2f}  % SSIM: {metrics[i][1]:.2f}\nPSNR: {metrics[i][2]:.2f}  MSE (e-3): {metrics[i][3]:.2f}"
+        info_text = f"% HaarPSI: {metrics[i,0]:.2f}  PSNR: {metrics[i,1]:.2f}\n% SSIM: {metrics[i,2]:.2f}  MSE (e-3): {metrics[i,3]:.2f}"
         text = axes[0, i + 1].text(
             10,
             156,
