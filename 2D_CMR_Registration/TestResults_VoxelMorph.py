@@ -141,16 +141,9 @@ for i, image_pairs in enumerate(test_generator):
         elif dataset == 'ACDC':
             Dice_test_full.append(csv_Dice_full)
             Dice_test_noBackground.append(csv_Dice_noBackground)
-    
-        hh, ww = Df_xy.shape[-2:]
-        Df_xy = Df_xy.detach().cpu().numpy()
-        Df_xy[:,0,:,:] = Df_xy[:,0,:,:] * hh / 2
-        Df_xy[:,1,:,:] = Df_xy[:,1,:,:] * ww / 2
-
-        jac_det = jacobian_determinant_vxm(Df_xy[0, :, :, :])   # get jacobian determinant
-        negJ = np.sum(jac_det <= 0)                             # get number of non positive values
-        negJ = negJ * 100 / (input_shape[0] * input_shape[1])   # get percentage over the whole image
-        NegJ.append(negJ)
+        
+        # get jacobian determinant
+        NegJ.append(jacobian_determinant_vxm(Df_xy.squeeze().numpy()))
 
         # save test results to csv file
         f = open(csv_name, 'a')
