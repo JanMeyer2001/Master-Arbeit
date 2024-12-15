@@ -21,7 +21,7 @@ H = 246
 W = 512
 input_shape = [H,W] 
 modes = [1,2,3]         # Acc factors 4, 8, 10
-boldpositions = [1,2,2] # positions for best model
+boldpositions = [2,3,3] # positions for best model
 
 transform = SpatialTransform().to(device)
 transform_voxelmorph = SpatialTransformer(input_shape, mode = 'nearest').to(device)
@@ -81,9 +81,12 @@ for mode in modes:
     model_f_net_plus_cascade.load_state_dict(torch.load(modelpath_f_net_plus_cascade))
     model_f_net_plus_cascade.eval()
 
-    titles = ["VoxelMorph", "Fourier-Net", "Fourier-Net+", "4xFourier-Net+"]
+    if mode ==1:
+        titles = ["Ground Truth","Baseline","VoxelMorph", "Fourier-Net", "Fourier-Net+", "4xFourier-Net+"]
+    else:
+        titles = None
     method_images = []
-    metrics = np.zeros((4,4))
+    metrics = []
 
     # init torch tensor for flow fields
     flows_voxelmorph            = torch.zeros(L+1,num_frames,H,W,2)
@@ -135,33 +138,28 @@ for mode in modes:
     # ground truth image
     images_fullysampled = images_fullysampled[0,:,:].unsqueeze(0).unsqueeze(0)
 
+    # get metrics for baseline
+    metrics.append(ssim(images_subsampled[4,0,:,:].unsqueeze(0).unsqueeze(0), images_fullysampled, data_range=1).item()*100)
+    method_images.append(images_subsampled[4,0,:,:].detach().cpu().numpy())
+    
     # get metrics for VoxelMorph
-    img_recon_motion    = img_recon_motion_voxelmorph[3,0,:,:].unsqueeze(0).unsqueeze(0)
-    metrics[0,0]        = haarpsi(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[0,1]        = psnr(img_recon_motion, images_fullysampled, data_range=1).item()
-    metrics[0,2]        = ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[0,3]        = mean_squared_error(images_fullysampled.cpu().detach().numpy(), img_recon_motion.cpu().detach().numpy())*100
+    img_recon_motion = img_recon_motion_voxelmorph[3,0,:,:].unsqueeze(0).unsqueeze(0)
+    metrics.append(ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100)
     method_images.append(img_recon_motion.squeeze().squeeze().detach().cpu().numpy())
+    
     # get metrics for Fourier-Net
-    img_recon_motion    = img_recon_motion_f_net[2,0,:,:].unsqueeze(0).unsqueeze(0)
-    metrics[1,0]        = haarpsi(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[1,1]        = psnr(img_recon_motion, images_fullysampled, data_range=1).item()
-    metrics[1,2]        = ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[1,3]        = mean_squared_error(images_fullysampled.cpu().detach().numpy(), img_recon_motion.cpu().detach().numpy())*100
+    img_recon_motion = img_recon_motion_f_net[2,0,:,:].unsqueeze(0).unsqueeze(0)
+    metrics.append(ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100)
     method_images.append(img_recon_motion.squeeze().squeeze().detach().cpu().numpy())
+    
     # get metrics for Fourier-Net+
-    img_recon_motion    = img_recon_motion_f_net_plus[0,0,:,:].unsqueeze(0).unsqueeze(0)
-    metrics[2,0]        = haarpsi(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[2,1]        = psnr(img_recon_motion, images_fullysampled, data_range=1).item()
-    metrics[2,2]        = ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[2,3]        = mean_squared_error(images_fullysampled.cpu().detach().numpy(), img_recon_motion.cpu().detach().numpy())*100
+    img_recon_motion = img_recon_motion_f_net_plus[0,0,:,:].unsqueeze(0).unsqueeze(0)
+    metrics.append(ssim(img_recon_motion, images_fullysampled, data_range=1).item()*10)
     method_images.append(img_recon_motion.squeeze().squeeze().detach().cpu().numpy())
+    
     # get metrics for 4xFourier-Net+
-    img_recon_motion    = img_recon_motion_f_net_plus_cascade[1,0,:,:].unsqueeze(0).unsqueeze(0)
-    metrics[3,0]        = haarpsi(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[3,1]        = psnr(img_recon_motion, images_fullysampled, data_range=1).item()
-    metrics[3,2]        = ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100
-    metrics[3,3]        = mean_squared_error(images_fullysampled.cpu().detach().numpy(), img_recon_motion.cpu().detach().numpy())*100
+    img_recon_motion = img_recon_motion_f_net_plus_cascade[1,0,:,:].unsqueeze(0).unsqueeze(0)
+    metrics.append(ssim(img_recon_motion, images_fullysampled, data_range=1).item()*100)
     method_images.append(img_recon_motion.squeeze().squeeze().detach().cpu().numpy())
 
     display_and_compare_images(images_fullysampled.squeeze().squeeze(), method_images, titles, metrics, mode, boldpositions[mode-1], save_name)  

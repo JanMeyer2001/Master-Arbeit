@@ -1812,12 +1812,14 @@ def crop2D(mov, fix, u, pos, crop_size):
 def display_and_compare_images(ground_truth, method_images, method_titles, metrics, mode, boldpos, figname="test.png"):
     """ display images (numpy arrays) with metrics"""
     num_methods = len(method_images)
-    fig, axes = plt.subplots(2, num_methods + 1, figsize=(20, 5))
+    fig, axes = plt.subplots(2, num_methods + 1, figsize=(20, 8))
     plt.subplots_adjust(wspace=0, hspace=0, left=0, right=1, bottom=0.0, top=1)
 
     H, W = ground_truth.shape
-    crop = [int(H / 4), int(W / 4)]
-    ground_truth_crop = ground_truth[crop[0] : -crop[0], crop[1] : -crop[1]]
+    centerx = int(H/2)
+    centery = int(W/2)
+    crop = 64
+    ground_truth_crop = ground_truth[(centerx-crop):(centerx+crop),(centery-crop):(centery+crop)]
     #ground_truth_crop = normalize_numpy(ground_truth_crop)
 
     #ground_truth = normalize_numpy(ground_truth)
@@ -1829,7 +1831,8 @@ def display_and_compare_images(ground_truth, method_images, method_titles, metri
         vmin=0,
         vmax=1,
     )
-    axes[0, 0].set_title("Ground Truth", fontsize=24, fontfamily="serif")
+    if type(method_titles) != type(None):
+        axes[0, 0].set_title(method_titles[0], fontsize=22, fontfamily="serif")
     axes[0, 0].margins(0, 0)
     axes[0, 0].axis("off")
 
@@ -1851,7 +1854,7 @@ def display_and_compare_images(ground_truth, method_images, method_titles, metri
     for i in range(num_methods):
         # Display the method image
         method_image = method_images[i]
-        method_img_crop = method_image[crop[0] : -crop[0], crop[1] : -crop[1]]
+        method_img_crop = method_image[(centerx-crop):(centerx+crop),(centery-crop):(centery+crop)]
         #method_img_crop = normalize_numpy(method_img_crop)
         # Normalize contrast for better visualization
         # method_img_eq = exposure.equalize_hist(method_img)
@@ -1863,26 +1866,57 @@ def display_and_compare_images(ground_truth, method_images, method_titles, metri
             vmin=0,
             vmax=1,
         )
-        if i == boldpos:
-            axes[0, i + 1].set_title(
-                method_titles[i], fontsize=24, weight="bold", fontfamily="serif"
-            )
-        else:
-            axes[0, i + 1].set_title(method_titles[i], fontsize=24, fontfamily="serif")
+        if type(method_titles) != type(None):
+            axes[0, i + 1].set_title(method_titles[i+1], fontsize=22, fontfamily="serif")
         axes[0, i + 1].margins(0, 0)
         axes[0, i + 1].axis("off")
 
-        # display metrics for each method image 
-        info_text = f"% HaarPSI: {metrics[i,0]:.2f}  PSNR: {metrics[i,1]:.2f}\n% SSIM: {metrics[i,2]:.2f}  MSE (e-3): {metrics[i,3]:.2f}"
-        text = axes[0, i + 1].text(
-            10,
-            156,
-            info_text,
-            fontsize=14,
-            color="black",
-            fontfamily="serif",
-            bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
-        )
+        # display SSIM for each method image 
+        info_text = f"% SSIM: {metrics[i]:.2f}"
+        if i == boldpos:
+            if type(method_titles) != type(None):
+                text = axes[0, i + 1].text(
+                    10,
+                    156,
+                    info_text,
+                    fontsize=18,
+                    weight="bold",
+                    color="black",
+                    fontfamily="serif",
+                    bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
+                )
+            else:
+                text = axes[0, i + 1].text(
+                    10,
+                    150,
+                    info_text,
+                    fontsize=18,
+                    weight="bold",
+                    color="black",
+                    fontfamily="serif",
+                    bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
+                )    
+        else:
+            if type(method_titles) != type(None):
+                text = axes[0, i + 1].text(
+                    10,
+                    156,
+                    info_text,
+                    fontsize=18,
+                    color="black",
+                    fontfamily="serif",
+                    bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
+                )
+            else:
+                text = axes[0, i + 1].text(
+                    10,
+                    150,
+                    info_text,
+                    fontsize=18,
+                    color="black",
+                    fontfamily="serif",
+                    bbox=dict(facecolor="white", alpha=0.8, edgecolor="black"),
+                )    
         axes[0, i + 1].margins(0, 0)
         axes[0, i + 1].axis("off")
 
