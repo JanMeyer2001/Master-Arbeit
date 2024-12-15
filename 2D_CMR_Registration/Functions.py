@@ -1757,12 +1757,13 @@ def create_boxplot(savename=None, title=None, data=None, labels=None, legend=Non
         # set colors for boxes
         plt.setp(bp["boxes"], facecolor=color[i])
         # draw temporary lines and use them to create a legend
-        plt.plot([], c=color[i], label=legend[i])
-    
+        #plt.plot([], c=color[i], label=legend[i])
+    """
     if type(anchor_loc) == type(None):
         plt.legend() 
     else:    
         plt.legend(bbox_to_anchor=anchor_loc,loc='center') 
+    """
     plt.xticks(range(0, len(labels)*2, 2), labels)
     plt.xlim(-0.9, len(labels)*1.65) 
     plt.tight_layout()

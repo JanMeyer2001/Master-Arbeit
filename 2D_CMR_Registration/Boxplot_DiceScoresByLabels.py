@@ -51,7 +51,7 @@ else:
     anchor_loc = [0.22, 0.125]      # coords for the legend to apprear
 
 # create path to save the boxplot to
-path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_'
+path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Images/Boxplot_DiceScores_'
 
 for label in labels:
     save_path = path + label + '.png'
