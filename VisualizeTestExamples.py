@@ -62,7 +62,7 @@ pathname3_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC
 pathname4_nifti = '/home/jmeyer/storage/students/janmeyer_711878/data/Nifti/ACDC/' + folder_nifti + '/ImagePair0003/Displacement.nii'
 
 # path to save the plots to
-save_path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/'
+save_path = './Images/'
 
 # read in images 
 moving_image = imread(pathname1, as_gray=True)/255
@@ -74,7 +74,7 @@ warped_image_nifti  = np.array(warped_image_nifti.get_fdata(), dtype='float32')
 
 # read in segmentations (only have value 0 for background and 1,2,3 for structures)
 moving_seg = imread(pathname1.replace('Image','Segmentation'), as_gray=True)/3
-fixed_seg = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/3
+fixed_seg  = imread(pathname2.replace('Image','Segmentation'), as_gray=True)/3
 
 # read in nifti segmentations from folder 
 warped_seg_nifti  = nibabel.load(pathname2_nifti)

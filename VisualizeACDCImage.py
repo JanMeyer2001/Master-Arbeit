@@ -68,5 +68,5 @@ for mode in modes:
     plt.imshow(image, cmap='gray') 
     plt.axis('off')
     plt.tight_layout()
-    plt.savefig('/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Images/ManualSubsamplingACDC_Mode{}.png'.format(mode)) 
+    plt.savefig('./Images/ManualSubsamplingACDC_Mode{}.png'.format(mode)) 
     plt.close

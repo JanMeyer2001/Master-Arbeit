@@ -132,16 +132,13 @@ for run in range(total_runs):
         model = Cascade(2, 2, config.start_channel, config.diffeo, config.FT_size).cuda() 
 
     # choose the loss function for similarity
-    assert config.choose_loss >= 0 and config.choose_loss <= 3, f"Expected choose_loss to be one of SAD (0), MSE (1), NCC (2) or SSIM (3), but got: {config.choose_loss}"
+    assert config.choose_loss >= 0 and config.choose_loss <= 2, f"Expected choose_loss to be one of SAD (0), MSE (1) or NCC (2), but got: {config.choose_loss}"
     if config.choose_loss == 1:
         loss_similarity = MSE().loss
     elif config.choose_loss == 0:
         loss_similarity = SAD().loss
     elif config.choose_loss == 2:
         loss_similarity = NCC(win=9)
-    elif config.choose_loss == 3:
-        ms_ssim_module = MS_SSIM(data_range=1, size_average=True, channel=1, win_size=9)
-        loss_similarity = SAD().loss
     loss_smooth = smoothloss
 
     transform = SpatialTransform().cuda()

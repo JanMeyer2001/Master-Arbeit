@@ -27,7 +27,7 @@ transform = SpatialTransform().to(device)
 transform_voxelmorph = SpatialTransformer(input_shape, mode = 'nearest').to(device)
 
 for mode in modes:
-    save_name = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Images/ResultsReconstruction_mode{}.png'.format(mode)
+    save_name = './Images/ResultsReconstruction_mode{}.png'.format(mode)
     # print mode
     if mode == 1:
         print('R=4')

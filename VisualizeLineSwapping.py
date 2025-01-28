@@ -42,7 +42,7 @@ image = normalize(fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(T.to_tensor(k_s
 plt.subplot(1,1,1)
 plt.imshow(image.cpu().detach().numpy(), cmap='gray')
 plt.axis('off')
-plt.savefig('./Thesis/Images/LineSwappingOriginal.png')
+plt.savefig('./Images/LineSwappingOriginal.png')
 plt.close
 
 # add motion artifacts to the k-space data via line swapping
@@ -62,7 +62,7 @@ image_16 = normalize(fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(T.to_tensor(
 plt.subplot(1,1,1)
 plt.imshow(image_16.cpu().detach().numpy(), cmap='gray')
 plt.axis('off')
-plt.savefig('./Thesis/Images/LineSwapping16.png')
+plt.savefig('./Images/LineSwapping16.png')
 plt.close
 
 # add motion artifacts to the k-space data via line swapping
@@ -82,5 +82,5 @@ image_32 = normalize(fastmri.rss(fastmri.complex_abs(fastmri.ifft2c(T.to_tensor(
 plt.subplot(1,1,1)
 plt.imshow(image_32.cpu().detach().numpy(), cmap='gray')
 plt.axis('off')
-plt.savefig('./Thesis/Images/LineSwapping32.png')
+plt.savefig('./Images/LineSwapping32.png')
 plt.close

@@ -51,7 +51,7 @@ else:
     width = 0.19
 
 # create path to save the boxplot to
-path = '/home/jmeyer/storage/students/janmeyer_711878/Master-Arbeit/Thesis/Images/Boxplot_DiceScores_'
+path = './Images/Boxplot_DiceScores_'
 
 if mode == 0:
     save_path = path + 'FullySampled.png'
